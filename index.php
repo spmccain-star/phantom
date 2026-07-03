@@ -1,33 +1,6 @@
 <?php
-$today = date('Y-m-d');
-
-// Next upcoming show/tournament
-$today_ts  = strtotime($today);
-$next_event = null;
-foreach ($events as $date_str => $ev) {
-    if (strtotime($date_str) >= $today_ts && in_array($ev['type'], ['show','dci'])) {
-        $next_event = ['date' => $date_str] + $ev;
-        break;
-    }
-}
-if ($next_event) {
-    $ne_ts       = strtotime($next_event['date']);
-    $ne_dow      = date('l', $ne_ts);
-    $ne_date_fmt = date('F j, Y', $ne_ts);
-    $ne_detail   = $next_event['detail'];
-    $ne_location = '';
-    if (preg_match('/H:\s*([^·]+)/u', $ne_detail, $m)) {
-        $ne_location = trim($m[1]);
-    }
-}
-
-// Current location: most recent event on or before today that has a city
-$current_city = null;
-foreach ($events as $date_str => $ev) {
-    if (strtotime($date_str) <= $today_ts && !empty($ev['city'])) {
-        $current_city = $ev['city'];
-    }
-}
+$today    = date('Y-m-d');
+$today_ts = strtotime($today);
 
 // Messages DB
 $_msg_db_path = __DIR__ . '/data/messages.db';
@@ -104,6 +77,34 @@ $events = [
     '2026-08-08' => ['label' => 'DCI FINALS',                        'detail' => 'Indianapolis, IN',                                        'type' => 'dci'],
     '2026-08-09' => ['label' => 'Banquet',                           'detail' => 'End of season',                                           'type' => 'milestone'],
 ];
+
+// Next upcoming show
+$next_event = null;
+foreach ($events as $date_str => $ev) {
+    if (strtotime($date_str) >= $today_ts && in_array($ev['type'], ['show','dci'])) {
+        $next_event = ['date' => $date_str] + $ev;
+        break;
+    }
+}
+if ($next_event) {
+    $ne_ts       = strtotime($next_event['date']);
+    $ne_dow      = date('l', $ne_ts);
+    $ne_date_fmt = date('F j, Y', $ne_ts);
+    $ne_detail   = $next_event['detail'];
+    $ne_location = '';
+    if (preg_match('/H:\s*([^·]+)/u', $ne_detail, $m)) {
+        $ne_location = trim($m[1]);
+    }
+}
+
+// Current location: most recent event on or before today that has a city
+$current_city = null;
+foreach ($events as $date_str => $ev) {
+    if (strtotime($date_str) <= $today_ts && !empty($ev['city'])) {
+        $current_city = $ev['city'];
+    }
+}
+
 $type_colors = [
     'milestone' => '#FFD97D',
     'show'      => '#7DD9A2',
