@@ -166,7 +166,8 @@ $months = [
     .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.0) 10%, rgba(0,0,0,0.95) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(1.25rem, 4vw, 2.5rem); }
     .hero-bottom-row { position: relative; }
     .hero-left { flex: 1; min-width: 0; }
-    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; }
+    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: opacity 0.15s; }
+    .hero-eyebrow:hover { opacity: 1; }
     .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff4444; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(255,68,68,0.6); animation: pulse 2s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,68,68,0.6); } 70% { box-shadow: 0 0 0 7px rgba(255,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(255,68,68,0); } }
     .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(24px, 4vw, 42px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
@@ -294,14 +295,14 @@ $months = [
       <div class="hero-bottom-row">
         <div class="hero-left">
           <?php if ($next_event): ?>
-          <div class="hero-eyebrow"><span class="pulse-dot"></span>Next show &nbsp;&middot;&nbsp; <?= $ne_dow ?>, <?= $ne_date_fmt ?></div>
-          <div class="hero-title">Keep up with Matéo</div>
-          <div class="hero-sub"><?= htmlspecialchars($next_event['label']) ?><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?></div>
+          <a class="hero-eyebrow" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[2])" style="text-decoration:none;">
+            <span class="pulse-dot"></span>Next show &nbsp;&middot;&nbsp; <?= date('M j', $ne_ts) ?><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?> &nbsp;&middot;&nbsp; <?= htmlspecialchars($next_event['label']) ?> ›
+          </a>
           <?php else: ?>
           <div class="hero-eyebrow">Phantom Regiment 2026</div>
-          <div class="hero-title">Keep up with Matéo</div>
-          <div class="hero-sub"><em>Bloodline</em> &middot; Drum Corps International</div>
           <?php endif; ?>
+          <div class="hero-title">Keep up with Matéo</div>
+          <div class="hero-sub">Phantom Regiment &middot; Drum Corps International</div>
           <a class="msg-btn" href="/fanmail.php">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Leave Matéo a message
