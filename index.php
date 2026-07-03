@@ -1,5 +1,12 @@
 <?php
 $today = date('Y-m-d');
+
+// Messages DB
+$_msg_db_path = __DIR__ . '/data/messages.db';
+if (!is_dir(__DIR__ . '/data')) mkdir(__DIR__ . '/data', 0755, true);
+$_msg_db = new PDO('sqlite:' . $_msg_db_path);
+$_msg_db->exec("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, message TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+$_ticker_msgs = $_msg_db->query("SELECT name, message FROM messages ORDER BY created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
 $events = [
     '2026-05-20' => ['label' => 'Move In Day',                       'detail' => 'Fly via Nashville (BNA) · transport provided to Owensboro', 'type' => 'milestone'],
     '2026-05-25' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM · Memorial Day',                                    'type' => 'practice'],
@@ -123,7 +130,7 @@ $months = [
           --green-bg: rgba(76,175,114,0.12);
         }
 
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--page-bg); color: var(--text); min-height: 100vh; padding-bottom: 3rem; font-size: 16px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--page-bg); color: var(--text); min-height: 100vh; padding-bottom: <?= !empty($_ticker_msgs) ? '4.5rem' : '3rem' ?>; font-size: 16px; }
 
     .hero { position: relative; width: 100%; height: clamp(320px, 50vw, 520px); overflow: hidden; background: #000; }
     .hero > img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
@@ -132,6 +139,17 @@ $months = [
     .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
+    .msg-btn { position: absolute; bottom: 1.25rem; right: 1.25rem; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 20px; text-decoration: none; backdrop-filter: blur(8px); display: flex; align-items: center; gap: 6px; transition: background 0.15s; }
+    .msg-btn:hover { background: rgba(255,255,255,0.25); }
+
+    .ticker-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(20,20,20,0.95); border-top: 1px solid var(--border); backdrop-filter: blur(8px); height: 36px; display: flex; align-items: center; overflow: hidden; }
+    .ticker-label { flex-shrink: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); padding: 0 12px 0 14px; border-right: 1px solid var(--border); height: 100%; display: flex; align-items: center; white-space: nowrap; }
+    .ticker-track { flex: 1; overflow: hidden; position: relative; }
+    .ticker-inner { display: flex; gap: 3rem; white-space: nowrap; animation: ticker-scroll 40s linear infinite; }
+    .ticker-inner:hover { animation-play-state: paused; }
+    .ticker-item { font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+    .ticker-item strong { color: var(--text); }
+    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
     .tab-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
     .tab-btn { flex: 1; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 16px 8px 13px; cursor: pointer; transition: color 0.15s, border-color 0.15s; text-align: center; }
@@ -240,6 +258,10 @@ $months = [
       <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em> &middot; DCI Southwestern Championship</div>
       <div><span class="show-pill">Bloodline</span></div>
     </div>
+    <a class="msg-btn" href="/messages.php">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Leave Mateo a message
+    </a>
   </div>
 
   <nav class="tab-bar">
@@ -564,6 +586,23 @@ $months = [
       calShow(curIdx);
     </script>
   </div>
+
+<?php if (!empty($_ticker_msgs)): ?>
+<?php
+  // Double the items so the scroll loops seamlessly
+  $ticker_items = array_merge($_ticker_msgs, $_ticker_msgs);
+?>
+<div class="ticker-bar">
+  <div class="ticker-label">Messages</div>
+  <div class="ticker-track">
+    <div class="ticker-inner">
+      <?php foreach ($ticker_items as $tm): ?>
+      <span class="ticker-item"><strong><?= htmlspecialchars($tm['name']) ?>:</strong> <?= htmlspecialchars(mb_strimwidth($tm['message'], 0, 80, '…')) ?></span>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <script async src="https://www.instagram.com/embed.js"></script>
 <script>
