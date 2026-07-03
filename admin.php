@@ -166,6 +166,7 @@ $messages = !empty($_SESSION['phantom_admin'])
   <div class="stats">
     <?= count($messages) ?> message<?= count($messages) !== 1 ? 's' : '' ?> &nbsp;·&nbsp;
     <a href="/messages.php" style="color:var(--text-muted);">View public page</a> &nbsp;·&nbsp;
+    <a href="/score.php" style="color:var(--text-muted);">Quick score</a> &nbsp;·&nbsp;
     <a href="/" style="color:var(--text-muted);">View site</a>
   </div>
 
