@@ -299,6 +299,44 @@ $months = [
     .ext-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600; transition: background 0.15s; }
     .ext-link:hover { background: var(--surface-2); }
     .ext-link span { color: var(--text-muted); font-size: 12px; }
+    /* Hero score */
+    .hero-score-card { background: linear-gradient(135deg, #1a1400 0%, #1A1A1A 100%); border: 1px solid rgba(255,215,0,0.25); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; position: relative; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+    .hero-score-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(90deg, #FFD700 0%, rgba(255,215,0,0.3) 100%); }
+    .hero-score-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,215,0,0.6); margin-bottom: 0.5rem; }
+    .hero-score-num { font-size: clamp(52px, 12vw, 80px); font-weight: 900; color: #FFD700; line-height: 1; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .hero-score-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 0.75rem; }
+    .score-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 20px; }
+    .score-badge-place { background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3); color: #FFD700; }
+    .score-badge-show { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-secondary); font-weight: 500; font-size: 12px; }
+    .score-badge-best { background: rgba(76,175,114,0.12); border: 1px solid rgba(76,175,114,0.3); color: #4CAF72; }
+    /* Caption bars */
+    .caption-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .caption-card-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 10px; }
+    .caption-card-title { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--text); }
+    .caption-card-sub { font-size: 11px; color: var(--text-muted); }
+    .caption-row { display: flex; align-items: center; gap: 12px; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .caption-row:last-child { border-bottom: none; }
+    .caption-row.percussion { background: rgba(255,215,0,0.04); }
+    .caption-name { width: 90px; font-size: 12px; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
+    .caption-row.percussion .caption-name { color: #FFD700; }
+    .caption-bar-wrap { flex: 1; height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+    .caption-bar { height: 100%; border-radius: 4px; background: var(--red); transition: width 0.6s ease; }
+    .caption-row.percussion .caption-bar { background: #FFD700; }
+    .caption-score { width: 44px; text-align: right; font-size: 14px; font-weight: 700; color: var(--text); flex-shrink: 0; }
+    .caption-row.percussion .caption-score { color: #FFD700; }
+    .caption-max { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+    /* Leaderboard */
+    .leaderboard-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .leaderboard-card-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text); }
+    .leaderboard-row { display: flex; align-items: center; gap: 10px; padding: 0.65rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .leaderboard-row:last-child { border-bottom: none; }
+    .leaderboard-row.phantom { background: rgba(255,215,0,0.07); border-left: 3px solid #FFD700; }
+    .leaderboard-rank { width: 24px; font-size: 12px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; text-align: center; }
+    .leaderboard-row.phantom .leaderboard-rank { color: #FFD700; }
+    .leaderboard-name { flex: 1; color: var(--text-secondary); }
+    .leaderboard-row.phantom .leaderboard-name { color: var(--text); font-weight: 700; }
+    .leaderboard-score { font-size: 14px; font-weight: 800; color: var(--text); }
+    .leaderboard-row.phantom .leaderboard-score { color: #FFD700; }
 
     .venue-banner { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .venue-banner-title { font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); line-height: 1.2; }
@@ -790,8 +828,50 @@ $months = [
 
   <div class="tab-panel" id="tab-results">
     <div class="content">
+    <?php
+      // Pull latest history entry for caption/leaderboard
+      $_latest_hist  = !empty($_scores_history) ? end($_scores_history) : null;
+      $_has_captions = !empty($_latest_hist['captions']);
+      $_has_leader   = !empty($_latest_hist['leaderboard']);
+      // Season best
+      $_best_score   = null; $_best_show = null;
+      if (!empty($_scores_history)) {
+          $best = null;
+          foreach ($_scores_history as $h) {
+              if ($best === null || (float)$h['score'] > (float)$best['score']) $best = $h;
+          }
+          $_best_score = $best['score'] ?? null;
+          $_best_show  = $best['show']  ?? null;
+      }
+    ?>
+
+    <?php if (empty($_scores_history)): ?>
+      <!-- Empty state -->
+      <div style="margin-top:1.5rem;">
+        <div class="results-empty">
+          <strong>Season just getting started</strong>
+          Scores will appear here after each competition night.
+        </div>
+      </div>
+    <?php else: ?>
+
+      <!-- Hero score card -->
+      <?php if (!empty($_score['score'])): ?>
+      <div class="hero-score-card" style="margin-top:1.5rem;">
+        <div class="hero-score-label">Latest score</div>
+        <div class="hero-score-num"><?= htmlspecialchars($_score['score']) ?></div>
+        <div class="hero-score-chips">
+          <span class="score-badge score-badge-place"><?= htmlspecialchars($_score['placement'] ?? '') ?> place</span>
+          <span class="score-badge score-badge-show"><?= htmlspecialchars($_score['show'] ?? '') ?></span>
+          <?php if ($_best_score && $_score['score'] === $_best_score): ?>
+          <span class="score-badge score-badge-best">Season best</span>
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
       <!-- Season at a glance -->
-      <div class="status-bar" style="margin-top:1.5rem;">
+      <div class="status-bar" style="margin-top:0.75rem;">
         <div class="stat-card">
           <div class="stat-val"><?= $_past_shows ?> <span style="font-size:14px;font-weight:400;color:var(--text-muted);">/ <?= $_total_shows ?></span></div>
           <div class="stat-label">Shows</div>
@@ -802,15 +882,23 @@ $months = [
           <div class="stat-label">Days to Finals</div>
           <div class="stat-sub">Aug 8 · Indianapolis</div>
         </div>
+        <?php if ($_best_score): ?>
+        <div class="stat-card">
+          <div class="stat-val" style="font-size:18px;color:#FFD700;"><?= htmlspecialchars($_best_score) ?></div>
+          <div class="stat-label">Season Best</div>
+          <div class="stat-sub" style="font-size:11px;"><?= htmlspecialchars(explode(',', $_best_show ?? '')[0] ?? '') ?></div>
+        </div>
+        <?php else: ?>
         <div class="stat-card" style="cursor:pointer;" onclick="location.href='/fanmail.php'">
           <div class="stat-val"><?= $_msg_count ?></div>
           <div class="stat-label">Fan Messages</div>
           <div class="stat-sub"><?= $_photo_count ?> with photos</div>
         </div>
+        <?php endif; ?>
       </div>
 
       <?php $_pct = $_total_shows > 0 ? round(($_past_shows / $_total_shows) * 100) : 0; ?>
-      <div class="season-progress" style="margin-top:0.75rem;">
+      <div class="season-progress">
         <div class="progress-label">
           <span>Season progress</span>
           <span><?= $_pct ?>% &nbsp;&middot;&nbsp; <?= $_total_shows - $_past_shows ?> shows remaining</span>
@@ -818,18 +906,62 @@ $months = [
         <div class="progress-track"><div class="progress-fill" style="width:<?= $_pct ?>%;"></div></div>
       </div>
 
-      <!-- Score history -->
-      <div class="section-label" style="margin-top:1.5rem;">Score History</div>
-
-      <?php if (empty($_scores_history)): ?>
-      <div class="results-empty">
-        <strong>Season just getting started</strong>
-        Scores will appear here after each competition night.
+      <?php if ($_has_captions): ?>
+      <!-- Caption breakdown -->
+      <?php
+        $caps = $_latest_hist['captions'];
+        $cap_rows = [
+          ['key' => 'ge1',        'label' => 'GE Music',    'class' => ''],
+          ['key' => 'ge2',        'label' => 'GE Visual',   'class' => ''],
+          ['key' => 'visual',     'label' => 'Visual Perf', 'class' => ''],
+          ['key' => 'music',      'label' => 'Music',       'class' => ''],
+          ['key' => 'percussion', 'label' => 'Percussion',  'class' => 'percussion'],
+        ];
+        $cap_max = 20.0; // DCI: each caption out of 20 pts
+      ?>
+      <div class="caption-card">
+        <div class="caption-card-header">
+          <span class="caption-card-title">Caption Breakdown</span>
+          <span class="caption-card-sub"><?= htmlspecialchars($_latest_hist['show'] ?? '') ?></span>
+        </div>
+        <?php foreach ($cap_rows as $cr):
+          $val = isset($caps[$cr['key']]) ? (float)$caps[$cr['key']] : null;
+          $pct = $val !== null ? min(100, ($val / $cap_max) * 100) : 0;
+        ?>
+        <div class="caption-row <?= $cr['class'] ?>">
+          <div class="caption-name"><?= $cr['label'] ?></div>
+          <div class="caption-bar-wrap">
+            <div class="caption-bar" style="width:<?= number_format($pct, 1) ?>%"></div>
+          </div>
+          <div class="caption-score"><?= $val !== null ? number_format($val, 2) : '—' ?></div>
+          <div class="caption-max">/ <?= $cap_max ?></div>
+        </div>
+        <?php endforeach; ?>
       </div>
-      <?php else: ?>
+      <?php endif; ?>
+
+      <?php if ($_has_leader): ?>
+      <!-- Show leaderboard -->
+      <?php
+        $leader = $_latest_hist['leaderboard'];
+        $show_label = $_latest_hist['show'] ?? '';
+      ?>
+      <div class="leaderboard-card">
+        <div class="leaderboard-card-header">Show Leaderboard &mdash; <?= htmlspecialchars($show_label) ?></div>
+        <?php foreach ($leader as $corps):
+          $is_phantom = stripos($corps['name'] ?? '', 'Phantom') !== false;
+        ?>
+        <div class="leaderboard-row <?= $is_phantom ? 'phantom' : '' ?>">
+          <div class="leaderboard-rank"><?= (int)($corps['rank'] ?? 0) ?></div>
+          <div class="leaderboard-name"><?= htmlspecialchars($corps['name'] ?? '') ?></div>
+          <div class="leaderboard-score"><?= isset($corps['total']) ? number_format((float)$corps['total'], 3) : '—' ?></div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
 
       <?php if (count($_scores_history) >= 2): ?>
-      <!-- SVG line chart -->
+      <!-- Score trend chart -->
       <?php
         $scores_vals = array_map(fn($h) => (float)$h['score'], $_scores_history);
         $min_s = min($scores_vals); $max_s = max($scores_vals);
@@ -844,18 +976,15 @@ $months = [
         $pts = [];
         for ($i = 0; $i < $n; $i++) $pts[] = sx($i,$n,$cw,$ML) . ',' . sy($scores_vals[$i],$y_min,$y_max,$ch,$MT);
       ?>
+      <div class="section-label" style="margin-top:1.25rem;">Score Trend</div>
       <div class="score-chart">
         <svg viewBox="0 0 <?= $W ?> <?= $H ?>" xmlns="http://www.w3.org/2000/svg">
-          <!-- Grid lines -->
           <?php for ($g = 0; $g <= 4; $g++): $gy = $MT + ($g / 4) * $ch; $gv = $y_max - ($g / 4) * ($y_max - $y_min); ?>
           <line x1="<?= $ML ?>" y1="<?= $gy ?>" x2="<?= $W - $MR ?>" y2="<?= $gy ?>" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
           <text x="<?= $ML - 4 ?>" y="<?= $gy + 4 ?>" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)"><?= number_format($gv, 1) ?></text>
           <?php endfor; ?>
-          <!-- Line -->
           <polyline points="<?= implode(' ', $pts) ?>" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-          <!-- Fill under line -->
           <polygon points="<?= implode(' ', $pts) ?> <?= $W - $MR ?>,<?= $MT + $ch ?> <?= $ML ?>,<?= $MT + $ch ?>" fill="rgba(255,215,0,0.07)"/>
-          <!-- Data points + labels -->
           <?php for ($i = 0; $i < $n; $i++):
             $px = sx($i,$n,$cw,$ML); $py = sy($scores_vals[$i],$y_min,$y_max,$ch,$MT);
             $lbl = isset($_scores_history[$i]['show']) ? explode(',', $_scores_history[$i]['show'])[0] : '';
@@ -871,7 +1000,8 @@ $months = [
       </div>
       <?php endif; ?>
 
-      <!-- Results table -->
+      <!-- Score history table -->
+      <div class="section-label" style="margin-top:1.25rem;">Score History</div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem;">
         <table class="results-table">
           <thead><tr>
@@ -899,7 +1029,7 @@ $months = [
         </table>
       </div>
 
-      <?php endif; ?>
+    <?php endif; ?>
 
       <!-- External links -->
       <div class="section-label">Full Standings</div>
