@@ -38,6 +38,20 @@ if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' 
     exit;
 }
 
+// Delete image only
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_image_id'])) {
+    $row = $db->prepare("SELECT image_path FROM messages WHERE id = ?");
+    $row->execute([(int)$_POST['delete_image_id']]);
+    $r = $row->fetch(PDO::FETCH_ASSOC);
+    if ($r && $r['image_path']) {
+        $f = __DIR__ . '/data/uploads/' . basename($r['image_path']);
+        if (file_exists($f)) unlink($f);
+    }
+    $db->prepare("UPDATE messages SET image_path = NULL WHERE id = ?")->execute([(int)$_POST['delete_image_id']]);
+    header('Location: /admin.php');
+    exit;
+}
+
 $messages = !empty($_SESSION['phantom_admin'])
     ? $db->query("SELECT * FROM messages ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC)
     : [];
@@ -79,6 +93,9 @@ $messages = !empty($_SESSION['phantom_admin'])
     .msg-name { font-weight: 700; font-size: 15px; }
     .msg-date { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
     .msg-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 0.75rem; }
+    .msg-img { max-width: 100%; max-height: 260px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 0.75rem; }
+    .msg-img-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 0.75rem; }
+    .msg-img-row img { max-width: 180px; max-height: 140px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
     .msg-actions { display: flex; gap: 8px; }
     .btn-sm { padding: 6px 14px; font-size: 12px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
     .btn-edit { background: var(--surface-2); color: var(--text); }
@@ -142,6 +159,15 @@ $messages = !empty($_SESSION['phantom_admin'])
       <span class="msg-date"><?= date('M j, Y g:i A', strtotime($msg['created_at'])) ?></span>
     </div>
     <div class="msg-text"><?= nl2br(htmlspecialchars($msg['message'])) ?></div>
+    <?php if (!empty($msg['image_path'])): ?>
+    <div class="msg-img-row">
+      <img src="/data/uploads/<?= htmlspecialchars($msg['image_path']) ?>" alt="">
+      <form method="POST" onsubmit="return confirm('Remove this image?')">
+        <input type="hidden" name="delete_image_id" value="<?= $msg['id'] ?>">
+        <button class="btn-sm btn-delete" type="submit" style="margin-top:4px;">Remove image</button>
+      </form>
+    </div>
+    <?php endif; ?>
     <div class="msg-actions">
       <button class="btn-sm btn-edit" onclick="toggleEdit(<?= $msg['id'] ?>)">Edit</button>
       <form method="POST" style="display:inline" onsubmit="return confirm('Delete this message?')">
