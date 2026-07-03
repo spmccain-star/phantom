@@ -406,7 +406,7 @@ $months = [
     <div class="content">
       <div class="section-label" style="margin-top:1.5rem;">Photos</div>
       <div class="gallery-grid" id="gallery">
-        <div class="gallery-item wide" onclick="openLightbox(this)">
+        <div class="gallery-item" onclick="openLightbox(this)">
           <img src="/assets/photo1.jpg" alt="Phantom Regiment" loading="lazy" />
         </div>
         <div class="gallery-item" onclick="openLightbox(this)">
