@@ -446,15 +446,17 @@ $months = [
       </a>
       <?php endif; ?>
 
-      <!-- Countdown to San Antonio -->
-      <?php if (strtotime('2026-07-18') >= $today_ts): ?>
+      <?php if ($next_event):
+        $days_to_next = (int)floor(($ne_ts - $today_ts) / 86400);
+        if ($days_to_next <= 0)      $next_label = 'Tonight!';
+        elseif ($days_to_next === 1) $next_label = 'Tomorrow';
+        else                         $next_label = 'In ' . $days_to_next . ' days';
+      ?>
       <div class="countdown-strip">
-        <div class="countdown-label">San Antonio show in</div>
-        <div class="countdown-digits" id="sa-countdown">
-          <div class="countdown-unit"><div class="countdown-num" id="cd-d">--</div><div class="countdown-unit-label">Days</div></div>
-          <div class="countdown-unit"><div class="countdown-num" id="cd-h">--</div><div class="countdown-unit-label">Hrs</div></div>
-          <div class="countdown-unit"><div class="countdown-num" id="cd-m">--</div><div class="countdown-unit-label">Min</div></div>
-          <div class="countdown-unit"><div class="countdown-num" id="cd-s">--</div><div class="countdown-unit-label">Sec</div></div>
+        <div class="countdown-label">Next show</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:22px;font-weight:800;color:var(--text);line-height:1;"><?= $next_label ?></span>
+          <span style="font-size:13px;color:var(--text-secondary);"><?= htmlspecialchars($next_event['label']) ?> &nbsp;&middot;&nbsp; <?= date('M j', $ne_ts) ?></span>
         </div>
       </div>
       <?php endif; ?>
@@ -1083,23 +1085,6 @@ $months = [
     if (name === 'more' && typeof calShow === 'function') calShow(curIdx);
   }
 
-  // Countdown to San Antonio show — July 18 2026 9:00 PM CT (UTC-5 in July)
-  (function() {
-    var target = new Date('2026-07-18T21:00:00-05:00').getTime();
-    var dEl = document.getElementById('cd-d');
-    if (!dEl) return;
-    function tick() {
-      var now = Date.now(), diff = target - now;
-      if (diff <= 0) { document.getElementById('sa-countdown').closest('.countdown-strip').style.display='none'; return; }
-      var d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000),
-          m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
-      document.getElementById('cd-d').textContent = d;
-      document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
-      document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
-      document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
-    }
-    tick(); setInterval(tick, 1000);
-  })();
 </script>
 
 </body>
