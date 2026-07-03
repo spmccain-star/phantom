@@ -224,7 +224,7 @@ $months = [
     .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 1rem; padding: 0 2px; }
     .cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
     .cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .bloodline-banner { width: 100%; max-height: 140px; object-fit: contain; object-position: center; display: block; margin-bottom: 1.5rem; }
+    .bloodline-banner { width: 100%; max-height: 175px; object-fit: contain; object-position: center; display: block; margin-bottom: 1.5rem; }
     .cal-wrap { background: #161616; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
     .cal-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); }
     .cal-dow { text-align: center; padding: 10px 4px; font-size: 0.72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
