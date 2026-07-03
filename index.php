@@ -202,6 +202,7 @@ $months = [
     .card.featured { border-color: rgba(176,26,28,0.5); box-shadow: 0 4px 16px rgba(176,26,28,0.15); }
     .card-header { padding: 1.4rem 1.5rem 0.875rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card-option-num { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+    .card-date { font-size: 13px; font-weight: 600; color: var(--red); margin-top: 5px; }
     .card-title { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
     .badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; margin-top: 4px; }
     .badge-us { background: var(--green-bg); color: var(--green); }
@@ -338,6 +339,7 @@ $months = [
           <div>
             <div class="card-option-num">Option 1</div>
             <div class="card-title">Free rehearsal</div>
+            <div class="card-date">Friday, July 17</div>
           </div>
           <span class="badge badge-us">We'll be here</span>
         </div>
@@ -371,6 +373,7 @@ $months = [
           <div>
             <div class="card-option-num">Option 2</div>
             <div class="card-title">The Lots</div>
+            <div class="card-date">Saturday, July 18 · ~6 PM</div>
           </div>
           <span class="badge badge-us">We'll be here</span>
         </div>
@@ -406,6 +409,7 @@ $months = [
           <div>
             <div class="card-option-num">Option 3</div>
             <div class="card-title">Official performance</div>
+            <div class="card-date">Saturday, July 18 · ~9 PM</div>
           </div>
         </div>
         <div class="card-body">
