@@ -10,14 +10,6 @@ $_score = [];
 $_score_file = __DIR__ . '/data/score.json';
 if (file_exists($_score_file)) $_score = json_decode(file_get_contents($_score_file), true) ?: [];
 
-// Season progress
-$_total_shows = 0; $_past_shows = 0;
-foreach ($events as $date_str => $ev) {
-    if (in_array($ev['type'], ['show','dci'])) {
-        $_total_shows++;
-        if (strtotime($date_str) <= $today_ts) $_past_shows++;
-    }
-}
 $_days_to_finals = max(0, (int)ceil((strtotime('2026-08-08') - $today_ts) / 86400));
 
 // Messages DB
@@ -97,6 +89,15 @@ $events = [
     '2026-08-08' => ['label' => 'DCI FINALS',                        'detail' => 'Indianapolis, IN',                                        'type' => 'dci'],
     '2026-08-09' => ['label' => 'Banquet',                           'detail' => 'End of season',                                           'type' => 'milestone'],
 ];
+
+// Season progress (must be after $events)
+$_total_shows = 0; $_past_shows = 0;
+foreach ($events as $date_str => $ev) {
+    if (in_array($ev['type'], ['show','dci'])) {
+        $_total_shows++;
+        if (strtotime($date_str) <= $today_ts) $_past_shows++;
+    }
+}
 
 // Next upcoming show
 $next_event = null;
@@ -962,6 +963,7 @@ $months = [
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
     if (name === 'more' && typeof calShow === 'function') calShow(curIdx);
+  }
 
   // Countdown to San Antonio show — July 18 2026 9:00 PM CT (UTC-5 in July)
   (function() {
@@ -980,7 +982,6 @@ $months = [
     }
     tick(); setInterval(tick, 1000);
   })();
-  }
 </script>
 
 </body>
