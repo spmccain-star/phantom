@@ -238,7 +238,7 @@ $months = [
     .gallery-grid .wide { grid-column: span 2; }
     .gallery-item { border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--surface-2); cursor: pointer; position: relative; }
     .gallery-item.tall { aspect-ratio: 3 / 4; }
-    .gallery-item.wide { aspect-ratio: 16 / 5; }
+    .gallery-item.wide { aspect-ratio: 16 / 7; }
     .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
     .gallery-item:hover img { transform: scale(1.03); }
     .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
@@ -493,22 +493,54 @@ $months = [
   <div class="tab-panel" id="tab-media">
     <div class="content">
       <div class="section-label" style="margin-top:1.5rem;">Photos</div>
+      <?php
+      $asset_dir = __DIR__ . '/assets';
+      $gallery_files = glob($asset_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
+      // Classify each image
+      $portraits = []; $landscapes = [];
+      foreach ($gallery_files as $path) {
+          $fname = basename($path);
+          if (in_array($fname, ['bloodline.png','bloodline.webp'])) continue;
+          $size = @getimagesize($path);
+          if (!$size) continue;
+          $is_portrait = $size[1] > $size[0];
+          $item = ['src' => '/assets/' . $fname, 'portrait' => $is_portrait];
+          if ($is_portrait) $portraits[] = $item; else $landscapes[] = $item;
+      }
+      // Build render list: pair portraits together, landscapes span full width
+      $render = [];
+      $p = 0;
+      while ($p < count($portraits)) {
+          if ($p + 1 < count($portraits)) {
+              $render[] = ['type' => 'portrait-pair', 'a' => $portraits[$p], 'b' => $portraits[$p+1]];
+              $p += 2;
+          } else {
+              $render[] = ['type' => 'portrait-solo', 'item' => $portraits[$p]];
+              $p++;
+          }
+      }
+      foreach ($landscapes as $l) $render[] = ['type' => 'landscape', 'item' => $l];
+      ?>
       <div class="gallery-grid" id="gallery">
-        <div class="gallery-item wide" onclick="openLightbox(this)">
-          <img src="/assets/mateo.jpg" alt="Matéo — Phantom Regiment 2026" loading="lazy" />
-        </div>
-        <div class="gallery-item" onclick="openLightbox(this)">
-          <img src="/assets/photo1.jpg" alt="Phantom Regiment" loading="lazy" />
-        </div>
-        <div class="gallery-item" onclick="openLightbox(this)">
-          <img src="/assets/photo2.jpg" alt="Phantom Regiment" loading="lazy" />
-        </div>
-        <div class="gallery-item" onclick="openLightbox(this)">
-          <img src="/assets/photo3.jpg" alt="Phantom Regiment" loading="lazy" />
-        </div>
-        <div class="gallery-item" onclick="openLightbox(this)">
-          <img src="/assets/photo4.jpg" alt="Phantom Regiment" loading="lazy" />
-        </div>
+        <?php foreach ($render as $r): ?>
+          <?php if ($r['type'] === 'portrait-pair'): ?>
+          <div class="gallery-item tall" onclick="openLightbox(this)">
+            <img src="<?= htmlspecialchars($r['a']['src']) ?>" alt="Phantom Regiment" loading="lazy" />
+          </div>
+          <div class="gallery-item tall" onclick="openLightbox(this)">
+            <img src="<?= htmlspecialchars($r['b']['src']) ?>" alt="Phantom Regiment" loading="lazy" />
+          </div>
+          <?php elseif ($r['type'] === 'portrait-solo'): ?>
+          <div class="gallery-item tall" onclick="openLightbox(this)">
+            <img src="<?= htmlspecialchars($r['item']['src']) ?>" alt="Phantom Regiment" loading="lazy" />
+          </div>
+          <div style="background:transparent;"></div>
+          <?php else: ?>
+          <div class="gallery-item wide" onclick="openLightbox(this)">
+            <img src="<?= htmlspecialchars($r['item']['src']) ?>" alt="Phantom Regiment" loading="lazy" />
+          </div>
+          <?php endif; ?>
+        <?php endforeach; ?>
       </div>
       <div class="lightbox" id="lightbox" onclick="closeLightbox()">
         <button class="lightbox-close" onclick="closeLightbox()">&#215;</button>
