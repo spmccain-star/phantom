@@ -203,6 +203,10 @@ $months = [
     .card-header { padding: 1.4rem 1.5rem 0.875rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card-option-num { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
     .card-date { font-size: 13px; font-weight: 600; color: var(--red); margin-top: 5px; }
+    .venue-banner { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .venue-banner-title { font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .venue-banner-sub { font-size: 14px; color: var(--text-secondary); margin-top: 3px; }
+    .venue-banner-right { display: flex; align-items: center; gap: 6px; color: var(--text-muted); flex-shrink: 0; }
     .card-title { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
     .badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; margin-top: 4px; }
     .badge-us { background: var(--green-bg); color: var(--green); }
@@ -330,7 +334,17 @@ $months = [
   <div class="tab-panel active" id="tab-latest">
     <div class="content">
       <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
-      <div class="section-label" style="margin-top:1.5rem;">3 ways to watch</div>
+      <div class="venue-banner">
+        <div class="venue-banner-left">
+          <div class="venue-banner-title">San Antonio, TX</div>
+          <div class="venue-banner-sub">Alamodome &nbsp;·&nbsp; July 17–18, 2026</div>
+        </div>
+        <div class="venue-banner-right">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <a href="https://maps.google.com/?q=Alamodome,+San+Antonio,+TX" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;font-size:13px;font-weight:600;">Get directions</a>
+        </div>
+      </div>
+      <div class="section-label">3 ways to watch</div>
       <div class="cards">
 
       <!-- Option 1 -->
