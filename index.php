@@ -1,6 +1,27 @@
 <?php
 $today = date('Y-m-d');
 
+// Next upcoming show/tournament
+$today_ts  = strtotime($today);
+$next_event = null;
+foreach ($events as $date_str => $ev) {
+    if (strtotime($date_str) >= $today_ts && in_array($ev['type'], ['show','dci','milestone'])) {
+        $next_event = ['date' => $date_str] + $ev;
+        break;
+    }
+}
+if ($next_event) {
+    $ne_ts       = strtotime($next_event['date']);
+    $ne_dow      = date('l', $ne_ts);
+    $ne_date_fmt = date('F j, Y', $ne_ts);
+    // Extract location: detail is "H: Some Place · AIRPORT" — grab the part after "H: " before " ·"
+    $ne_detail   = $next_event['detail'];
+    $ne_location = '';
+    if (preg_match('/H:\s*([^·]+)/u', $ne_detail, $m)) {
+        $ne_location = trim($m[1]);
+    }
+}
+
 // Messages DB
 $_msg_db_path = __DIR__ . '/data/messages.db';
 if (!is_dir(__DIR__ . '/data')) mkdir(__DIR__ . '/data', 0755, true);
@@ -257,9 +278,15 @@ $months = [
   <div class="hero">
     <img src="/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
     <div class="hero-overlay">
-      <div class="hero-eyebrow">Saturday, July 18, 2026 &nbsp;&middot;&nbsp; San Antonio, TX</div>
-      <div class="hero-title">Come watch Mateo perform!</div>
-      <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em> &middot; DCI Southwestern Championship</div>
+      <?php if ($next_event): ?>
+      <div class="hero-eyebrow">Next up &nbsp;&middot;&nbsp; <?= $ne_dow ?>, <?= $ne_date_fmt ?></div>
+      <div class="hero-title"><?= htmlspecialchars($next_event['label']) ?></div>
+      <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?></div>
+      <?php else: ?>
+      <div class="hero-eyebrow">Phantom Regiment 2026</div>
+      <div class="hero-title">What a season.</div>
+      <div class="hero-sub">Mateo &middot; <em>Bloodline</em> &middot; DCI Championships, Indianapolis</div>
+      <?php endif; ?>
       <a class="msg-btn" href="/fanmail.php">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Leave Mateo a message
