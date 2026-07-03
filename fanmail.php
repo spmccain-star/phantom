@@ -82,7 +82,7 @@ try {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fanmail — Phantom Regiment 2026</title>
+  <title>Phanmail — Phantom Regiment 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -167,7 +167,7 @@ try {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     Back
   </a>
-  <h1>Fanmail</h1>
+  <h1>Phanmail</h1>
   <?php if ($photos): ?>
   <span class="count"><?= count($photos) ?> photo<?= count($photos) !== 1 ? 's' : '' ?></span>
   <?php endif; ?>
@@ -176,7 +176,7 @@ try {
 <div class="page-content">
 
   <div class="form-card">
-    <h2>Send Matéo a message</h2>
+    <h2>Send Matéo a Phanmail</h2>
     <p class="subtitle">Drop him a note — add a photo and it'll show up in the gallery below.</p>
 
     <?php if ($error): ?>

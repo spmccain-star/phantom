@@ -448,7 +448,7 @@ $months = [
           <div class="hero-sub">Phantom Regiment &middot; Drum Corps International</div>
           <a class="msg-btn" href="/fanmail.php">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Leave Matéo a message
+            Send Phanmail
           </a>
         </div>
         <?php if ($current_city): ?>
@@ -649,7 +649,7 @@ $months = [
 
       <a class="fanmail-hook" href="/fanmail.php">
         <div class="fanmail-hook-left">
-          <strong><?= $_msg_count ?> fan message<?= $_msg_count !== 1 ? 's' : '' ?> for Matéo<?= $_photo_count ? " · {$_photo_count} photos" : '' ?></strong>
+          <strong><?= $_msg_count ?> Phanmail<?= $_msg_count !== 1 ? 's' : '' ?> for Matéo<?= $_photo_count ? " · {$_photo_count} photos" : '' ?></strong>
           See what fans have been sending him →
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-muted);"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -658,11 +658,11 @@ $months = [
       <div style="display:flex;gap:10px;margin-bottom:2rem;">
         <a href="/messages.php" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Messages
+          All messages
         </a>
         <a href="/fanmail.php" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Fanmail
+          Phanmail
         </a>
       </div>
       <div class="section-label">About Phantom Regiment</div>

@@ -45,6 +45,43 @@ if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' 
     exit;
 }
 
+// Save Phanmail settings
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['phanmail_email'])) {
+    $pm_file = __DIR__ . '/data/phanmail_settings.json';
+    $existing_pm = file_exists($pm_file) ? json_decode(file_get_contents($pm_file), true) ?: [] : [];
+    $pm = [
+        'recipient_email' => trim($_POST['phanmail_email']),
+        'frequency'       => in_array($_POST['phanmail_freq'], ['daily','weekly','biweekly']) ? $_POST['phanmail_freq'] : 'weekly',
+        'from_email'      => trim($_POST['phanmail_from_email'] ?: 'phanmail@phantom.agavelabs.dev'),
+        'from_name'       => trim($_POST['phanmail_from_name']  ?: 'Phanmail — Phantom Regiment'),
+        'smtp_host'       => trim($_POST['phanmail_smtp_host']),
+        'smtp_port'       => (int)($_POST['phanmail_smtp_port'] ?: 587),
+        'smtp_user'       => trim($_POST['phanmail_smtp_user']),
+        'smtp_pass'       => trim($_POST['phanmail_smtp_pass']) ?: ($existing_pm['smtp_pass'] ?? ''),
+    ];
+    if (isset($existing_pm['last_sent'])) $pm['last_sent'] = $existing_pm['last_sent'];
+    file_put_contents($pm_file, json_encode($pm, JSON_PRETTY_PRINT));
+    header('Location: /admin.php?phanmail=saved');
+    exit;
+}
+
+// Send test Phanmail now
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['phanmail_test'])) {
+    $out = shell_exec('/usr/bin/php ' . escapeshellarg(__DIR__ . '/phanmail_digest.php') . ' --force 2>&1');
+    header('Location: /admin.php?phanmail=tested&log=' . urlencode(trim(substr($out ?? '', 0, 300))));
+    exit;
+}
+
+// Reset last_sent so next cron sends all messages
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['phanmail_reset'])) {
+    $pm_file = __DIR__ . '/data/phanmail_settings.json';
+    $pm = file_exists($pm_file) ? json_decode(file_get_contents($pm_file), true) ?: [] : [];
+    unset($pm['last_sent']);
+    file_put_contents($pm_file, json_encode($pm, JSON_PRETTY_PRINT));
+    header('Location: /admin.php?phanmail=reset');
+    exit;
+}
+
 // Save score
 if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['score_text'])) {
     $score_data = json_encode([
@@ -202,6 +239,97 @@ $messages = !empty($_SESSION['phantom_admin'])
       </div>
       <button class="btn-sm btn-save" type="submit" style="grid-column:1;">Save Score</button>
     </form>
+  </div>
+
+  <!-- Phanmail Settings -->
+  <?php
+    $pm_file = __DIR__.'/data/phanmail_settings.json';
+    $pm = file_exists($pm_file) ? json_decode(file_get_contents($pm_file), true) ?: [] : [];
+    $pm_notice = '';
+    if (isset($_GET['phanmail'])) {
+        if ($_GET['phanmail'] === 'saved')  $pm_notice = 'Settings saved.';
+        if ($_GET['phanmail'] === 'reset')  $pm_notice = 'Last-sent reset — next run will include all messages.';
+        if ($_GET['phanmail'] === 'tested') $pm_notice = 'Test sent. Log: ' . htmlspecialchars(urldecode($_GET['log'] ?? ''));
+    }
+  ?>
+  <div class="msg-card" style="margin-bottom:1.5rem;">
+    <div class="msg-name" style="margin-bottom:0.75rem;">Phanmail Digest</div>
+    <?php if ($pm_notice): ?><div style="font-size:12px;color:#7DD9A2;margin-bottom:0.75rem;"><?= $pm_notice ?></div><?php endif; ?>
+    <?php if (!empty($pm['last_sent'])): ?>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;">Last sent: <?= htmlspecialchars($pm['last_sent']) ?></div>
+    <?php endif; ?>
+    <form method="POST" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Matéo's email</label>
+        <input type="email" name="phanmail_email" placeholder="mateo@example.com"
+          value="<?= htmlspecialchars($pm['recipient_email'] ?? '') ?>"
+          style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Frequency</label>
+        <select name="phanmail_freq" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          <option value="weekly"   <?= ($pm['frequency'] ?? 'weekly') === 'weekly'   ? 'selected' : '' ?>>Weekly (Sundays)</option>
+          <option value="biweekly" <?= ($pm['frequency'] ?? '') === 'biweekly' ? 'selected' : '' ?>>Bi-weekly (every other Sunday)</option>
+          <option value="daily"    <?= ($pm['frequency'] ?? '') === 'daily'    ? 'selected' : '' ?>>Daily</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">From name</label>
+        <input type="text" name="phanmail_from_name" placeholder="Phanmail — Phantom Regiment"
+          value="<?= htmlspecialchars($pm['from_name'] ?? 'Phanmail — Phantom Regiment') ?>"
+          style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">From address</label>
+        <input type="email" name="phanmail_from_email" placeholder="phanmail@phantom.agavelabs.dev"
+          value="<?= htmlspecialchars($pm['from_email'] ?? 'phanmail@phantom.agavelabs.dev') ?>"
+          style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">SMTP (optional — uses PHP mail() if blank)</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 2fr 2fr;gap:8px;">
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Host</label>
+            <input type="text" name="phanmail_smtp_host" placeholder="smtp.gmail.com"
+              value="<?= htmlspecialchars($pm['smtp_host'] ?? '') ?>"
+              style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Port</label>
+            <input type="number" name="phanmail_smtp_port" placeholder="587"
+              value="<?= htmlspecialchars((string)($pm['smtp_port'] ?? 587)) ?>"
+              style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Username</label>
+            <input type="text" name="phanmail_smtp_user" placeholder="you@gmail.com"
+              value="<?= htmlspecialchars($pm['smtp_user'] ?? '') ?>"
+              style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Password <span style="font-weight:400;">(leave blank to keep)</span></label>
+            <input type="password" name="phanmail_smtp_pass" placeholder="••••••••"
+              style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;grid-column:span 2;">
+        <button class="btn-sm btn-save" type="submit" name="phanmail_save" value="1">Save settings</button>
+      </div>
+    </form>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <form method="POST" style="display:inline;">
+        <button class="btn-sm btn-edit" type="submit" name="phanmail_test" value="1"
+          onclick="return confirm('Send a test digest to the configured email right now?')">Send test now</button>
+      </form>
+      <?php if (!empty($pm['last_sent'])): ?>
+      <form method="POST" style="display:inline;">
+        <button class="btn-sm" type="submit" name="phanmail_reset" value="1"
+          style="background:var(--surface-2);color:var(--text-muted);"
+          onclick="return confirm('Reset last-sent timestamp? Next digest will include ALL messages.')">Reset last-sent</button>
+      </form>
+      <?php endif; ?>
+    </div>
   </div>
 
   <?php if (empty($messages)): ?>
