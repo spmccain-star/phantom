@@ -2,12 +2,32 @@
 $today    = date('Y-m-d');
 $today_ts = strtotime($today);
 
+// Announcement + score
+$_announcement = '';
+$_ann_file = __DIR__ . '/data/announcement.txt';
+if (file_exists($_ann_file)) $_announcement = trim(file_get_contents($_ann_file));
+$_score = [];
+$_score_file = __DIR__ . '/data/score.json';
+if (file_exists($_score_file)) $_score = json_decode(file_get_contents($_score_file), true) ?: [];
+
+// Season progress
+$_total_shows = 0; $_past_shows = 0;
+foreach ($events as $date_str => $ev) {
+    if (in_array($ev['type'], ['show','dci'])) {
+        $_total_shows++;
+        if (strtotime($date_str) <= $today_ts) $_past_shows++;
+    }
+}
+$_days_to_finals = max(0, (int)ceil((strtotime('2026-08-08') - $today_ts) / 86400));
+
 // Messages DB
 $_msg_db_path = __DIR__ . '/data/messages.db';
 if (!is_dir(__DIR__ . '/data')) mkdir(__DIR__ . '/data', 0755, true);
 $_msg_db = new PDO('sqlite:' . $_msg_db_path);
 $_msg_db->exec("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, message TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
 $_ticker_msgs = $_msg_db->query("SELECT name, message FROM messages ORDER BY created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
+$_msg_count = (int)$_msg_db->query("SELECT COUNT(*) FROM messages")->fetchColumn();
+$_photo_count = (int)$_msg_db->query("SELECT COUNT(*) FROM messages WHERE image_path IS NOT NULL")->fetchColumn();
 $events = [
     '2026-05-20' => ['label' => 'Move In Day',                       'detail' => 'Fly via Nashville (BNA) · transport provided to Owensboro', 'type' => 'milestone', 'city' => 'Owensboro, KY'],
     '2026-05-25' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM · Memorial Day',                                    'type' => 'practice'],
@@ -215,6 +235,39 @@ $months = [
     .card-horizontal-left { flex: 1; padding: 1.4rem 1.5rem; border-right: 1px solid var(--border); }
     .card-horizontal-right { flex: 0 0 auto; width: 286px; padding: 1.4rem 1.5rem; display: flex; flex-direction: column; justify-content: center; }
     @media (max-width: 600px) { .card-horizontal { flex-direction: column; } .card-horizontal-left { border-right: none; border-bottom: 1px solid var(--border); } .card-horizontal-right { width: auto; } }
+    /* Status bar */
+    .status-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1.5rem; margin-bottom: 1rem; }
+    @media (max-width: 600px) { .status-bar { grid-template-columns: 1fr 1fr; } }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; text-align: center; }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
+    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+    .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+    /* Progress bar */
+    .season-progress { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1.1rem; margin-bottom: 1rem; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+    .progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--red); border-radius: 3px; transition: width 0.6s ease; }
+    /* Announcement */
+    .announcement-banner { background: rgba(176,26,28,0.1); border: 1px solid rgba(176,26,28,0.35); border-radius: var(--radius); padding: 0.9rem 1.1rem; margin-bottom: 1rem; font-size: 14px; color: var(--text); line-height: 1.6; }
+    .announcement-banner strong { color: #E07070; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+    /* Score card */
+    .score-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid #FFD700; border-radius: var(--radius); padding: 0.9rem 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .score-left .score-num { font-size: 28px; font-weight: 800; color: #FFD700; line-height: 1; }
+    .score-left .score-place { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .score-right { font-size: 12px; color: var(--text-muted); text-align: right; }
+    /* Fanmail hook */
+    .fanmail-hook { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; text-decoration: none; color: var(--text); transition: background 0.15s; }
+    .fanmail-hook:hover { background: var(--surface-2); }
+    .fanmail-hook-left { font-size: 14px; color: var(--text-secondary); }
+    .fanmail-hook-left strong { color: var(--text); display: block; font-size: 15px; margin-bottom: 2px; }
+    /* Countdown */
+    .countdown-strip { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .countdown-label { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    .countdown-digits { display: flex; gap: 12px; align-items: baseline; }
+    .countdown-unit { text-align: center; }
+    .countdown-num { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
+    .countdown-unit-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
     .venue-banner { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .venue-banner-title { font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); line-height: 1.2; }
     .venue-banner-sub { font-size: 14px; color: var(--text-secondary); margin-top: 3px; }
@@ -347,6 +400,71 @@ $months = [
   <div class="tab-panel active" id="tab-latest">
     <div class="content">
       <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
+
+      <?php if ($_announcement): ?>
+      <div class="announcement-banner"><strong>Update</strong><?= nl2br(htmlspecialchars($_announcement)) ?></div>
+      <?php endif; ?>
+
+      <!-- Season stats -->
+      <div class="status-bar">
+        <div class="stat-card">
+          <div class="stat-val"><?= $_past_shows ?> <span style="font-size:14px;font-weight:400;color:var(--text-muted);">/ <?= $_total_shows ?></span></div>
+          <div class="stat-label">Shows</div>
+          <div class="stat-sub">this season</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val"><?= $_days_to_finals ?></div>
+          <div class="stat-label">Days to DCI Finals</div>
+          <div class="stat-sub">Aug 8 · Indianapolis</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;" onclick="location.href='/fanmail.php'">
+          <div class="stat-val"><?= $_msg_count ?></div>
+          <div class="stat-label">Fan Messages</div>
+          <div class="stat-sub"><?= $_photo_count ?> with photos</div>
+        </div>
+      </div>
+
+      <!-- Season progress bar -->
+      <?php $_pct = $_total_shows > 0 ? round(($_past_shows / $_total_shows) * 100) : 0; ?>
+      <div class="season-progress">
+        <div class="progress-label">
+          <span>Season progress</span>
+          <span><?= $_pct ?>% · <?= $_total_shows - $_past_shows ?> shows remaining</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:<?= $_pct ?>%;"></div></div>
+      </div>
+
+      <?php if (!empty($_score['score'])): ?>
+      <div class="score-card">
+        <div class="score-left">
+          <div class="score-num"><?= htmlspecialchars($_score['score']) ?></div>
+          <div class="score-place"><?= htmlspecialchars($_score['placement']) ?> place</div>
+        </div>
+        <div class="score-right">
+          Latest score<br><?= htmlspecialchars($_score['show']) ?><br>
+          <a href="https://www.dci.org/scores" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:11px;">Full standings at dci.org →</a>
+        </div>
+      </div>
+      <?php else: ?>
+      <div class="score-card" style="justify-content:center;">
+        <span style="font-size:13px;color:var(--text-muted);">Season scores at &nbsp;</span>
+        <a href="https://www.dci.org/scores" target="_blank" rel="noopener" style="color:#FFD700;font-size:13px;font-weight:600;">dci.org/scores →</a>
+      </div>
+      <?php endif; ?>
+
+      <!-- Countdown to San Antonio -->
+      <?php if (strtotime('2026-07-18') >= $today_ts): ?>
+      <div class="countdown-strip">
+        <div class="countdown-label">San Antonio show in</div>
+        <div class="countdown-digits" id="sa-countdown">
+          <div class="countdown-unit"><div class="countdown-num" id="cd-d">--</div><div class="countdown-unit-label">Days</div></div>
+          <div class="countdown-unit"><div class="countdown-num" id="cd-h">--</div><div class="countdown-unit-label">Hrs</div></div>
+          <div class="countdown-unit"><div class="countdown-num" id="cd-m">--</div><div class="countdown-unit-label">Min</div></div>
+          <div class="countdown-unit"><div class="countdown-num" id="cd-s">--</div><div class="countdown-unit-label">Sec</div></div>
+        </div>
+      </div>
+      <?php endif; ?>
+
       <div class="venue-banner">
         <div class="venue-banner-left">
           <div class="venue-banner-title">San Antonio, TX</div>
@@ -374,6 +492,7 @@ $months = [
         <div class="card-body">
           <p>Phantom Regiment rehearses at a high school about 1 hr 40 min south of the Alamodome. Free, up-close, and you'll likely see them run the full show.</p>
           <p><strong>We'll be there</strong> — come say hi before heading into San Antonio for the show.</p>
+          <p style="font-size:13px;color:var(--text-muted);margin-top:0.5rem;"><strong style="color:var(--text-secondary);">What to bring:</strong> Sunscreen, water, folding chair or blanket, hat, comfortable shoes, cash for gas. It's South Texas in July — expect 95–100°F.</p>
         </div>
         <div class="divider"></div>
         <div class="details">
@@ -409,6 +528,7 @@ $months = [
           <p>Starting around 6 PM, corps warm up in the parking lots around the Alamodome in partial uniform. You'll see the horn lines and snare lines running drills separately — not the full show, but a cool behind-the-scenes look at how it all comes together.</p>
           <p>You're free to roam and listen to different sections up close. Multiple corps will be doing the same thing. Phantom wears bright red — hard to miss. Once we find them, we'll text everyone a pin so you can find us!</p>
           <p>If you're joining us, let us know — once we get a head count we can figure out if dinner together works out after!</p>
+          <p style="font-size:13px;color:var(--text-muted);margin-top:0.5rem;"><strong style="color:var(--text-secondary);">Weather:</strong> Expect 95°F+ on the pavement. Bring a full water bottle, wear light clothing, and bring a portable chair.</p>
         </div>
         <div class="divider"></div>
         <div class="details">
@@ -492,6 +612,14 @@ $months = [
           </a>
         </div>
       </div>
+
+      <a class="fanmail-hook" href="/fanmail.php">
+        <div class="fanmail-hook-left">
+          <strong><?= $_msg_count ?> fan message<?= $_msg_count !== 1 ? 's' : '' ?> for Matéo<?= $_photo_count ? " · {$_photo_count} photos" : '' ?></strong>
+          See what fans have been sending him →
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-muted);"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </a>
 
       <div style="display:flex;gap:10px;margin-bottom:2rem;">
         <a href="/messages.php" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;">
@@ -833,6 +961,24 @@ $months = [
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
     if (name === 'more' && typeof calShow === 'function') calShow(curIdx);
+
+  // Countdown to San Antonio show — July 18 2026 9:00 PM CT (UTC-5 in July)
+  (function() {
+    var target = new Date('2026-07-18T21:00:00-05:00').getTime();
+    var dEl = document.getElementById('cd-d');
+    if (!dEl) return;
+    function tick() {
+      var now = Date.now(), diff = target - now;
+      if (diff <= 0) { document.getElementById('sa-countdown').closest('.countdown-strip').style.display='none'; return; }
+      var d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000),
+          m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+      document.getElementById('cd-d').textContent = d;
+      document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
+      document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
+      document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
+    }
+    tick(); setInterval(tick, 1000);
+  })();
   }
 </script>
 

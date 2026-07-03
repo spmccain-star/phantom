@@ -38,6 +38,25 @@ if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' 
     exit;
 }
 
+// Save announcement
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['announcement'])) {
+    file_put_contents(__DIR__ . '/data/announcement.txt', trim($_POST['announcement']));
+    header('Location: /admin.php');
+    exit;
+}
+
+// Save score
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['score_text'])) {
+    $score_data = json_encode([
+        'score'     => trim($_POST['score_text']),
+        'placement' => trim($_POST['score_placement']),
+        'show'      => trim($_POST['score_show']),
+    ]);
+    file_put_contents(__DIR__ . '/data/score.json', $score_data);
+    header('Location: /admin.php');
+    exit;
+}
+
 // Delete image only
 if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_image_id'])) {
     $row = $db->prepare("SELECT image_path FROM messages WHERE id = ?");
@@ -146,7 +165,42 @@ $messages = !empty($_SESSION['phantom_admin'])
 <div class="content">
   <div class="stats">
     <?= count($messages) ?> message<?= count($messages) !== 1 ? 's' : '' ?> &nbsp;·&nbsp;
-    <a href="/messages.php" style="color:var(--text-muted);">View public page</a>
+    <a href="/messages.php" style="color:var(--text-muted);">View public page</a> &nbsp;·&nbsp;
+    <a href="/" style="color:var(--text-muted);">View site</a>
+  </div>
+
+  <!-- Announcement -->
+  <?php $ann = file_exists(__DIR__.'/data/announcement.txt') ? file_get_contents(__DIR__.'/data/announcement.txt') : ''; ?>
+  <div class="msg-card" style="margin-bottom:1.5rem;">
+    <div class="msg-name" style="margin-bottom:0.75rem;">Pinned Announcement</div>
+    <form method="POST">
+      <textarea name="announcement" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;padding:9px 12px;min-height:70px;resize:vertical;outline:none;margin-bottom:8px;"><?= htmlspecialchars($ann) ?></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-save" type="submit">Save</button>
+        <?php if ($ann): ?><button class="btn-sm btn-delete" type="submit" onclick="document.querySelector('[name=announcement]').value='';">Clear</button><?php endif; ?>
+      </div>
+    </form>
+  </div>
+
+  <!-- Score -->
+  <?php $score_raw = file_exists(__DIR__.'/data/score.json') ? json_decode(file_get_contents(__DIR__.'/data/score.json'), true) : []; ?>
+  <div class="msg-card" style="margin-bottom:1.5rem;">
+    <div class="msg-name" style="margin-bottom:0.75rem;">Latest DCI Score</div>
+    <form method="POST" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;">
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Score</label>
+        <input type="text" name="score_text" placeholder="e.g. 74.350" value="<?= htmlspecialchars($score_raw['score'] ?? '') ?>" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Placement</label>
+        <input type="text" name="score_placement" placeholder="e.g. 8th" value="<?= htmlspecialchars($score_raw['placement'] ?? '') ?>" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Show / Date</label>
+        <input type="text" name="score_show" placeholder="e.g. Rockford, Jul 3" value="<?= htmlspecialchars($score_raw['show'] ?? '') ?>" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <button class="btn-sm btn-save" type="submit" style="grid-column:1;">Save Score</button>
+    </form>
   </div>
 
   <?php if (empty($messages)): ?>
