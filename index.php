@@ -244,7 +244,7 @@ $months = [
   <nav class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('latest', this)">Latest</button>
     <button class="tab-btn" onclick="switchTab('media', this)">Media</button>
-    <button class="tab-btn" onclick="switchTab('more', this)">More</button>
+    <button class="tab-btn" onclick="switchTab('more', this)">Dates</button>
   </nav>
 
   <div class="tab-panel active" id="tab-latest">
