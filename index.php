@@ -174,7 +174,8 @@ $months = [
 
     .footer-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--red); border-radius: var(--radius); padding: 1.25rem 1.5rem; font-size: 15px; color: var(--text-secondary); line-height: 1.75; box-shadow: 0 2px 8px rgba(0,0,0,0.3); margin-bottom: 2rem; }
     .footer-card strong { color: var(--text); font-weight: 600; }
-    .social-section { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+    .social-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; align-items: start; }
+    @media (max-width: 600px) { .social-section { grid-template-columns: 1fr; } }
     .reel-wrap { border-radius: var(--radius); overflow: hidden; }
     .ig-follow-btn { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.5rem; color: var(--text); text-decoration: none; font-size: 15px; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
     .ig-follow-btn:hover { border-color: var(--border-strong); background: var(--surface-2); }
