@@ -183,6 +183,10 @@ $messages = $db->query("SELECT * FROM messages ORDER BY created_at DESC")->fetch
     Back
   </a>
   <h1>Messages for Mateo</h1>
+  <a href="/fanmail.php" style="margin-left:auto;font-size:13px;color:var(--text-muted);text-decoration:none;display:flex;align-items:center;gap:5px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    Fanmail
+  </a>
 </div>
 
 <div class="page-content">
