@@ -276,7 +276,7 @@ $months = [
 
   <div class="tab-panel active" id="tab-latest">
     <div class="content">
-      <img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner">
+      <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
       <div class="section-label" style="margin-top:1.5rem;">3 ways to watch</div>
       <div class="cards">
 
@@ -487,7 +487,7 @@ $months = [
 
   <div class="tab-panel" id="tab-more">
     <div class="content">
-      <img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner">
+      <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
       <div class="footer-card">
       We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
     </div>
