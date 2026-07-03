@@ -712,8 +712,8 @@ $months = [
 
     <script>
       var mKeys   = <?php echo json_encode(array_keys($eventsByMon)); ?>;
-      var mLabels = <?php echo json_encode(array_map(function($d){return $d['meta']['label'];}, $eventsByMon)); ?>;
-      var mPhases = <?php echo json_encode(array_map(function($d){return $d['meta']['phase'] ?? '';}, $eventsByMon)); ?>;
+      var mLabels = <?php echo json_encode(array_values(array_map(function($d){return $d['meta']['label'];}, $eventsByMon))); ?>;
+      var mPhases = <?php echo json_encode(array_values(array_map(function($d){return $d['meta']['phase'] ?? '';}, $eventsByMon))); ?>;
       var curIdx  = <?php echo $curIdx; ?>;
       function calShow(idx) {
         document.querySelectorAll('.month-view').forEach(function(el){el.classList.remove('active');});
