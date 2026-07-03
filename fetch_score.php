@@ -133,6 +133,102 @@ function ordinal(int $n): string {
     return $n . ($s[($v - 20) % 10] ?? $s[$v] ?? $s[0]);
 }
 
+function send_score_alerts(string $score, string $placement, string $show): void {
+    $db_file = __DIR__ . '/data/messages.db';
+    if (!file_exists($db_file)) {
+        log_msg('Alerts: no messages.db found, skipping');
+        return;
+    }
+
+    $pdo = new PDO('sqlite:' . $db_file);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $stmt = $pdo->query("SELECT email, token FROM score_alerts WHERE active=1");
+    $subscribers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($subscribers)) {
+        log_msg('Alerts: no active subscribers');
+        return;
+    }
+
+    $site_url    = 'https://phantom.agavelabs.dev';
+    $results_url = $site_url . '/index.php#results';
+    $subject     = 'New Phantom Regiment score: ' . $score;
+
+    $sent = 0;
+    foreach ($subscribers as $row) {
+        $email     = $row['email'];
+        $token     = $row['token'];
+        $unsub_url = $site_url . '/alerts.php?unsubscribe=' . urlencode($token);
+
+        // Plain text body
+        $text_body = implode("\n", [
+            'Phantom Regiment — New Score Posted',
+            '',
+            'Score:     ' . $score,
+            'Placement: ' . $placement,
+            'Show:      ' . $show,
+            '',
+            'Full results: ' . $results_url,
+            '',
+            '---',
+            'To stop receiving these alerts, unsubscribe here:',
+            $unsub_url,
+        ]);
+
+        // HTML body
+        $html_body = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+            . 'body{background:#111111;color:#F0F0F0;font-family:Roboto,Arial,sans-serif;margin:0;padding:0}'
+            . '.wrap{max-width:480px;margin:40px auto;padding:0 16px}'
+            . '.card{background:#1A1A1A;border:1px solid #2C2C2C;border-radius:8px;padding:32px}'
+            . '.label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9E9E9E;margin-bottom:4px}'
+            . '.score{font-size:48px;font-weight:700;color:#B01A1C;line-height:1;margin-bottom:4px}'
+            . '.placement{font-size:20px;color:#F0F0F0;margin-bottom:20px}'
+            . '.show-name{font-size:14px;color:#9E9E9E;margin-bottom:28px}'
+            . '.btn{display:inline-block;background:#B01A1C;color:#fff;text-decoration:none;'
+            .      'font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;'
+            .      'padding:12px 24px;border-radius:4px}'
+            . '.footer{margin-top:28px;font-size:12px;color:#9E9E9E;border-top:1px solid #2C2C2C;padding-top:16px}'
+            . '.unsub{color:#9E9E9E}'
+            . '</style></head><body><div class="wrap"><div class="card">'
+            . '<div class="label">Phantom Regiment 2026</div>'
+            . '<div class="score">' . htmlspecialchars($score) . '</div>'
+            . '<div class="placement">' . htmlspecialchars($placement) . ' Place</div>'
+            . '<div class="show-name">' . htmlspecialchars($show) . '</div>'
+            . '<a href="' . htmlspecialchars($results_url) . '" class="btn">View Full Results</a>'
+            . '<div class="footer">'
+            . 'You\'re receiving this because you subscribed to score alerts at phantom.agavelabs.dev.<br>'
+            . '<a href="' . htmlspecialchars($unsub_url) . '" class="unsub">Unsubscribe</a>'
+            . '</div></div></div></body></html>';
+
+        $boundary = 'boundary_' . bin2hex(random_bytes(8));
+        $headers  = implode("\r\n", [
+            'From: Phantom Regiment Alerts <noreply@phantom.agavelabs.dev>',
+            'Reply-To: noreply@phantom.agavelabs.dev',
+            'MIME-Version: 1.0',
+            'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+        ]);
+
+        $body = "--{$boundary}\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n"
+            . "Content-Transfer-Encoding: 7bit\r\n\r\n"
+            . $text_body . "\r\n"
+            . "--{$boundary}\r\n"
+            . "Content-Type: text/html; charset=UTF-8\r\n"
+            . "Content-Transfer-Encoding: 7bit\r\n\r\n"
+            . $html_body . "\r\n"
+            . "--{$boundary}--";
+
+        if (@mail($email, $subject, $body, $headers)) {
+            $sent++;
+        } else {
+            log_msg('Alerts: mail() failed for ' . $email);
+        }
+    }
+
+    log_msg("Alerts: sent {$sent}/" . count($subscribers) . ' emails');
+}
+
 // ──────────────────────────────────────────────────────────────
 
 log_msg('Starting score fetch...');
@@ -195,6 +291,13 @@ if (($existing['score'] ?? '') === $found['score'] && ($existing['show'] ?? '') 
 
 file_put_contents($SCORE_FILE, json_encode($found, JSON_PRETTY_PRINT));
 log_msg('Saved: ' . $found['score'] . ' | ' . $found['placement'] . ' | ' . $found['show']);
+
+// Notify subscribers of the new score
+try {
+    send_score_alerts($found['score'], $found['placement'], $found['show']);
+} catch (Throwable $e) {
+    log_msg('Alert send error (non-fatal): ' . $e->getMessage());
+}
 
 // Fetch caption breakdown from recap URL
 $recap_data = null;

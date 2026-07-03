@@ -93,6 +93,42 @@ $events = [
     '2026-08-09' => ['label' => 'Banquet',                           'detail' => 'End of season',                                           'type' => 'milestone'],
 ];
 
+// Judged (DCI-scored) shows from official DCI schedule PDF
+$_judged_dates = [
+    '2026-07-03','2026-07-05','2026-07-10','2026-07-11',
+    '2026-07-13','2026-07-14','2026-07-16','2026-07-18','2026-07-20',
+    '2026-07-22','2026-07-24','2026-07-25','2026-07-27','2026-07-30',
+    '2026-08-01','2026-08-03',
+];
+$_dci_show_names = [
+    '2026-07-03' => 'Show of Shows',
+    '2026-07-05' => 'River City Rhapsody',
+    '2026-07-10' => 'Cavalcade of Brass',
+    '2026-07-11' => 'The Whitewater Classic',
+    '2026-07-13' => 'Brass Impact',
+    '2026-07-14' => 'DCI Broken Arrow',
+    '2026-07-16' => 'DCI Denton',
+    '2026-07-18' => 'DCI Southwestern Championship',
+    '2026-07-20' => 'DCI McKinney',
+    '2026-07-22' => 'Drums on the Ohio',
+    '2026-07-24' => 'Drums on Parade',
+    '2026-07-25' => 'Midwestern Championship',
+    '2026-07-27' => 'Summer Music Games in Cincinnati',
+    '2026-07-30' => 'DCI East Coast Showcase',
+    '2026-08-01' => 'DCI Eastern Classic',
+    '2026-08-03' => 'DCI Kentucky',
+    '2026-08-06' => 'DCI World Championship Prelims',
+    '2026-08-07' => 'DCI World Championship Semifinals',
+    '2026-08-08' => 'DCI World Championship Finals',
+];
+// All judged dates (regular shows + DCI events)
+$_all_judged = array_merge($_judged_dates, ['2026-08-06','2026-08-07','2026-08-08']);
+
+// Show Night Mode: today is a scored competition
+$_is_show_night = in_array($today, $_all_judged);
+$_tonight_event = $_is_show_night && isset($events[$today]) ? $events[$today] : null;
+$_tonight_dci_show = $_dci_show_names[$today] ?? null;
+
 // Season progress (must be after $events)
 $_total_shows = 0; $_past_shows = 0;
 foreach ($events as $date_str => $ev) {
@@ -374,13 +410,11 @@ $months = [
     .ig-follow-btn:hover { border-color: var(--border-strong); background: var(--surface-2); }
     .ig-follow-btn .link-arrow { margin-left: auto; color: var(--text-muted); }
 
-    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 2rem; }
-    .gallery-grid .wide { grid-column: span 2; }
-    .gallery-item { border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--surface-2); cursor: pointer; position: relative; }
-    .gallery-item.tall { aspect-ratio: 3 / 4; }
-    .gallery-item.wide { aspect-ratio: 16 / 7; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 2rem; }
+    .gallery-item { border-radius: 8px; overflow: hidden; aspect-ratio: 1 / 1; background: var(--surface-2); cursor: pointer; position: relative; }
     .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
-    .gallery-item:hover img { transform: scale(1.03); }
+    .gallery-item:hover img { transform: scale(1.05); }
+    @media (max-width: 480px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; } }
     .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
     .lightbox.open { display: flex; }
     .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; object-fit: contain; }
@@ -428,6 +462,38 @@ $months = [
       .cal-month-name { font-size: 1rem; }
       .tab-btn { font-size: 13px; padding: 14px 4px 11px; }
     }
+
+    /* Show Night Mode */
+    .show-night-banner { background: linear-gradient(135deg, rgba(176,26,28,0.22) 0%, rgba(176,26,28,0.07) 100%); border: 1px solid rgba(176,26,28,0.5); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1.1rem 1.25rem; margin-bottom: 1rem; position: relative; overflow: hidden; }
+    .show-night-banner::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, var(--red), transparent); }
+    .snb-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .snb-title { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.2; }
+    .snb-show-name { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+    .snb-status { font-size: 11px; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+    /* Score update toast */
+    .score-toast { position: fixed; bottom: 5.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: #1A1A1A; border: 1px solid rgba(255,215,0,0.5); border-radius: 12px; padding: 11px 20px; font-size: 14px; font-weight: 700; color: #FFD700; z-index: 500; transition: transform 0.35s ease, opacity 0.35s ease; opacity: 0; pointer-events: none; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.7); }
+    .score-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    /* Tour map */
+    .tour-map-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 1.5rem; margin-bottom: 1.5rem; }
+    .tour-map-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .tour-map-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .tour-map-sub { font-size: 11px; color: var(--text-muted); }
+    .tour-map-svg-wrap { overflow-x: auto; padding: 0.75rem; }
+    /* Season projection */
+    .projection-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid #4CAF72; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .projection-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #4CAF72; margin-bottom: 0.5rem; }
+    .projection-score { font-size: 32px; font-weight: 900; color: var(--text); line-height: 1; }
+    .projection-sub { font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+    .projection-detail { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    /* Caption trend */
+    .caption-trend-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .caption-trend-header { padding: 0.9rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); }
+    .caption-trend-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .caption-trend-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .caption-trend-body { overflow-x: auto; padding: 0.75rem 0.5rem 0; }
+    .caption-trend-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 0.5rem 1rem 0.75rem; }
+    .clt-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+    .clt-line { width: 18px; height: 2px; border-radius: 1px; }
   </style>
 </head>
 <body>
@@ -448,7 +514,7 @@ $months = [
           <div class="hero-sub">Phantom Regiment &middot; Drum Corps International</div>
           <a class="msg-btn" href="/fanmail.php">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Send Phanmail
+            Post Phanmail to Matéo
           </a>
         </div>
         <?php if ($current_city): ?>
@@ -476,9 +542,23 @@ $months = [
       <div class="announcement-banner"><strong>Update</strong><?= nl2br(htmlspecialchars($_announcement)) ?></div>
       <?php endif; ?>
 
+      <?php if ($_is_show_night && $_tonight_event): ?>
+      <div class="show-night-banner">
+        <div class="snb-eyebrow"><span class="pulse-dot"></span>Competition Night</div>
+        <div class="snb-title"><?= htmlspecialchars($_tonight_event['label']) ?></div>
+        <?php if ($_tonight_dci_show): ?>
+        <div class="snb-show-name"><?= htmlspecialchars($_tonight_dci_show) ?></div>
+        <?php endif; ?>
+        <div class="snb-status">
+          <span>Checking for score updates automatically</span>
+          <span id="snb-check-time"></span>
+        </div>
+      </div>
+      <?php endif; ?>
+
       <?php if (!empty($_score['score'])): ?>
       <a class="score-chip" href="javascript:switchTab('results',document.querySelectorAll('.tab-btn')[2])">
-        <span class="score-chip-num"><?= htmlspecialchars($_score['score']) ?></span>
+        <span class="score-chip-num" id="live-score-num"><?= htmlspecialchars($_score['score']) ?></span>
         <span class="score-chip-meta"><?= htmlspecialchars($_score['placement']) ?> place &nbsp;&middot;&nbsp; <?= htmlspecialchars($_score['show']) ?></span>
         <span class="score-chip-cta">Season results →</span>
       </a>
@@ -722,7 +802,7 @@ $months = [
       <?php
       $asset_dir = __DIR__ . '/assets';
       $gallery_files = glob($asset_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
-      $skip = ['bloodline.png','bloodline.webp'];
+      $skip = ['bloodline.png','bloodline.webp','mateo.jpg','favicon.png'];
       // Deduplicate: group by stem, prefer jpg/png as base, webp as source
       $stems = [];
       foreach ($gallery_files as $path) {
@@ -734,29 +814,11 @@ $months = [
           if ($ext === 'webp') { $stems[$stem]['webp'] = '/assets/' . $fname; }
           else { $stems[$stem]['base'] = '/assets/' . $fname; $stems[$stem]['path'] = $path; }
       }
-      // Classify each image
-      $portraits = []; $landscapes = [];
-      foreach ($stems as $stem => $f) {
-          $src_path = $f['path'] ?? ($asset_dir . '/' . $stem . '.webp');
-          $size = @getimagesize($src_path);
-          if (!$size) continue;
-          $is_portrait = $size[1] > $size[0];
-          $item = ['src' => $f['base'] ?? $f['webp'], 'webp' => $f['webp'], 'portrait' => $is_portrait];
-          if ($is_portrait) $portraits[] = $item; else $landscapes[] = $item;
-      }
-      // Build render list: pair portraits together, landscapes span full width
+      // Build flat render list (no orientation classification needed)
       $render = [];
-      $p = 0;
-      while ($p < count($portraits)) {
-          if ($p + 1 < count($portraits)) {
-              $render[] = ['type' => 'portrait-pair', 'a' => $portraits[$p], 'b' => $portraits[$p+1]];
-              $p += 2;
-          } else {
-              $render[] = ['type' => 'portrait-solo', 'item' => $portraits[$p]];
-              $p++;
-          }
+      foreach ($stems as $stem => $f) {
+          $render[] = ['src' => $f['base'] ?? $f['webp'], 'webp' => $f['webp']];
       }
-      foreach ($landscapes as $l) $render[] = ['type' => 'landscape', 'item' => $l];
       ?>
       <div class="gallery-grid" id="gallery">
         <?php
@@ -764,28 +826,14 @@ $months = [
             $src = htmlspecialchars($item['src']);
             $webp = $item['webp'] ? htmlspecialchars($item['webp']) : null;
             $inner = $webp ? "<source srcset=\"$webp\" type=\"image/webp\">" : '';
-            $inner .= "<img src=\"$src\" alt=\"$alt\" loading=\"lazy\" style=\"width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.3s ease;\" />";
+            $inner .= "<img src=\"$src\" alt=\"$alt\" loading=\"lazy\" />";
             return "<picture>$inner</picture>";
         }
         ?>
-        <?php foreach ($render as $r): ?>
-          <?php if ($r['type'] === 'portrait-pair'): ?>
-          <div class="gallery-item tall" onclick="openLightbox(this)">
-            <?= gallery_picture($r['a']) ?>
+        <?php foreach ($render as $item): ?>
+          <div class="gallery-item" onclick="openLightbox(this)">
+            <?= gallery_picture($item) ?>
           </div>
-          <div class="gallery-item tall" onclick="openLightbox(this)">
-            <?= gallery_picture($r['b']) ?>
-          </div>
-          <?php elseif ($r['type'] === 'portrait-solo'): ?>
-          <div class="gallery-item tall" onclick="openLightbox(this)">
-            <?= gallery_picture($r['item']) ?>
-          </div>
-          <div style="background:transparent;"></div>
-          <?php else: ?>
-          <div class="gallery-item wide" onclick="openLightbox(this)">
-            <?= gallery_picture($r['item']) ?>
-          </div>
-          <?php endif; ?>
         <?php endforeach; ?>
       </div>
       <div class="lightbox" id="lightbox" onclick="closeLightbox()">
@@ -1000,6 +1048,98 @@ $months = [
       </div>
       <?php endif; ?>
 
+      <?php
+      // Season Projection — linear regression on scores to project Finals score
+      if (count($_scores_history) >= 3):
+        $n = count($_scores_history);
+        $totalShows = 17; // Total judged shows in 2026 DCI season for Phantom
+        $sum_x=0; $sum_y=0; $sum_xy=0; $sum_x2=0;
+        foreach ($_scores_history as $i => $h) {
+          $x=$i+1; $y=(float)$h['score'];
+          $sum_x+=$x; $sum_y+=$y; $sum_xy+=$x*$y; $sum_x2+=$x*$x;
+        }
+        $denom = $n*$sum_x2 - $sum_x*$sum_x;
+        $slope = $denom!=0 ? ($n*$sum_xy - $sum_x*$sum_y)/$denom : 0;
+        $intercept = ($sum_y - $slope*$sum_x)/$n;
+        $proj = $slope*$totalShows + $intercept;
+        $proj_low  = max(0, $proj-1.8);
+        $proj_high = min(100, $proj+1.8);
+      ?>
+      <div class="projection-card" style="margin-top:1.25rem;">
+        <div class="projection-eyebrow">Season Projection</div>
+        <div class="projection-score"><?= number_format($proj, 2) ?></div>
+        <div class="projection-sub">Projected Finals score &nbsp;&middot;&nbsp; range <?= number_format($proj_low, 1) ?>–<?= number_format($proj_high, 1) ?></div>
+        <div class="projection-detail">Based on <?= $n ?> shows &nbsp;&middot;&nbsp; +<?= number_format($slope, 3) ?> pts/show trend &nbsp;&middot;&nbsp; extrapolated to show <?= $totalShows ?></div>
+      </div>
+      <?php endif; ?>
+
+      <?php
+      // Caption Trend — multi-line chart across all shows with caption data
+      $_shows_with_caps = array_values(array_filter($_scores_history, fn($h) => !empty($h['captions'])));
+      if (count($_shows_with_caps) >= 2):
+        $cap_defs = [
+          'ge1'        => ['label'=>'GE Music',   'color'=>'#7B9FD4'],
+          'ge2'        => ['label'=>'GE Visual',  'color'=>'#9B7DD4'],
+          'visual'     => ['label'=>'Visual',     'color'=>'#7DD4C5'],
+          'music'      => ['label'=>'Music',      'color'=>'#D4A07B'],
+          'percussion' => ['label'=>'Percussion', 'color'=>'#FFD700'],
+        ];
+        $CW=570; $CH=145; $CML=44; $CMR=12; $CMT=12; $CMB=28;
+        $ccw=$CW-$CML-$CMR; $cch=$CH-$CMT-$CMB;
+        $cn=count($_shows_with_caps);
+        $all_cv=[];
+        foreach($_shows_with_caps as $h) foreach($cap_defs as $k=>$_) if(isset($h['captions'][$k])) $all_cv[]=(float)$h['captions'][$k];
+        $cmin=$all_cv?min($all_cv):0; $cmax=$all_cv?max($all_cv):20;
+        $crange=max($cmax-$cmin,1.0); $cpad=$crange*0.15;
+        $cy_min=$cmin-$cpad; $cy_max=$cmax+$cpad;
+        function capX($i,$cn,$ccw,$CML){return $CML+($cn>1?($i/($cn-1))*$ccw:$ccw/2);}
+        function capY($v,$cy_min,$cy_max,$cch,$CMT){return $CMT+$cch-(($v-$cy_min)/($cy_max-$cy_min))*$cch;}
+      ?>
+      <div class="section-label" style="margin-top:1.25rem;">Caption Trend</div>
+      <div class="caption-trend-card">
+        <div class="caption-trend-header">
+          <div class="caption-trend-title">Caption Scores Across Shows</div>
+          <div class="caption-trend-sub">Percussion highlighted &nbsp;&middot;&nbsp; each out of 20 pts</div>
+        </div>
+        <div class="caption-trend-body">
+          <svg viewBox="0 0 <?=$CW?> <?=$CH?>" xmlns="http://www.w3.org/2000/svg" style="min-width:320px;display:block;width:100%;">
+            <?php for($g=0;$g<=4;$g++): $gy=$CMT+($g/4)*$cch; $gv=$cy_max-($g/4)*($cy_max-$cy_min); ?>
+            <line x1="<?=$CML?>" y1="<?=$gy?>" x2="<?=$CW-$CMR?>" y2="<?=$gy?>" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <text x="<?=$CML-4?>" y="<?=$gy+4?>" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)"><?=number_format($gv,1)?></text>
+            <?php endfor; ?>
+            <?php foreach($cap_defs as $k=>$cd):
+              $isperc=($k==='percussion');
+              $cpts=[];
+              for($ci=0;$ci<$cn;$ci++){
+                $cv=isset($_shows_with_caps[$ci]['captions'][$k])?(float)$_shows_with_caps[$ci]['captions'][$k]:null;
+                if($cv===null) continue;
+                $cpx=capX($ci,$cn,$ccw,$CML); $cpy=capY($cv,$cy_min,$cy_max,$cch,$CMT);
+                $cpts[]="$cpx,$cpy";
+              }
+              if(count($cpts)<2) continue;
+            ?>
+            <polyline points="<?=implode(' ',$cpts)?>" fill="none" stroke="<?=$cd['color']?>" stroke-width="<?=$isperc?2.5:1.5?>" stroke-linejoin="round" stroke-linecap="round" opacity="<?=$isperc?1:0.65?>"/>
+            <?php foreach($cpts as $cpstr): list($cpx,$cpy)=explode(',',$cpstr); ?>
+            <circle cx="<?=$cpx?>" cy="<?=$cpy?>" r="<?=$isperc?3.5:2.5?>" fill="<?=$cd['color']?>" opacity="<?=$isperc?1:0.65?>"/>
+            <?php endforeach; ?>
+            <?php endforeach; ?>
+            <?php if($cn<=9): for($ci=0;$ci<$cn;$ci++):
+              $cpx=capX($ci,$cn,$ccw,$CML);
+              $lbl=isset($_shows_with_caps[$ci]['show'])?explode(',',$_shows_with_caps[$ci]['show'])[0]:'';
+              $lbl=mb_strimwidth($lbl,0,10,'');
+            ?>
+            <text x="<?=$cpx?>" y="<?=$CH-4?>" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.28)"><?=htmlspecialchars($lbl)?></text>
+            <?php endfor; endif; ?>
+          </svg>
+        </div>
+        <div class="caption-trend-legend">
+          <?php foreach($cap_defs as $k=>$cd): ?>
+          <div class="clt-item"><div class="clt-line" style="background:<?=$cd['color']?>"></div><?=$cd['label']?></div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
       <!-- Score history table -->
       <div class="section-label" style="margin-top:1.25rem;">Score History</div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem;">
@@ -1074,7 +1214,7 @@ $months = [
             'events' => [],
           ];
         }
-        $calMonths[$k]['events'][] = ['day'=>(int)date('j',$ts)] + $ev;
+        $calMonths[$k]['events'][] = ['day'=>(int)date('j',$ts), 'date'=>$date_str] + $ev;
       }
       ksort($calMonths);
       $mKeys    = array_keys($calMonths);
@@ -1134,11 +1274,17 @@ $months = [
               <?php endif; ?>
               <?php if (isset($byDay[$d])): ?>
               <?php foreach ($byDay[$d] as $ev): ?>
-              <?php $c = $type_colors[$ev['type']] ?? '#888'; $isDCI = ($ev['type']==='dci'); ?>
+              <?php
+                $c = $type_colors[$ev['type']] ?? '#888';
+                $isDCI = ($ev['type']==='dci');
+                $isJudged = in_array($ev['date'] ?? '', $_all_judged) || $isDCI;
+                $dciName  = $_dci_show_names[$ev['date'] ?? ''] ?? null;
+                $tipDetail = ($dciName ? '★ '.$dciName.' · ' : '') . ($ev['detail'] ?? '');
+              ?>
               <span class="event-pill<?= $isDCI ? ' dci' : '' ?>"
                 style="background:<?= $c ?>"
-                data-detail="<?= htmlspecialchars($ev['detail'] ?? '') ?>">
-                <?= htmlspecialchars($ev['label']) ?>
+                data-detail="<?= htmlspecialchars($tipDetail) ?>">
+                <?= $isJudged ? '★ ' : '' ?><?= htmlspecialchars($ev['label']) ?>
               </span>
               <?php endforeach; ?>
               <?php endif; ?>
@@ -1152,6 +1298,89 @@ $months = [
       <div class="dci-info-box">
         <strong>DCI World Championships — Indianapolis, IN</strong>
         August 7–9, 2026: Semifinals & Finals at Lucas Oil Stadium. The pinnacle of drum corps — over 20,000 fans. <a href="https://dci.org" target="_blank" style="color:#FFD700;">dci.org</a>
+      </div>
+
+      <?php
+      // Tour map city data: [city label, dci show name, date, svg_x, svg_y]
+      $_map_cities = [
+        ['Rockford IL',       'Show of Shows',               '2026-07-03', 427, 134],
+        ['La Crosse WI',      'River City Rhapsody',         '2026-07-05', 388, 100],
+        ['Lisle IL',          'Cavalcade of Brass',          '2026-07-10', 452, 148],
+        ['Whitewater WI',     'The Whitewater Classic',      '2026-07-11', 432, 117],
+        ['Olathe KS',         'Brass Impact',                '2026-07-13', 355, 196],
+        ['Broken Arrow OK',   'DCI Broken Arrow',            '2026-07-14', 343, 248],
+        ['Denton TX',         'DCI Denton',                  '2026-07-16', 323, 302],
+        ['San Antonio TX',    'DCI Southwestern Champ.',     '2026-07-18', 308, 368],
+        ['McKinney TX',       'DCI McKinney',                '2026-07-20', 340, 310],
+        ['Evansville IN',     'Drums on the Ohio',           '2026-07-22', 447, 214],
+        ['Madison WI',        'Drums on Parade',             '2026-07-24', 420, 119],
+        ['DeKalb IL',         'Midwestern Championship',     '2026-07-25', 436, 142],
+        ['Mason OH',          'Summer Music Games',          '2026-07-27', 484, 188],
+        ['Lawrence MA',       'DCI East Coast Showcase',     '2026-07-30', 638, 128],
+        ['Allentown PA',      'DCI Eastern Classic',         '2026-08-01', 587, 166],
+        ['Lexington KY',      'DCI Kentucky',                '2026-08-03', 479, 213],
+        ['Indianapolis IN',   'DCI World Championships',     '2026-08-06', 461, 178],
+      ];
+      ?>
+      <div class="tour-map-wrap">
+        <div class="tour-map-header">
+          <div>
+            <div class="tour-map-title">2026 Tour Map</div>
+            <div class="tour-map-sub"><?= count($_map_cities) ?> DCI judged competitions &nbsp;&middot;&nbsp; hover for show name</div>
+          </div>
+        </div>
+        <div class="tour-map-svg-wrap">
+          <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" style="min-width:340px;width:100%;max-width:700px;display:block;">
+            <rect width="700" height="420" fill="#0E0E0E" rx="4"/>
+            <?php for($gx=100;$gx<700;$gx+=100): ?>
+            <line x1="<?=$gx?>" y1="0" x2="<?=$gx?>" y2="420" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+            <?php endfor; ?>
+            <?php for($gy=84;$gy<420;$gy+=84): ?>
+            <line x1="0" y1="<?=$gy?>" x2="700" y2="<?=$gy?>" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+            <?php endfor; ?>
+            <!-- Faint region labels for orientation -->
+            <text x="55" y="200" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Rocky Mts.</text>
+            <text x="360" y="88" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Great Lakes</text>
+            <text x="298" y="378" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Gulf Coast</text>
+            <text x="598" y="108" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">New England</text>
+            <text x="558" y="250" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Mid-Atlantic</text>
+            <?php foreach($_map_cities as $mc):
+              list($city,$dciShow,$date,$mx,$my) = $mc;
+              $mts = strtotime($date);
+              $isTonight = ($date === $today);
+              $isPast    = ($mts < $today_ts);
+              $isDCIChamp = ($date >= '2026-08-06');
+              if ($isTonight)       { $fill='#B01A1C'; $fc='#E07070'; $r=7; }
+              elseif ($isPast)      { $fill='rgba(255,255,255,0.25)'; $fc='rgba(255,255,255,0.3)'; $r=4; }
+              elseif ($isDCIChamp)  { $fill='#FFD700'; $fc='#FFD700'; $r=8; }
+              else                  { $fill='#7DD9A2'; $fc='rgba(255,255,255,0.72)'; $r=5; }
+              // Label side: left edge if near right border
+              $lx=$mx+9; $ly=$my+4; $anchor='start';
+              if($mx>580){ $lx=$mx-9; $anchor='end'; }
+            ?>
+            <g>
+              <title><?= htmlspecialchars($dciShow.' · '.date('M j',strtotime($date))) ?></title>
+              <?php if($isTonight): ?>
+              <circle cx="<?=$mx?>" cy="<?=$my?>" r="14" fill="rgba(176,26,28,0)" stroke="rgba(176,26,28,0.5)" stroke-width="1.5">
+                <animate attributeName="r" values="8;15;8" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <?php endif; ?>
+              <circle cx="<?=$mx?>" cy="<?=$my?>" r="<?=$r?>" fill="<?=$fill?>" <?=$isPast?'opacity="0.5"':''?>/>
+              <text x="<?=$lx?>" y="<?=$ly?>" text-anchor="<?=$anchor?>" font-size="8.5" fill="<?=$fc?>" font-weight="<?=$isTonight||$isDCIChamp?'700':'400'?>"><?= htmlspecialchars($city) ?></text>
+            </g>
+            <?php endforeach; ?>
+            <!-- Legend -->
+            <circle cx="20" cy="408" r="5" fill="#7DD9A2"/>
+            <text x="29" y="412" font-size="9" fill="rgba(255,255,255,0.45)">Upcoming</text>
+            <circle cx="102" cy="408" r="4" fill="rgba(255,255,255,0.25)" opacity="0.5"/>
+            <text x="110" y="412" font-size="9" fill="rgba(255,255,255,0.3)">Past</text>
+            <circle cx="152" cy="408" r="5" fill="#B01A1C"/>
+            <text x="161" y="412" font-size="9" fill="rgba(255,255,255,0.45)">Tonight</text>
+            <circle cx="218" cy="408" r="6" fill="#FFD700"/>
+            <text x="228" y="412" font-size="9" fill="rgba(255,255,255,0.45)">DCI Championships</text>
+          </svg>
+        </div>
       </div>
     </div>
 
@@ -1191,6 +1420,7 @@ $months = [
 </div>
 <?php endif; ?>
 
+<div class="score-toast" id="score-toast"></div>
 <script async src="https://www.instagram.com/embed.js"></script>
 <script>
   function openLightbox(el) {
@@ -1214,6 +1444,46 @@ $months = [
     btn.classList.add('active');
     if (name === 'more' && typeof calShow === 'function') calShow(curIdx);
   }
+
+  // Score toast notification
+  function showScoreToast(score, placement) {
+    var t = document.getElementById('score-toast');
+    if (!t) return;
+    t.textContent = 'Score updated: ' + score + (placement ? ' · ' + placement + ' place' : '');
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 5500);
+  }
+
+<?php if ($_is_show_night): ?>
+  // Show Night Mode — poll /score_check.php every 2 minutes for live score updates
+  (function() {
+    var lastScore = '<?= addslashes($_score['score'] ?? '') ?>';
+    var lastPlace = '<?= addslashes($_score['placement'] ?? '') ?>';
+    function doCheck() {
+      var ts = (new Date()).getTime();
+      fetch('/score_check.php?_=' + ts)
+        .then(function(r){ return r.json(); })
+        .then(function(d) {
+          var el = document.getElementById('snb-check-time');
+          if (el) {
+            var t = new Date();
+            var hm = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+            el.textContent = '· Last checked ' + hm;
+          }
+          if (d.score && d.score !== lastScore) {
+            var chip = document.getElementById('live-score-num');
+            if (chip) chip.textContent = d.score;
+            showScoreToast(d.score, d.placement || '');
+            lastScore = d.score;
+            lastPlace = d.placement || lastPlace;
+          }
+        })
+        .catch(function(){});
+      setTimeout(doCheck, 120000); // re-check every 2 minutes
+    }
+    setTimeout(doCheck, 30000); // first check after 30 seconds
+  })();
+<?php endif; ?>
 
 </script>
 
