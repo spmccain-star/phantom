@@ -546,15 +546,26 @@ $months = [
       <?php
       $asset_dir = __DIR__ . '/assets';
       $gallery_files = glob($asset_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
-      // Classify each image
-      $portraits = []; $landscapes = [];
+      $skip = ['bloodline.png','bloodline.webp'];
+      // Deduplicate: group by stem, prefer jpg/png as base, webp as source
+      $stems = [];
       foreach ($gallery_files as $path) {
           $fname = basename($path);
-          if (in_array($fname, ['bloodline.png','bloodline.webp'])) continue;
-          $size = @getimagesize($path);
+          if (in_array($fname, $skip)) continue;
+          $ext  = strtolower(pathinfo($fname, PATHINFO_EXTENSION));
+          $stem = pathinfo($fname, PATHINFO_FILENAME);
+          if (!isset($stems[$stem])) $stems[$stem] = ['base' => null, 'webp' => null, 'path' => null];
+          if ($ext === 'webp') { $stems[$stem]['webp'] = '/assets/' . $fname; }
+          else { $stems[$stem]['base'] = '/assets/' . $fname; $stems[$stem]['path'] = $path; }
+      }
+      // Classify each image
+      $portraits = []; $landscapes = [];
+      foreach ($stems as $stem => $f) {
+          $src_path = $f['path'] ?? ($asset_dir . '/' . $stem . '.webp');
+          $size = @getimagesize($src_path);
           if (!$size) continue;
           $is_portrait = $size[1] > $size[0];
-          $item = ['src' => '/assets/' . $fname, 'portrait' => $is_portrait];
+          $item = ['src' => $f['base'] ?? $f['webp'], 'webp' => $f['webp'], 'portrait' => $is_portrait];
           if ($is_portrait) $portraits[] = $item; else $landscapes[] = $item;
       }
       // Build render list: pair portraits together, landscapes span full width
@@ -572,22 +583,31 @@ $months = [
       foreach ($landscapes as $l) $render[] = ['type' => 'landscape', 'item' => $l];
       ?>
       <div class="gallery-grid" id="gallery">
+        <?php
+        function gallery_picture(array $item, string $alt = 'Phantom Regiment'): string {
+            $src = htmlspecialchars($item['src']);
+            $webp = $item['webp'] ? htmlspecialchars($item['webp']) : null;
+            $inner = $webp ? "<source srcset=\"$webp\" type=\"image/webp\">" : '';
+            $inner .= "<img src=\"$src\" alt=\"$alt\" loading=\"lazy\" style=\"width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.3s ease;\" />";
+            return "<picture>$inner</picture>";
+        }
+        ?>
         <?php foreach ($render as $r): ?>
           <?php if ($r['type'] === 'portrait-pair'): ?>
           <div class="gallery-item tall" onclick="openLightbox(this)">
-            <img src="<?= htmlspecialchars($r['a']['src']) ?>" alt="Phantom Regiment" loading="lazy" />
+            <?= gallery_picture($r['a']) ?>
           </div>
           <div class="gallery-item tall" onclick="openLightbox(this)">
-            <img src="<?= htmlspecialchars($r['b']['src']) ?>" alt="Phantom Regiment" loading="lazy" />
+            <?= gallery_picture($r['b']) ?>
           </div>
           <?php elseif ($r['type'] === 'portrait-solo'): ?>
           <div class="gallery-item tall" onclick="openLightbox(this)">
-            <img src="<?= htmlspecialchars($r['item']['src']) ?>" alt="Phantom Regiment" loading="lazy" />
+            <?= gallery_picture($r['item']) ?>
           </div>
           <div style="background:transparent;"></div>
           <?php else: ?>
           <div class="gallery-item wide" onclick="openLightbox(this)">
-            <img src="<?= htmlspecialchars($r['item']['src']) ?>" alt="Phantom Regiment" loading="lazy" />
+            <?= gallery_picture($r['item']) ?>
           </div>
           <?php endif; ?>
         <?php endforeach; ?>
