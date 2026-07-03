@@ -276,6 +276,7 @@ $months = [
 
   <div class="tab-panel active" id="tab-latest">
     <div class="content">
+      <img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner">
       <div class="section-label" style="margin-top:1.5rem;">3 ways to watch</div>
       <div class="cards">
 
