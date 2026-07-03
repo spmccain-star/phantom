@@ -432,6 +432,9 @@ $months = [
         <div class="video-wrap">
           <iframe src="https://www.youtube.com/embed/sIMSeloDV3k" title="Phantom Regiment 2026" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
+        <div class="video-wrap">
+          <iframe src="https://www.youtube.com/embed/rwodYLaTWc4" title="Phantom Regiment 2026" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
         <div class="reel-wrap">
         <blockquote
           class="instagram-media"
