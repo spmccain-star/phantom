@@ -156,7 +156,9 @@ $months = [
     .hero { position: relative; width: 100%; height: clamp(320px, 50vw, 520px); overflow: hidden; background: #000; }
     .hero > img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
     .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.0) 10%, rgba(0,0,0,0.95) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(1.25rem, 4vw, 2.5rem); }
-    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-bottom: 0.5rem; }
+    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff4444; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(255,68,68,0.6); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,68,68,0.6); } 70% { box-shadow: 0 0 0 7px rgba(255,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(255,68,68,0); } }
     .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
@@ -279,7 +281,7 @@ $months = [
     <img src="/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
     <div class="hero-overlay">
       <?php if ($next_event): ?>
-      <div class="hero-eyebrow">Next up &nbsp;&middot;&nbsp; <?= $ne_dow ?>, <?= $ne_date_fmt ?></div>
+      <div class="hero-eyebrow"><span class="pulse-dot"></span>Next up &nbsp;&middot;&nbsp; <?= $ne_dow ?>, <?= $ne_date_fmt ?></div>
       <div class="hero-title"><?= htmlspecialchars($next_event['label']) ?></div>
       <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?></div>
       <?php else: ?>
