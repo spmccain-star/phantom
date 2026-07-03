@@ -93,6 +93,17 @@ if (($existing['score'] ?? '') === $found['score'] && ($existing['show'] ?? '') 
 file_put_contents($SCORE_FILE, json_encode($found, JSON_PRETTY_PRINT));
 log_msg('Saved: ' . $found['score'] . ' | ' . $found['placement'] . ' | ' . $found['show']);
 
+// Append to history (deduplicate by show name)
+$hist_file = __DIR__ . '/data/scores_history.json';
+$history = file_exists($hist_file) ? json_decode(file_get_contents($hist_file), true) ?: [] : [];
+$already = false;
+foreach ($history as $h) { if ($h['show'] === $found['show']) { $already = true; break; } }
+if (!$already) {
+    $history[] = ['date' => date('Y-m-d'), 'score' => $found['score'], 'placement' => $found['placement'], 'show' => $found['show']];
+    file_put_contents($hist_file, json_encode($history, JSON_PRETTY_PRINT));
+    log_msg('Appended to history (' . count($history) . ' total)');
+}
+
 function ordinal(int $n): string {
     $s = ['th','st','nd','rd'];
     $v = $n % 100;
