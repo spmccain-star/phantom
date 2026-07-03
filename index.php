@@ -146,11 +146,11 @@ $months = [
     }
     .hero-overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.82) 100%);
+      background: linear-gradient(to bottom, transparent 0%, transparent 28%, rgba(0,0,0,0.55) 58%, rgba(0,0,0,0.91) 100%);
       display: flex; flex-direction: column; justify-content: flex-end;
       padding: clamp(1.25rem, 4vw, 2.5rem);
     }
-    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #E07070; margin-bottom: 0.5rem; }
+    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #E07070; margin-top: 0.5rem; margin-bottom: 0.75rem; }
     .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
@@ -238,7 +238,7 @@ $months = [
     .cal-cell.today { background: rgba(176,26,28,0.07); }
     .cal-cell.today .day-num { color: #B01A1C; font-weight: 800; }
     .day-num { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block; }
-    .event-pill { display: block; border-radius: 5px; padding: 4px 7px; margin-bottom: 4px; font-size: 0.72rem; font-weight: 600; line-height: 1.3; color: #000; cursor: default; overflow: hidden; position: relative; }
+    .event-pill { display: block; border-radius: 5px; padding: 4px 7px; margin-bottom: 4px; font-size: 0.72rem; font-weight: 600; line-height: 1.3; color: #000; cursor: default; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; position: relative; }
     .event-pill.dci { font-size: 0.78rem; font-weight: 800; letter-spacing: .02em; }
     .event-pill:hover::after { content: attr(data-detail); position: absolute; bottom: calc(100% + 4px); left: 0; min-width: 150px; max-width: 220px; background: #2a2a2a; color: #F2F0EA; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 6px 9px; font-size: 0.7rem; font-weight: 400; white-space: normal; z-index: 10; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.6); }
     .dci-info-box { margin-top: 1.5rem; background: rgba(176,26,28,0.06); border: 1px solid rgba(176,26,28,0.2); border-radius: 10px; padding: 14px 18px; font-size: 0.82rem; color: var(--text-secondary); }
@@ -246,12 +246,20 @@ $months = [
     .month-view { display: none; }
     .month-view.active { display: block; }
 
+    .cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .cal-dow-row, .cal-grid { min-width: 280px; }
+    .cal-phase { white-space: normal; line-height: 1.4; }
+
     @media (max-width: 600px) {
-      .cal-cell { min-height: 64px; padding: 4px; }
-      .event-pill { font-size: 0.6rem; padding: 2px 4px; }
+      .cal-cell { min-height: 58px; padding: 3px; }
+      .day-num { font-size: 0.72rem; margin-bottom: 3px; }
+      .event-pill { font-size: 0.58rem; padding: 2px 3px; }
       .event-pill:hover::after { display: none; }
       .cal-month-name { font-size: 1rem; }
+      .cal-phase { font-size: 0.72rem; }
       .tab-btn { font-size: 13px; padding: 14px 4px 11px; }
+      .dci-info-box { font-size: 0.78rem; }
+      .dci-info-box p { margin-top: 4px; }
     }
   </style>
 </head>
@@ -260,17 +268,17 @@ $months = [
   <div class="hero">
     <img src="/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
     <div class="hero-overlay">
-      <div class="hero-eyebrow">Saturday, July 18, 2026 &nbsp;&middot;&nbsp; San Antonio, TX</div>
       <div class="hero-title">Come watch Mateo perform!</div>
+      <div class="hero-eyebrow">Saturday, July 18, 2026 &nbsp;&middot;&nbsp; San Antonio, TX</div>
       <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em> &middot; DCI Southwestern Championship</div>
       <div><span class="show-pill">Bloodline</span></div>
     </div>
   </div>
 
   <nav class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('watch', this)">Watch</button>
-    <button class="tab-btn" onclick="switchTab('schedule', this)">Schedule</button>
-    <button class="tab-btn" onclick="switchTab('more', this)">More</button>
+    <button class="tab-btn active" onclick="switchTab('watch', this)">Latest</button>
+    <button class="tab-btn" onclick="switchTab('more', this)">Media</button>
+    <button class="tab-btn" onclick="switchTab('schedule', this)">Dates</button>
   </nav>
 
   <div class="tab-panel active" id="tab-watch">
@@ -540,6 +548,7 @@ $months = [
   </script>
   </div>
 
+
   <!-- Tab: More -->
   <div class="tab-panel" id="tab-more">
     <div class="content">
@@ -549,28 +558,17 @@ $months = [
       <div class="section-label" style="margin-top:0.5rem;">Photos</div>
       <div class="gallery-grid" id="gallery">
       <div class="gallery-item wide" onclick="openLightbox(this)">
-        <img src="images/photo1.jpg" alt="Phantom Regiment snare line rehearsal" loading="lazy" />
+        <img src="/assets/mateo.jpg" alt="Phantom Regiment snare line rehearsal" loading="lazy" />
       </div>
       <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="images/photo2.jpg" alt="Phantom Regiment — Bloodline" loading="lazy" />
+        <img src="/assets/mateo.jpg" alt="Phantom Regiment — Bloodline" loading="lazy" />
       </div>
       <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="images/photo3.jpg" alt="Phantom Regiment percussion" loading="lazy" />
+        <img src="/assets/mateo.jpg" alt="Phantom Regiment percussion" loading="lazy" />
       </div>
-      <!-- Add more photos: copy a .gallery-item div and point src to images/photoN.jpg -->
     </div>
 
-    <!-- Lightbox overlay -->
-    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-      <button class="lightbox-close" onclick="closeLightbox()">×</button>
-      <img id="lightbox-img" src="" alt="" />
-    </div>
-
-    <div class="footer-card">
-      We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
-    </div>
-
-    <div class="section-label" style="margin-top: 1.75rem;">Follow along</div>
+    <div class="section-label" style="margin-top:1.75rem;">Follow along</div>
 
     <div class="social-section">
       <div class="video-wrap">
@@ -588,7 +586,7 @@ $months = [
           class="instagram-media"
           data-instgrm-permalink="https://www.instagram.com/reel/DaIBv_ABv5a/"
           data-instgrm-version="14"
-          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:326px;padding:0;width:calc(100% - 2px);">
+          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:0;padding:0;width:calc(100% - 2px);">
           <div style="padding:16px;">
             <a href="https://www.instagram.com/reel/DaIBv_ABv5a/" target="_blank" rel="noopener"
                style="color:#c9c8cd;font-family:Arial,sans-serif;font-size:14px;line-height:17px;text-decoration:none;">
@@ -605,160 +603,13 @@ $months = [
       </a>
     </div>
 
-  </div>
-      <!-- Lightbox overlay -->
-    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-      <button class="lightbox-close" onclick="closeLightbox()">×</button>
-      <img id="lightbox-img" src="" alt="" />
-    </div>
-      <div class="section-label" style="margin-top:1.75rem;">Follow along</div>
-      <div class="social-section">
-        <div class="video-wrap">
-        <iframe
-          src="https://www.youtube.com/embed/lrOzW2I4r3U"
-          title="Phantom Regiment 2026"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen>
-        </iframe>
-      </div>
-
-      <div class="reel-wrap">
-        <blockquote
-          class="instagram-media"
-          data-instgrm-permalink="https://www.instagram.com/reel/DaIBv_ABv5a/"
-          data-instgrm-version="14"
-          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:326px;padding:0;width:calc(100% - 2px);">
-          <div style="padding:16px;">
-            <a href="https://www.instagram.com/reel/DaIBv_ABv5a/" target="_blank" rel="noopener"
-               style="color:#c9c8cd;font-family:Arial,sans-serif;font-size:14px;line-height:17px;text-decoration:none;">
-              View this reel on Instagram
-            </a>
-          </div>
-        </blockquote>
-      </div>
-
-      <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        Follow @thephantomregiment on Instagram
-        <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-    </div>
-
-  </div>
-        <div class="reel-wrap">
-        <blockquote
-          class="instagram-media"
-          data-instgrm-permalink="https://www.instagram.com/reel/DaIBv_ABv5a/"
-          data-instgrm-version="14"
-          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:326px;padding:0;width:calc(100% - 2px);">
-          <div style="padding:16px;">
-            <a href="https://www.instagram.com/reel/DaIBv_ABv5a/" target="_blank" rel="noopener"
-               style="color:#c9c8cd;font-family:Arial,sans-serif;font-size:14px;line-height:17px;text-decoration:none;">
-              View this reel on Instagram
-            </a>
-          </div>
-        </blockquote>
-      </div>
-
-      <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        Follow @thephantomregiment on Instagram
-        <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-    </div>
-
-  </div>
-        <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        Follow @thephantomregiment on Instagram
-        <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-      </div>
     </div>
   </div>
 
-<script async src="https://www.instagram.com/embed.js"></script>
-<script>
-  function openLightbox(el) {
-    var img = el.querySelector('img');
-    document.getElementById('lightbox-img').src = img.src;
-    document.getElementById('lightbox-img').alt = img.alt;
-    document.getElementById('lightbox').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeLightbox();
-  });
-  function switchTab(name, btn) {
-    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    document.getElementById('tab-' + name).classList.add('active');
-    btn.classList.add('active');
-    if (name === 'schedule' && typeof calShow === 'function') calShow(curIdx);
-  }
-</script>
-  </div>
-
-  <div class="tab-panel" id="tab-more">
-    <div class="content">
-      <div class="footer-card">
-      We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
-    </div>
-      <div class="section-label" style="margin-top:0.5rem;">Photos</div>
-      <div class="gallery-grid" id="gallery">
-      <div class="gallery-item wide" onclick="openLightbox(this)">
-        <img src="images/photo1.jpg" alt="Phantom Regiment snare line rehearsal" loading="lazy" />
-      </div>
-      <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="images/photo2.jpg" alt="Phantom Regiment — Bloodline" loading="lazy" />
-      </div>
-      <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="images/photo3.jpg" alt="Phantom Regiment percussion" loading="lazy" />
-      </div>
-      <!-- Add more photos: copy a .gallery-item div and point src to images/photoN.jpg -->
-    </div>
-      <!-- Lightbox overlay -->
-      <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-      <button class="lightbox-close" onclick="closeLightbox()">×</button>
-      <img id="lightbox-img" src="" alt="" />
-    </div>
-      <div class="section-label" style="margin-top:1.75rem;">Follow along</div>
-      <div class="social-section">
-        <div class="video-wrap">
-        <iframe
-          src="https://www.youtube.com/embed/lrOzW2I4r3U"
-          title="Phantom Regiment 2026"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen>
-        </iframe>
-      </div>
-        <div class="reel-wrap">
-        <blockquote
-          class="instagram-media"
-          data-instgrm-permalink="https://www.instagram.com/reel/DaIBv_ABv5a/"
-          data-instgrm-version="14"
-          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:326px;padding:0;width:calc(100% - 2px);">
-          <div style="padding:16px;">
-            <a href="https://www.instagram.com/reel/DaIBv_ABv5a/" target="_blank" rel="noopener"
-               style="color:#c9c8cd;font-family:Arial,sans-serif;font-size:14px;line-height:17px;text-decoration:none;">
-              View this reel on Instagram
-            </a>
-          </div>
-        </blockquote>
-      </div>
-        <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        Follow @thephantomregiment on Instagram
-        <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-      </div>
-    </div>
+  <!-- Lightbox overlay -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">×</button>
+    <img id="lightbox-img" src="" alt="" />
   </div>
 
 <script async src="https://www.instagram.com/embed.js"></script>
