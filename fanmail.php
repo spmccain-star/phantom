@@ -190,7 +190,7 @@ try {
       <div class="form-row">
         <div class="form-group">
           <label for="name">Your name</label>
-          <input type="text" id="name" name="name" placeholder="e.g. Grandma Carol" maxlength="80" autocomplete="name" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
+          <input type="text" id="name" name="name" placeholder="Name" maxlength="80" autocomplete="name" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
         </div>
         <div class="form-group">
           <label>Photo <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(optional)</span></label>

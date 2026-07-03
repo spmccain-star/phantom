@@ -205,7 +205,7 @@ $messages = $db->query("SELECT * FROM messages ORDER BY created_at DESC")->fetch
     <form method="POST" action="/messages.php" enctype="multipart/form-data">
       <div class="form-group">
         <label for="name">Your name</label>
-        <input type="text" id="name" name="name" placeholder="e.g. Grandma Carol" maxlength="80" autocomplete="name" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
+        <input type="text" id="name" name="name" placeholder="Name" maxlength="80" autocomplete="name" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
       </div>
       <div class="form-group">
         <label for="message">Message</label>
