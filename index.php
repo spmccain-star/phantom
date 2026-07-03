@@ -136,7 +136,7 @@ $months = [
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Matéo with Phantom Regiment 2026</title>
+  <title>Keep up with Matéo — Phantom Regiment 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -294,11 +294,11 @@ $months = [
         <div class="hero-left">
           <?php if ($next_event): ?>
           <div class="hero-eyebrow"><span class="pulse-dot"></span>Next show &nbsp;&middot;&nbsp; <?= $ne_dow ?>, <?= $ne_date_fmt ?></div>
-          <div class="hero-title">Matéo with Phantom Regiment 2026</div>
+          <div class="hero-title">Keep up with Matéo</div>
           <div class="hero-sub"><?= htmlspecialchars($next_event['label']) ?><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?></div>
           <?php else: ?>
           <div class="hero-eyebrow">Phantom Regiment 2026</div>
-          <div class="hero-title">Matéo with Phantom Regiment 2026</div>
+          <div class="hero-title">Keep up with Matéo</div>
           <div class="hero-sub"><em>Bloodline</em> &middot; DCI Championships, Indianapolis</div>
           <?php endif; ?>
           <a class="msg-btn" href="/fanmail.php">
