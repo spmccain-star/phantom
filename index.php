@@ -340,7 +340,7 @@ body {
 <?php $hero = __DIR__ . '/assets/mateo.jpg'; ?>
 <div class="hero">
   <?php if (file_exists($hero)): ?>
-    <img src="/phantom/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
+    <img src="/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
   <?php else: ?>
     <div class="hero-placeholder">Photo coming soon — place mateo.jpg in phantom/assets/</div>
   <?php endif; ?>
