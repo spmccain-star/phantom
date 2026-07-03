@@ -221,6 +221,10 @@ $months = [
     .cal-nav-btn:disabled { opacity: 0.25; cursor: default; box-shadow: none; }
     .cal-nav-center { text-align: center; flex: 1; padding: 0 1rem; }
     .cal-month-name { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+    .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 1rem; padding: 0 2px; }
+    .cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .bloodline-banner { width: 100%; max-height: 140px; object-fit: contain; object-position: center; display: block; margin-bottom: 1.5rem; }
     .cal-wrap { background: #161616; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
     .cal-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); }
     .cal-dow { text-align: center; padding: 10px 4px; font-size: 0.72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
@@ -482,6 +486,7 @@ $months = [
 
   <div class="tab-panel" id="tab-more">
     <div class="content">
+      <img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner">
       <div class="footer-card">
       We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
     </div>
