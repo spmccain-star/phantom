@@ -180,11 +180,11 @@ $months = [
     .ig-follow-btn:hover { border-color: var(--border-strong); background: var(--surface-2); }
     .ig-follow-btn .link-arrow { margin-left: auto; color: var(--text-muted); }
 
-    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 2rem; max-width: 75%; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 2rem; }
     .gallery-grid .wide { grid-column: span 2; }
-    .gallery-item { border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--surface-2); cursor: pointer; position: relative; }
+    .gallery-item { border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--surface-2); cursor: pointer; position: relative; }
     .gallery-item.tall { aspect-ratio: 3 / 4; }
-    .gallery-item.wide { aspect-ratio: 16 / 7; }
+    .gallery-item.wide { aspect-ratio: 16 / 5; }
     .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
     .gallery-item:hover img { transform: scale(1.03); }
     .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
