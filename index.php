@@ -345,7 +345,7 @@ $months = [
           <a href="https://maps.google.com/?q=Alamodome,+San+Antonio,+TX" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;font-size:13px;font-weight:600;">Get directions</a>
         </div>
       </div>
-      <div class="section-label">3 ways to watch</div>
+      <div class="section-label">4 ways to watch</div>
       <div class="cards">
 
       <!-- Option 1 -->
@@ -419,6 +419,34 @@ $months = [
       </div>
 
       <!-- Option 3 -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-option-num">Option 3</div>
+            <div class="card-title">Watch online</div>
+            <div class="card-date">Saturday, July 18</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <p>FloMarching streams DCI events live. You can watch Phantom perform <em>Bloodline</em> from anywhere — great option if you can't make it to San Antonio in person.</p>
+        </div>
+        <div class="divider"></div>
+        <div class="details">
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+            Live stream on FloMarching
+          </div>
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Phantom performs ~9 PM CT
+          </div>
+        </div>
+        <a class="ticket-btn" href="https://www.flomarching.com/signup" target="_blank" rel="noopener">
+          Sign up for FloMarching →
+        </a>
+      </div>
+
+      <!-- Option 4 -->
       <div class="card">
         <div class="card-header">
           <div>
