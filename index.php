@@ -124,11 +124,12 @@ $months = [
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--page-bg);
       color: var(--text);
       min-height: 100vh;
       padding-bottom: 3rem;
+      font-size: 16px;
     }
 
     .hero {
@@ -159,7 +160,7 @@ $months = [
     }
 
     .hero-eyebrow {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.14em;
       text-transform: uppercase;
@@ -171,7 +172,7 @@ $months = [
 
     .hero-title {
       font-family: 'Playfair Display', Georgia, serif;
-      font-size: clamp(26px, 6vw, 40px);
+      font-size: clamp(32px, 6vw, 52px);
       font-weight: 700;
       line-height: 1.15;
       margin-bottom: 0.75rem;
@@ -181,10 +182,10 @@ $months = [
     }
 
     .hero-sub {
-      font-size: 15px;
+      font-size: 18px;
       color: var(--text-secondary);
       line-height: 1.6;
-      max-width: 440px;
+      max-width: 600px;
       margin: 0 auto 1.25rem;
       position: relative;
       z-index: 1;
@@ -195,9 +196,9 @@ $months = [
       background: var(--red-light);
       border: 1px solid rgba(176,26,28,0.35);
       color: #E07070;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 500;
-      padding: 5px 14px;
+      padding: 6px 18px;
       border-radius: 20px;
       position: relative;
       z-index: 1;
@@ -205,26 +206,30 @@ $months = [
     }
 
     .content {
-      max-width: 560px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 1.5rem 1rem 0;
+      padding: 2rem 1.5rem 0;
     }
 
     .section-label {
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
       padding: 0 0.25rem;
     }
 
     .cards {
-      display: flex;
-      flex-direction: column;
-      gap: 0.875rem;
-      margin-bottom: 1.75rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (min-width: 780px) {
+      .cards { grid-template-columns: repeat(3, 1fr); }
     }
 
     .card {
@@ -232,14 +237,18 @@ $months = [
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
     }
 
     .card.featured {
       border-color: rgba(176,26,28,0.5);
+      box-shadow: 0 4px 16px rgba(176,26,28,0.15);
     }
 
     .card-header {
-      padding: 1.1rem 1.25rem 0.75rem;
+      padding: 1.4rem 1.5rem 0.875rem;
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
@@ -247,26 +256,26 @@ $months = [
     }
 
     .card-option-num {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
 
     .card-title {
       font-family: 'Playfair Display', Georgia, serif;
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 700;
       color: var(--text);
       line-height: 1.2;
     }
 
     .badge {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
-      padding: 3px 10px;
+      padding: 4px 12px;
       border-radius: 20px;
       white-space: nowrap;
       flex-shrink: 0;
@@ -284,50 +293,52 @@ $months = [
     }
 
     .card-body {
-      padding: 0 1.25rem 1.1rem;
-      font-size: 14px;
+      padding: 0 1.5rem 1.25rem;
+      font-size: 15px;
       color: var(--text-secondary);
-      line-height: 1.7;
+      line-height: 1.75;
+      flex: 1;
     }
 
-    .card-body p + p { margin-top: 0.6rem; }
+    .card-body p + p { margin-top: 0.75rem; }
 
     .divider {
       height: 1px;
       background: var(--border);
-      margin: 0 1.25rem;
+      margin: 0 1.5rem;
     }
 
     .details {
-      padding: 0.75rem 1.25rem 1rem;
+      padding: 1rem 1.5rem 1.1rem;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 9px;
     }
 
     .detail {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
-      font-size: 13px;
+      gap: 10px;
+      font-size: 14px;
       color: var(--text-muted);
-      line-height: 1.4;
+      line-height: 1.5;
     }
 
-    .detail svg { flex-shrink: 0; margin-top: 1px; }
+    .detail svg { flex-shrink: 0; margin-top: 2px; }
 
     .ticket-btn {
       display: block;
-      margin: 0 1.25rem 1.1rem;
-      padding: 11px 16px;
+      margin: 0 1.5rem 1.25rem;
+      padding: 14px 20px;
       background: var(--red);
       color: white;
       text-align: center;
       border-radius: 10px;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
       text-decoration: none;
       transition: background 0.15s;
+      letter-spacing: 0.01em;
     }
 
     .ticket-btn:hover { background: var(--red-dark); }
@@ -337,14 +348,15 @@ $months = [
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
-      margin-bottom: 1.75rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
     .links-header {
-      padding: 0.9rem 1.25rem 0.5rem;
-      font-size: 10px;
+      padding: 1.1rem 1.5rem 0.6rem;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--text-muted);
     }
@@ -352,8 +364,8 @@ $months = [
     .link-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 0.75rem 1.25rem;
+      gap: 14px;
+      padding: 1rem 1.5rem;
       border-top: 1px solid var(--border);
       text-decoration: none;
       color: var(--text);
@@ -363,9 +375,9 @@ $months = [
     .link-row:hover { background: var(--surface-2); }
 
     .link-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
       background: var(--red-light);
       display: flex;
       align-items: center;
@@ -377,14 +389,14 @@ $months = [
 
     .link-label {
       flex: 1;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 500;
     }
 
     .link-sub {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
-      margin-top: 1px;
+      margin-top: 2px;
     }
 
     .link-arrow { color: var(--text-muted); }
@@ -394,24 +406,24 @@ $months = [
       border: 1px solid var(--border);
       border-left: 3px solid var(--red);
       border-radius: var(--radius);
-      padding: 1.1rem 1.25rem;
-      font-size: 14px;
+      padding: 1.25rem 1.5rem;
+      font-size: 15px;
       color: var(--text-secondary);
-      line-height: 1.7;
+      line-height: 1.75;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
     .footer-card strong { color: var(--text); font-weight: 600; }
 
     @media (min-width: 600px) {
       .hero { padding: 3.5rem 2rem 2.5rem; }
-      .content { padding: 2rem 1.5rem 0; }
     }
 
     .social-section {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      margin-bottom: 1.75rem;
+      margin-bottom: 2rem;
     }
 
     .reel-wrap {
@@ -422,14 +434,14 @@ $months = [
     .ig-follow-btn {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 0.9rem 1.25rem;
+      padding: 1rem 1.5rem;
       color: var(--text);
       text-decoration: none;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 500;
       transition: border-color 0.15s, background 0.15s;
     }
@@ -445,8 +457,8 @@ $months = [
     .gallery-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      margin-bottom: 1.75rem;
+      gap: 10px;
+      margin-bottom: 2rem;
     }
 
     .gallery-grid .wide {
@@ -454,7 +466,7 @@ $months = [
     }
 
     .gallery-item {
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
       aspect-ratio: 4 / 3;
       background: var(--surface-2);
@@ -549,33 +561,34 @@ $months = [
 
     /* ── Full-season calendar ── */
     .calendar-section {
-      max-width: 860px;
+      max-width: 1100px;
       margin: 2rem auto 0;
-      padding: 0 1rem 3rem;
+      padding: 0 1.5rem 3rem;
     }
     .cal-nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
     }
     .cal-nav-btn {
-      background: #1A1A1A;
+      background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text);
-      width: 36px; height: 36px;
+      width: 44px; height: 44px;
       border-radius: 50%;
-      font-size: 1.1rem;
+      font-size: 1.25rem;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s;
+      transition: background 0.15s, box-shadow 0.15s;
       flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
-    .cal-nav-btn:hover { background: #2a2a2a; }
-    .cal-nav-btn:disabled { opacity: 0.25; cursor: default; }
-    .cal-nav-center { text-align: center; flex: 1; padding: 0 0.5rem; }
-    .cal-month-name { font-size: 1rem; font-weight: 700; color: var(--text); }
-    .cal-phase { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
+    .cal-nav-btn:hover { background: var(--surface-2); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+    .cal-nav-btn:disabled { opacity: 0.25; cursor: default; box-shadow: none; }
+    .cal-nav-center { text-align: center; flex: 1; padding: 0 1rem; }
+    .cal-month-name { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+    .cal-phase { font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px; }
     .cal-legend {
       display: flex;
       flex-wrap: wrap;
@@ -600,19 +613,19 @@ $months = [
     }
     .cal-dow {
       text-align: center;
-      padding: 7px 4px;
-      font-size: 0.62rem;
+      padding: 10px 4px;
+      font-size: 0.72rem;
       font-weight: 700;
-      letter-spacing: .06em;
+      letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--text-muted);
     }
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
     .cal-cell {
-      min-height: 76px;
-      padding: 5px 6px;
-      border-right: 1px solid rgba(255,255,255,0.04);
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      min-height: 100px;
+      padding: 8px 8px;
+      border-right: 1px solid rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
       vertical-align: top;
     }
     .cal-cell:nth-child(7n) { border-right: none; }
@@ -620,18 +633,18 @@ $months = [
     .cal-cell.today { background: rgba(176,26,28,0.07); }
     .cal-cell.today .day-num { color: #B01A1C; font-weight: 800; }
     .day-num {
-      font-size: 0.72rem;
+      font-size: 0.82rem;
       font-weight: 600;
       color: var(--text-secondary);
-      margin-bottom: 4px;
+      margin-bottom: 5px;
       display: block;
     }
     .event-pill {
       display: block;
-      border-radius: 4px;
-      padding: 3px 5px;
-      margin-bottom: 3px;
-      font-size: 0.63rem;
+      border-radius: 5px;
+      padding: 4px 7px;
+      margin-bottom: 4px;
+      font-size: 0.72rem;
       font-weight: 600;
       line-height: 1.3;
       color: #000;
@@ -639,7 +652,7 @@ $months = [
       overflow: hidden;
       position: relative;
     }
-    .event-pill.dci { font-size: 0.67rem; font-weight: 800; letter-spacing: .02em; }
+    .event-pill.dci { font-size: 0.78rem; font-weight: 800; letter-spacing: .02em; }
     .event-pill:hover::after {
       content: attr(data-detail);
       position: absolute;
@@ -671,10 +684,11 @@ $months = [
     .dci-info-box strong { color: #FFD700; display: block; margin-bottom: 6px; font-size: 0.88rem; }
     .month-view { display: none; }
     .month-view.active { display: block; }
-    @media (max-width: 540px) {
-      .cal-cell { min-height: 58px; padding: 3px 3px; }
-      .event-pill { font-size: 0.56rem; padding: 2px 3px; }
+    @media (max-width: 600px) {
+      .cal-cell { min-height: 64px; padding: 4px 4px; }
+      .event-pill { font-size: 0.6rem; padding: 2px 4px; }
       .event-pill:hover::after { display: none; }
+      .cal-month-name { font-size: 1rem; }
     }
 
   </style>
