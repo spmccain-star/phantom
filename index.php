@@ -127,8 +127,8 @@ $months = [
 
     .hero { position: relative; width: 100%; height: clamp(320px, 50vw, 520px); overflow: hidden; background: #000; }
     .hero > img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
-    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.82) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(1.25rem, 4vw, 2.5rem); }
-    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #E07070; margin-bottom: 0.5rem; }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.0) 10%, rgba(0,0,0,0.95) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(1.25rem, 4vw, 2.5rem); }
+    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-bottom: 0.5rem; }
     .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
@@ -401,7 +401,26 @@ $months = [
 
   <div class="tab-panel" id="tab-media">
     <div class="content">
-      <div class="section-label" style="margin-top:1.5rem;">Videos &amp; Social</div>
+      <div class="section-label" style="margin-top:1.5rem;">Photos</div>
+      <div class="gallery-grid" id="gallery">
+        <div class="gallery-item wide" onclick="openLightbox(this)">
+          <img src="/assets/photo1.jpg" alt="Phantom Regiment" loading="lazy" />
+        </div>
+        <div class="gallery-item" onclick="openLightbox(this)">
+          <img src="/assets/photo2.jpg" alt="Phantom Regiment" loading="lazy" />
+        </div>
+        <div class="gallery-item" onclick="openLightbox(this)">
+          <img src="/assets/photo3.jpg" alt="Phantom Regiment" loading="lazy" />
+        </div>
+        <div class="gallery-item" onclick="openLightbox(this)">
+          <img src="/assets/photo4.jpg" alt="Phantom Regiment" loading="lazy" />
+        </div>
+      </div>
+      <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">&#215;</button>
+        <img id="lightbox-img" src="" alt="" />
+      </div>
+      <div class="section-label" style="margin-top:1.75rem;">Videos &amp; Social</div>
       <div class="social-section">
         <div class="video-wrap">
         <iframe
