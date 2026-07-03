@@ -267,8 +267,10 @@ $months = [
     .cal-cell { min-height: 100px; padding: 8px; border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
     .cal-cell:nth-child(7n) { border-right: none; }
     .cal-cell.empty { background: transparent; }
-    .cal-cell.today { background: rgba(176,26,28,0.07); }
+    .cal-cell.today { background: rgba(176,26,28,0.14); border: 1.5px solid rgba(176,26,28,0.5); border-radius: 6px; }
     .cal-cell.today .day-num { color: #B01A1C; font-weight: 800; }
+    .today-num-wrap { display: flex; align-items: center; gap: 4px; }
+    .today-dot { width: 6px; height: 6px; border-radius: 50%; background: #B01A1C; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(176,26,28,0.5); animation: pulse 2s infinite; }
     .day-num { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block; }
     .event-pill { display: block; border-radius: 5px; padding: 4px 7px; margin-bottom: 4px; font-size: 0.72rem; font-weight: 600; line-height: 1.3; color: #000; cursor: default; overflow: hidden; position: relative; }
     .event-pill.dci { font-size: 0.78rem; font-weight: 800; letter-spacing: .02em; }
@@ -647,7 +649,11 @@ $months = [
             <?php for ($d = 1; $d <= $daysInMon; $d++): ?>
             <?php $isToday = ($m['year']==$todayY && $m['month']==$todayM && $d==$todayD); ?>
             <div class="cal-cell<?= $isToday ? ' today' : '' ?>">
+              <?php if ($isToday): ?>
+              <div class="today-num-wrap"><span class="day-num"><?= $d ?></span><span class="today-dot"></span></div>
+              <?php else: ?>
               <span class="day-num"><?= $d ?></span>
+              <?php endif; ?>
               <?php if (isset($byDay[$d])): ?>
               <?php foreach ($byDay[$d] as $ev): ?>
               <?php $c = $type_colors[$ev['type']] ?? '#888'; $isDCI = ($ev['type']==='dci'); ?>
