@@ -202,7 +202,7 @@ $months = [
     .card.featured { border-color: rgba(176,26,28,0.5); box-shadow: 0 4px 16px rgba(176,26,28,0.15); }
     .card-header { padding: 1.4rem 1.5rem 0.875rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card-option-num { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
-    .card-date { font-size: 13px; font-weight: 600; color: var(--red); margin-top: 5px; }
+    .card-date { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-top: 5px; }
     .venue-banner { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .venue-banner-title { font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); line-height: 1.2; }
     .venue-banner-sub { font-size: 14px; color: var(--text-secondary); margin-top: 3px; }
@@ -260,7 +260,8 @@ $months = [
     .cal-nav-btn:hover { background: var(--surface-2); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
     .cal-nav-btn:disabled { opacity: 0.25; cursor: default; box-shadow: none; }
     .cal-nav-center { text-align: center; flex: 1; padding: 0 1rem; }
-    .cal-month-name { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+    .cal-month-name { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .cal-month-phase { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
     .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 1rem; padding: 0 2px; }
     .cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
     .cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -611,11 +612,23 @@ $months = [
     <div class="calendar-section">
       <?php
       $monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      // Build phase lookup from $months array
+      $phaseMap = [];
+      foreach ($months as $mo) $phaseMap[sprintf('%04d-%02d', $mo['year'], $mo['month'])] = $mo['phase'];
+
       $calMonths = [];
       foreach ($events as $date_str => $ev) {
         $ts = strtotime($date_str);
         $k  = date('Y-m', $ts);
-        if (!isset($calMonths[$k])) $calMonths[$k] = ['label'=>$monthNames[(int)date('m',$ts)-1].' '.date('Y',$ts), 'year'=>(int)date('Y',$ts), 'month'=>(int)date('m',$ts), 'events'=>[]];
+        if (!isset($calMonths[$k])) {
+          $calMonths[$k] = [
+            'label'  => $monthNames[(int)date('m',$ts)-1].' '.date('Y',$ts),
+            'year'   => (int)date('Y',$ts),
+            'month'  => (int)date('m',$ts),
+            'phase'  => $phaseMap[$k] ?? '',
+            'events' => [],
+          ];
+        }
         $calMonths[$k]['events'][] = ['day'=>(int)date('j',$ts)] + $ev;
       }
       ksort($calMonths);
@@ -639,6 +652,7 @@ $months = [
         <button class="cal-nav-btn" id="cal-prev" onclick="calNav(-1)">&#8592;</button>
         <div class="cal-nav-center">
           <div class="cal-month-name" id="cal-month-label"></div>
+          <div class="cal-month-phase" id="cal-month-phase"></div>
         </div>
         <button class="cal-nav-btn" id="cal-next" onclick="calNav(1)">&#8594;</button>
       </div>
@@ -697,13 +711,15 @@ $months = [
     </div>
 
     <script>
-      var mKeys = <?php echo json_encode(array_keys($eventsByMon)); ?>;
+      var mKeys   = <?php echo json_encode(array_keys($eventsByMon)); ?>;
       var mLabels = <?php echo json_encode(array_map(function($d){return $d['meta']['label'];}, $eventsByMon)); ?>;
-      var curIdx = <?php echo $curIdx; ?>;
+      var mPhases = <?php echo json_encode(array_map(function($d){return $d['meta']['phase'] ?? '';}, $eventsByMon)); ?>;
+      var curIdx  = <?php echo $curIdx; ?>;
       function calShow(idx) {
         document.querySelectorAll('.month-view').forEach(function(el){el.classList.remove('active');});
         document.getElementById('mv-' + mKeys[idx]).classList.add('active');
         document.getElementById('cal-month-label').textContent = mLabels[idx];
+        document.getElementById('cal-month-phase').textContent = mPhases[idx];
         document.getElementById('cal-prev').disabled = (idx === 0);
         document.getElementById('cal-next').disabled = (idx === mKeys.length - 1);
         curIdx = idx;
