@@ -203,6 +203,10 @@ $months = [
     .card-header { padding: 1.4rem 1.5rem 0.875rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card-option-num { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
     .card-date { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-top: 5px; }
+    .card-horizontal { display: flex; flex-direction: row; gap: 0; align-items: stretch; }
+    .card-horizontal-left { flex: 1; padding: 1.4rem 1.5rem; border-right: 1px solid var(--border); }
+    .card-horizontal-right { flex: 0 0 auto; width: 260px; padding: 1.4rem 1.5rem; display: flex; flex-direction: column; justify-content: center; }
+    @media (max-width: 600px) { .card-horizontal { flex-direction: column; } .card-horizontal-left { border-right: none; border-bottom: 1px solid var(--border); } .card-horizontal-right { width: auto; } }
     .venue-banner { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .venue-banner-title { font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); line-height: 1.2; }
     .venue-banner-sub { font-size: 14px; color: var(--text-secondary); margin-top: 3px; }
@@ -345,7 +349,7 @@ $months = [
           <a href="https://maps.google.com/?q=Alamodome,+San+Antonio,+TX" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;font-size:13px;font-weight:600;">Get directions</a>
         </div>
       </div>
-      <div class="section-label">4 ways to watch</div>
+      <div class="section-label">3 ways to watch in person</div>
       <div class="cards">
 
       <!-- Option 1 -->
@@ -423,34 +427,6 @@ $months = [
         <div class="card-header">
           <div>
             <div class="card-option-num">Option 3</div>
-            <div class="card-title">Watch online</div>
-            <div class="card-date">Saturday, July 18</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <p>FloMarching streams DCI events live. You can watch Phantom perform <em>Bloodline</em> from anywhere — great option if you can't make it to San Antonio in person.</p>
-        </div>
-        <div class="divider"></div>
-        <div class="details">
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
-            Live stream on FloMarching
-          </div>
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Phantom performs ~9 PM CT
-          </div>
-        </div>
-        <a class="ticket-btn" href="https://www.flomarching.com/signup" target="_blank" rel="noopener">
-          Sign up for FloMarching →
-        </a>
-      </div>
-
-      <!-- Option 4 -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-option-num">Option 3</div>
             <div class="card-title">Official performance</div>
             <div class="card-date">Saturday, July 18 · ~9 PM</div>
           </div>
@@ -479,6 +455,32 @@ $months = [
       </div>
 
     </div>
+
+      <!-- Watch online — horizontal card -->
+      <div class="card card-horizontal" style="margin-bottom:1.5rem;">
+        <div class="card-horizontal-left">
+          <div class="card-option-num">Also available</div>
+          <div class="card-title" style="font-size:18px;">Watch online</div>
+          <div class="card-date">Saturday, July 18 · ~9 PM CT</div>
+          <p style="font-size:14px;color:var(--text-secondary);margin-top:0.5rem;line-height:1.6;">FloMarching streams DCI events live — watch Phantom perform <em>Bloodline</em> from anywhere.</p>
+        </div>
+        <div class="card-horizontal-right">
+          <div class="details" style="padding:0;margin-bottom:1rem;">
+            <div class="detail">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+              Live stream on FloMarching
+            </div>
+            <div class="detail">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Watch from anywhere
+            </div>
+          </div>
+          <a class="ticket-btn" href="https://www.flomarching.com/signup" target="_blank" rel="noopener" style="margin:0;">
+            Sign up for FloMarching →
+          </a>
+        </div>
+      </div>
+
       <div style="display:flex;gap:10px;margin-bottom:2rem;">
         <a href="/messages.php" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
