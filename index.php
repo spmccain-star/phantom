@@ -180,7 +180,7 @@ $months = [
     .ig-follow-btn:hover { border-color: var(--border-strong); background: var(--surface-2); }
     .ig-follow-btn .link-arrow { margin-left: auto; color: var(--text-muted); }
 
-    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 2rem; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 2rem; max-width: 75%; }
     .gallery-grid .wide { grid-column: span 2; }
     .gallery-item { border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--surface-2); cursor: pointer; position: relative; }
     .gallery-item.tall { aspect-ratio: 3 / 4; }
