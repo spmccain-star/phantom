@@ -138,6 +138,14 @@ $months = [
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Keep up with Matéo — Phantom Regiment 2026</title>
+  <meta name="description" content="Follow Matéo's 2026 DCI season with Phantom Regiment performing Bloodline. Dates, tickets, and ways to watch." />
+  <meta property="og:title" content="Keep up with Matéo — Phantom Regiment 2026" />
+  <meta property="og:description" content="Follow Matéo's 2026 DCI season with Phantom Regiment performing Bloodline. Dates, tickets, and ways to watch." />
+  <meta property="og:image" content="https://phantom.agavelabs.dev/assets/mateo.jpg" />
+  <meta property="og:url" content="https://phantom.agavelabs.dev" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎺</text></svg>" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -166,7 +174,7 @@ $months = [
     .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.0) 10%, rgba(0,0,0,0.95) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(1.25rem, 4vw, 2.5rem); }
     .hero-bottom-row { position: relative; }
     .hero-left { flex: 1; min-width: 0; }
-    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: opacity 0.15s; }
+    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: opacity 0.15s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
     .hero-eyebrow:hover { opacity: 1; }
     .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff4444; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(255,68,68,0.6); animation: pulse 2s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,68,68,0.6); } 70% { box-shadow: 0 0 0 7px rgba(255,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(255,68,68,0); } }
@@ -205,7 +213,7 @@ $months = [
     .card-date { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-top: 5px; }
     .card-horizontal { display: flex; flex-direction: row; gap: 0; align-items: stretch; }
     .card-horizontal-left { flex: 1; padding: 1.4rem 1.5rem; border-right: 1px solid var(--border); }
-    .card-horizontal-right { flex: 0 0 auto; width: 260px; padding: 1.4rem 1.5rem; display: flex; flex-direction: column; justify-content: center; }
+    .card-horizontal-right { flex: 0 0 auto; width: 286px; padding: 1.4rem 1.5rem; display: flex; flex-direction: column; justify-content: center; }
     @media (max-width: 600px) { .card-horizontal { flex-direction: column; } .card-horizontal-left { border-right: none; border-bottom: 1px solid var(--border); } .card-horizontal-right { width: auto; } }
     .venue-banner { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .venue-banner-title { font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); line-height: 1.2; }
@@ -311,7 +319,7 @@ $months = [
             <span class="pulse-dot"></span>Next show &nbsp;&middot;&nbsp; <?= date('M j', $ne_ts) ?><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?> &nbsp;&middot;&nbsp; <?= htmlspecialchars($next_event['label']) ?> ›
           </a>
           <?php else: ?>
-          <div class="hero-eyebrow">Phantom Regiment 2026</div>
+          <div class="hero-eyebrow"><span style="opacity:0.6;">&#10003;</span>&nbsp; Season complete &nbsp;&middot;&nbsp; DCI Championships, Indianapolis</div>
           <?php endif; ?>
           <div class="hero-title">Keep up with Matéo</div>
           <div class="hero-sub">Phantom Regiment &middot; Drum Corps International</div>
@@ -349,14 +357,15 @@ $months = [
           <a href="https://maps.google.com/?q=Alamodome,+San+Antonio,+TX" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;font-size:13px;font-weight:600;">Get directions</a>
         </div>
       </div>
-      <div class="section-label">3 ways to watch in person</div>
+      <div class="section-label">Ways to watch in person</div>
+      <p style="font-size:13px;color:var(--text-muted);margin:-0.5rem 0 1rem;">These stack — many fans do the rehearsal Friday, then the lots and show on Saturday.</p>
       <div class="cards">
 
       <!-- Option 1 -->
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-option-num">Option 1</div>
+            <div class="card-option-num">Friday · Free</div>
             <div class="card-title">Free rehearsal</div>
             <div class="card-date">Friday, July 17</div>
           </div>
@@ -390,7 +399,7 @@ $months = [
       <div class="card featured">
         <div class="card-header">
           <div>
-            <div class="card-option-num">Option 2</div>
+            <div class="card-option-num">Saturday · Free</div>
             <div class="card-title">The Lots</div>
             <div class="card-date">Saturday, July 18 · ~6 PM</div>
           </div>
@@ -426,7 +435,7 @@ $months = [
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-option-num">Option 3</div>
+            <div class="card-option-num">Saturday · Ticketed</div>
             <div class="card-title">Official performance</div>
             <div class="card-date">Saturday, July 18 · ~9 PM</div>
           </div>
@@ -451,6 +460,9 @@ $months = [
         </div>
         <a class="ticket-btn" href="https://www.ticketmaster.com/event/3A00636CF94C7C32" target="_blank" rel="noopener">
           Buy tickets on Ticketmaster →
+        </a>
+        <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Phantom+Regiment+%E2%80%94+Bloodline+%7C+DCI+San+Antonio&dates=20260718T210000/20260718T230000&location=Alamodome,+San+Antonio,+TX&details=Matéo+performs+with+Phantom+Regiment.+Section+116." target="_blank" rel="noopener" style="display:block;text-align:center;font-size:12px;color:var(--text-muted);padding:0.5rem 1.5rem 1rem;text-decoration:none;">
+          + Add to Google Calendar
         </a>
       </div>
 
@@ -657,6 +669,9 @@ $months = [
       <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
       <div class="footer-card">
       We're also flying to <strong>Indianapolis August 6–9</strong> to watch Matéo compete at the DCI World Championships at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio!
+    </div>
+    <div class="footer-card" style="margin-top:0.75rem;border-left-color:#FFD700;">
+      <strong style="color:#FFD700;">About DCI Championships</strong> — DCI (Drum Corps International) is the top competitive level of marching music. The season ends with three rounds in Indianapolis: <strong>Prelims</strong> (Aug 6, all corps compete), <strong>Semifinals</strong> (Aug 7, top scores advance), and <strong>Finals</strong> (Aug 8, the championship). Over 20,000 fans attend each night at Lucas Oil Stadium.
     </div>
     </div>
     <div class="calendar-section">
