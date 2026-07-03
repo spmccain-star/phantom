@@ -339,7 +339,7 @@ $months = [
             <div class="card-option-num">Option 1</div>
             <div class="card-title">Free rehearsal</div>
           </div>
-          <span class="badge badge-free">Free</span>
+          <span class="badge badge-us">We'll be here</span>
         </div>
         <div class="card-body">
           <p>Phantom Regiment rehearses at a high school about 1 hr 40 min south of the Alamodome. Free, up-close, and you'll likely see them run the full show.</p>
