@@ -123,33 +123,11 @@ $months = [
           --green-bg: rgba(76,175,114,0.12);
         }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--page-bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding-bottom: 3rem;
-      font-size: 16px;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--page-bg); color: var(--text); min-height: 100vh; padding-bottom: 3rem; font-size: 16px; }
 
-    .hero {
-      position: relative;
-      width: 100%;
-      height: clamp(320px, 50vw, 520px);
-      overflow: hidden;
-      background: #000;
-    }
-    .hero > img {
-      width: 100%; height: 100%;
-      object-fit: cover; object-position: center top;
-      display: block;
-    }
-    .hero-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.82) 100%);
-      display: flex; flex-direction: column; justify-content: flex-end;
-      padding: clamp(1.25rem, 4vw, 2.5rem);
-    }
+    .hero { position: relative; width: 100%; height: clamp(320px, 50vw, 520px); overflow: hidden; background: #000; }
+    .hero > img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.82) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(1.25rem, 4vw, 2.5rem); }
     .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #E07070; margin-bottom: 0.5rem; }
     .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
@@ -224,11 +202,7 @@ $months = [
     .cal-nav-btn:disabled { opacity: 0.25; cursor: default; box-shadow: none; }
     .cal-nav-center { text-align: center; flex: 1; padding: 0 1rem; }
     .cal-month-name { font-size: 1.25rem; font-weight: 700; color: var(--text); }
-    .cal-phase { font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px; }
-    .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 1rem; }
-    .cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--text-secondary); }
-    .cal-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .cal-wrap { background: #161616; border: 1px solid var(--border); border-radius: 0 0 10px 10px; overflow: hidden; }
+    .cal-wrap { background: #161616; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
     .cal-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); }
     .cal-dow { text-align: center; padding: 10px 4px; font-size: 0.72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
@@ -268,12 +242,12 @@ $months = [
   </div>
 
   <nav class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('watch', this)">Watch</button>
-    <button class="tab-btn" onclick="switchTab('schedule', this)">Schedule</button>
+    <button class="tab-btn active" onclick="switchTab('latest', this)">Latest</button>
+    <button class="tab-btn" onclick="switchTab('media', this)">Media</button>
     <button class="tab-btn" onclick="switchTab('more', this)">More</button>
   </nav>
 
-  <div class="tab-panel active" id="tab-watch">
+  <div class="tab-panel active" id="tab-latest">
     <div class="content">
       <div class="section-label" style="margin-top:1.5rem;">3 ways to watch</div>
       <div class="cards">
@@ -374,7 +348,7 @@ $months = [
       </div>
 
     </div>
-      <div class="section-label">More about Phantom Regiment</div>
+      <div class="section-label">About Phantom Regiment</div>
       <div class="links-card">
       <div class="links-header">Links</div>
 
@@ -425,128 +399,9 @@ $months = [
     </div>
   </div>
 
-  <div class="tab-panel" id="tab-schedule">
-    <!-- Full Season Calendar -->
-  <div class="calendar-section">
-
-    <div class="cal-nav">
-      <button class="cal-nav-btn" id="cal-prev" onclick="calNav(-1)" aria-label="Previous month">&#8592;</button>
-      <div class="cal-nav-center">
-        <div class="cal-month-name" id="cal-month-name"></div>
-        <div class="cal-phase" id="cal-phase"></div>
-      </div>
-      <button class="cal-nav-btn" id="cal-next" onclick="calNav(1)" aria-label="Next month">&#8594;</button>
-    </div>
-
-    <div class="cal-legend">
-      <?php foreach ([
-        'show'      => ['#7DD9A2','Show'],
-        'dci'       => ['#FFD700','DCI Championships'],
-        'rehearsal' => ['#5E9BD6','Rehearsal / NIU'],
-        'practice'  => ['#4FD1C0','Practice'],
-        'travel'    => ['#7A7A85','Travel'],
-        'free'      => ['#FFB59E','Free Day'],
-        'milestone' => ['#FFD97D','Milestone'],
-      ] as $t => [$c, $l]): ?>
-      <div class="cal-legend-item">
-        <div class="cal-legend-dot" style="background:<?= $c ?>"></div>
-        <?= $l ?>
-      </div>
-      <?php endforeach; ?>
-    </div>
-
-    <?php foreach ($months as $idx => $m):
-      $year = $m['year']; $mon = $m['month'];
-      $first_dow = (int)date('w', mktime(0,0,0,$mon,1,$year));
-      $days_in_month = (int)date('t', mktime(0,0,0,$mon,1,$year));
-    ?>
-    <div class="month-view" id="month-<?= $idx ?>"
-         data-name="<?= htmlspecialchars($m['name']) ?>"
-         data-phase="<?= htmlspecialchars($m['phase']) ?>">
-      <div class="cal-wrap">
-        <div class="cal-dow-row">
-          <?php foreach (['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $d): ?>
-            <div class="cal-dow"><?= $d ?></div>
-          <?php endforeach; ?>
-        </div>
-        <div class="cal-grid">
-          <?php
-          for ($i = 0; $i < $first_dow; $i++) echo '<div class="cal-cell empty"></div>';
-          for ($day = 1; $day <= $days_in_month; $day++):
-            $date_str = sprintf('%04d-%02d-%02d', $year, $mon, $day);
-            $ev = $events[$date_str] ?? null;
-            $is_today = ($date_str === $today);
-            $cls = 'cal-cell' . ($is_today ? ' today' : '');
-          ?>
-          <div class="<?= $cls ?>">
-            <span class="day-num"><?= $day ?></span>
-            <?php if ($ev):
-              $color  = $type_colors[$ev['type']];
-              $pcls   = 'event-pill' . ($ev['type'] === 'dci' ? ' dci' : '');
-            ?>
-            <span class="<?= $pcls ?>" style="background:<?= $color ?>" data-detail="<?= htmlspecialchars($ev['detail']) ?>"><?= htmlspecialchars($ev['label']) ?></span>
-            <?php endif; ?>
-          </div>
-          <?php endfor;
-          $total = $first_dow + $days_in_month;
-          $trailing = (7 - ($total % 7)) % 7;
-          for ($i = 0; $i < $trailing; $i++) echo '<div class="cal-cell empty"></div>';
-          ?>
-        </div>
-      </div>
-    </div>
-    <?php endforeach; ?>
-
-    <div class="dci-info-box" id="dci-info-box" style="display:none;">
-      <strong>DCI Championships — Indianapolis, IN (Aug 6–9)</strong>
-      <p>Housing: Lawrence Armory · 9920 E 59th St, Indianapolis IN 46216</p>
-      <p>Rehearsal (Tue–Fri): Carmel Dad's Club · 5459 E Main St, Carmel IN 46033</p>
-    </div>
-
-  </div>
-
-  <script>
-    var CAL_COUNT = <?= count($months) ?>;
-    var CAL_LAST  = CAL_COUNT - 1;
-
-    // Default to the current month if it falls in range, otherwise first month
-    var todayStr = '<?= $today ?>';
-    var todayMonth = parseInt(todayStr.slice(5,7), 10);
-    var monthMap = <?= json_encode(array_map(fn($m) => $m['month'], $months)) ?>;
-    var initIdx = monthMap.indexOf(todayMonth);
-    if (initIdx === -1) initIdx = 0;
-
-    var curIdx = initIdx;
-
-    function calShow(idx) {
-      document.querySelectorAll('.month-view').forEach(function(el) { el.classList.remove('active'); });
-      var el = document.getElementById('month-' + idx);
-      el.classList.add('active');
-      document.getElementById('cal-month-name').textContent = el.dataset.name;
-      document.getElementById('cal-phase').textContent       = el.dataset.phase;
-      document.getElementById('cal-prev').disabled = (idx === 0);
-      document.getElementById('cal-next').disabled = (idx === CAL_LAST);
-      document.getElementById('dci-info-box').style.display = (idx === CAL_LAST) ? 'block' : 'none';
-    }
-
-    function calNav(dir) {
-      var next = curIdx + dir;
-      if (next < 0 || next > CAL_LAST) return;
-      curIdx = next;
-      calShow(curIdx);
-    }
-
-    calShow(curIdx);
-  </script>
-  </div>
-
-  <!-- Tab: More -->
-  <div class="tab-panel" id="tab-more">
+  <div class="tab-panel" id="tab-media">
     <div class="content">
-      <div class="footer-card">
-      We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
-    </div>
-      <div class="section-label" style="margin-top:0.5rem;">Photos</div>
+      <div class="section-label" style="margin-top:1.5rem;">Photos</div>
       <div class="gallery-grid" id="gallery">
       <div class="gallery-item wide" onclick="openLightbox(this)">
         <img src="images/photo1.jpg" alt="Phantom Regiment snare line rehearsal" loading="lazy" />
@@ -559,175 +414,11 @@ $months = [
       </div>
       <!-- Add more photos: copy a .gallery-item div and point src to images/photoN.jpg -->
     </div>
-
-    <!-- Lightbox overlay -->
-    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-      <button class="lightbox-close" onclick="closeLightbox()">×</button>
-      <img id="lightbox-img" src="" alt="" />
-    </div>
-
-    <div class="footer-card">
-      We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
-    </div>
-
-    <div class="section-label" style="margin-top: 1.75rem;">Follow along</div>
-
-    <div class="social-section">
-      <div class="video-wrap">
-        <iframe
-          src="https://www.youtube.com/embed/lrOzW2I4r3U"
-          title="Phantom Regiment 2026"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen>
-        </iframe>
-      </div>
-
-      <div class="reel-wrap">
-        <blockquote
-          class="instagram-media"
-          data-instgrm-permalink="https://www.instagram.com/reel/DaIBv_ABv5a/"
-          data-instgrm-version="14"
-          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:326px;padding:0;width:calc(100% - 2px);">
-          <div style="padding:16px;">
-            <a href="https://www.instagram.com/reel/DaIBv_ABv5a/" target="_blank" rel="noopener"
-               style="color:#c9c8cd;font-family:Arial,sans-serif;font-size:14px;line-height:17px;text-decoration:none;">
-              View this reel on Instagram
-            </a>
-          </div>
-        </blockquote>
-      </div>
-
-      <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        Follow @thephantomregiment on Instagram
-        <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-    </div>
-
-  </div>
-      <!-- Lightbox overlay -->
-    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-      <button class="lightbox-close" onclick="closeLightbox()">×</button>
-      <img id="lightbox-img" src="" alt="" />
-    </div>
-      <div class="section-label" style="margin-top:1.75rem;">Follow along</div>
-      <div class="social-section">
-        <div class="video-wrap">
-        <iframe
-          src="https://www.youtube.com/embed/lrOzW2I4r3U"
-          title="Phantom Regiment 2026"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen>
-        </iframe>
-      </div>
-
-      <div class="reel-wrap">
-        <blockquote
-          class="instagram-media"
-          data-instgrm-permalink="https://www.instagram.com/reel/DaIBv_ABv5a/"
-          data-instgrm-version="14"
-          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:326px;padding:0;width:calc(100% - 2px);">
-          <div style="padding:16px;">
-            <a href="https://www.instagram.com/reel/DaIBv_ABv5a/" target="_blank" rel="noopener"
-               style="color:#c9c8cd;font-family:Arial,sans-serif;font-size:14px;line-height:17px;text-decoration:none;">
-              View this reel on Instagram
-            </a>
-          </div>
-        </blockquote>
-      </div>
-
-      <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        Follow @thephantomregiment on Instagram
-        <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-    </div>
-
-  </div>
-        <div class="reel-wrap">
-        <blockquote
-          class="instagram-media"
-          data-instgrm-permalink="https://www.instagram.com/reel/DaIBv_ABv5a/"
-          data-instgrm-version="14"
-          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:326px;padding:0;width:calc(100% - 2px);">
-          <div style="padding:16px;">
-            <a href="https://www.instagram.com/reel/DaIBv_ABv5a/" target="_blank" rel="noopener"
-               style="color:#c9c8cd;font-family:Arial,sans-serif;font-size:14px;line-height:17px;text-decoration:none;">
-              View this reel on Instagram
-            </a>
-          </div>
-        </blockquote>
-      </div>
-
-      <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        Follow @thephantomregiment on Instagram
-        <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-    </div>
-
-  </div>
-        <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        Follow @thephantomregiment on Instagram
-        <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-      </div>
-    </div>
-  </div>
-
-<script async src="https://www.instagram.com/embed.js"></script>
-<script>
-  function openLightbox(el) {
-    var img = el.querySelector('img');
-    document.getElementById('lightbox-img').src = img.src;
-    document.getElementById('lightbox-img').alt = img.alt;
-    document.getElementById('lightbox').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeLightbox();
-  });
-  function switchTab(name, btn) {
-    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    document.getElementById('tab-' + name).classList.add('active');
-    btn.classList.add('active');
-    if (name === 'schedule' && typeof calShow === 'function') calShow(curIdx);
-  }
-</script>
-  </div>
-
-  <div class="tab-panel" id="tab-more">
-    <div class="content">
-      <div class="footer-card">
-      We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
-    </div>
-      <div class="section-label" style="margin-top:0.5rem;">Photos</div>
-      <div class="gallery-grid" id="gallery">
-      <div class="gallery-item wide" onclick="openLightbox(this)">
-        <img src="images/photo1.jpg" alt="Phantom Regiment snare line rehearsal" loading="lazy" />
-      </div>
-      <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="images/photo2.jpg" alt="Phantom Regiment — Bloodline" loading="lazy" />
-      </div>
-      <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="images/photo3.jpg" alt="Phantom Regiment percussion" loading="lazy" />
-      </div>
-      <!-- Add more photos: copy a .gallery-item div and point src to images/photoN.jpg -->
-    </div>
-      <!-- Lightbox overlay -->
       <div class="lightbox" id="lightbox" onclick="closeLightbox()">
       <button class="lightbox-close" onclick="closeLightbox()">×</button>
       <img id="lightbox-img" src="" alt="" />
     </div>
-      <div class="section-label" style="margin-top:1.75rem;">Follow along</div>
+      <div class="section-label" style="margin-top:1.75rem;">Videos &amp; Social</div>
       <div class="social-section">
         <div class="video-wrap">
         <iframe
@@ -761,6 +452,113 @@ $months = [
     </div>
   </div>
 
+  <div class="tab-panel" id="tab-more">
+    <div class="content">
+      <div class="footer-card">
+      We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
+    </div>
+    </div>
+    <div class="calendar-section">
+      <?php
+      $monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      $months = [];
+      foreach ($events as $ev) {
+        $ts = strtotime($ev['date']);
+        $k  = date('Y-m', $ts);
+        if (!isset($months[$k])) $months[$k] = ['label'=>$monthNames[(int)date('m',$ts)-1].' '.date('Y',$ts), 'year'=>(int)date('Y',$ts), 'month'=>(int)date('m',$ts), 'events'=>[]];
+        $months[$k]['events'][] = ['day'=>(int)date('j',$ts)] + $ev;
+      }
+      ksort($months);
+      $mKeys    = array_keys($months);
+      $todayY   = (int)date('Y');
+      $todayM   = (int)date('m');
+      $todayD   = (int)date('j');
+      $curIdx   = 0;
+      foreach ($mKeys as $i => $k) {
+        if ($months[$k]['year'] == $todayY && $months[$k]['month'] == $todayM) $curIdx = $i;
+      }
+      $eventsByMon = [];
+      foreach ($months as $k => $m) {
+        $byDay = [];
+        foreach ($m['events'] as $ev) $byDay[$ev['day']][] = $ev;
+        $eventsByMon[$k] = ['meta'=>$m, 'byDay'=>$byDay];
+      }
+      ?>
+
+      <div class="cal-nav">
+        <button class="cal-nav-btn" id="cal-prev" onclick="calNav(-1)">&#8592;</button>
+        <div class="cal-nav-center">
+          <div class="cal-month-name" id="cal-month-label"></div>
+        </div>
+        <button class="cal-nav-btn" id="cal-next" onclick="calNav(1)">&#8594;</button>
+      </div>
+
+      <div class="cal-legend">
+        <?php foreach ($type_colors as $t => $c): ?>
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:<?= $c ?>"></span><?= htmlspecialchars($t) ?></div>
+        <?php endforeach; ?>
+      </div>
+
+      <?php foreach ($eventsByMon as $k => $data): ?>
+      <?php $m = $data['meta']; $byDay = $data['byDay']; ?>
+      <div class="month-view" id="mv-<?= $k ?>">
+        <div class="cal-wrap">
+          <div class="cal-dow-row">
+            <?php foreach (['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $d): ?>
+            <div class="cal-dow"><?= $d ?></div>
+            <?php endforeach; ?>
+          </div>
+          <div class="cal-grid">
+            <?php
+            $firstDow = (int)date('w', mktime(0,0,0,$m['month'],1,$m['year']));
+            $daysInMon = (int)date('t', mktime(0,0,0,$m['month'],1,$m['year']));
+            for ($e = 0; $e < $firstDow; $e++): ?>
+            <div class="cal-cell empty"></div>
+            <?php endfor; ?>
+            <?php for ($d = 1; $d <= $daysInMon; $d++): ?>
+            <?php $isToday = ($m['year']==$todayY && $m['month']==$todayM && $d==$todayD); ?>
+            <div class="cal-cell<?= $isToday ? ' today' : '' ?>">
+              <span class="day-num"><?= $d ?></span>
+              <?php if (isset($byDay[$d])): ?>
+              <?php foreach ($byDay[$d] as $ev): ?>
+              <?php $c = $type_colors[$ev['type']] ?? '#888'; $isDCI = ($ev['type']==='DCI Championship'); ?>
+              <span class="event-pill<?= $isDCI ? ' dci' : '' ?>"
+                style="background:<?= $c ?>"
+                data-detail="<?= htmlspecialchars($ev['detail'] ?? '') ?>">
+                <?= htmlspecialchars($ev['name']) ?>
+              </span>
+              <?php endforeach; ?>
+              <?php endif; ?>
+            </div>
+            <?php endfor; ?>
+          </div>
+        </div>
+      </div>
+      <?php endforeach; ?>
+
+      <div class="dci-info-box">
+        <strong>DCI World Championships — Indianapolis, IN</strong>
+        August 7–9, 2026: Semifinals & Finals at Lucas Oil Stadium. The pinnacle of drum corps — over 20,000 fans. <a href="https://dci.org" target="_blank" style="color:#FFD700;">dci.org</a>
+      </div>
+    </div>
+
+    <script>
+      var mKeys = <?php echo json_encode(array_keys($eventsByMon)); ?>;
+      var mLabels = <?php echo json_encode(array_map(function($d){return $d['meta']['label'];}, $eventsByMon)); ?>;
+      var curIdx = <?php echo $curIdx; ?>;
+      function calShow(idx) {
+        document.querySelectorAll('.month-view').forEach(function(el){el.classList.remove('active');});
+        document.getElementById('mv-' + mKeys[idx]).classList.add('active');
+        document.getElementById('cal-month-label').textContent = mLabels[idx];
+        document.getElementById('cal-prev').disabled = (idx === 0);
+        document.getElementById('cal-next').disabled = (idx === mKeys.length - 1);
+        curIdx = idx;
+      }
+      function calNav(dir) { calShow(curIdx + dir); }
+      calShow(curIdx);
+    </script>
+  </div>
+
 <script async src="https://www.instagram.com/embed.js"></script>
 <script>
   function openLightbox(el) {
@@ -782,7 +580,7 @@ $months = [
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
-    if (name === 'schedule' && typeof calShow === 'function') calShow(curIdx);
+    if (name === 'more' && typeof calShow === 'function') calShow(curIdx);
   }
 </script>
 
