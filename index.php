@@ -553,15 +553,29 @@ $months = [
       margin: 2rem auto 0;
       padding: 0 1rem 3rem;
     }
-    .calendar-section h2 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
-      letter-spacing: 0.04em;
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
     }
+    .cal-nav-btn {
+      background: #1A1A1A;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .cal-nav-btn:hover { background: #2a2a2a; }
+    .cal-nav-btn:disabled { opacity: 0.25; cursor: default; }
+    .cal-nav-center { text-align: center; flex: 1; padding: 0 0.5rem; }
+    .cal-month-name { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .cal-phase { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
     .cal-legend {
       display: flex;
       flex-wrap: wrap;
@@ -573,21 +587,9 @@ $months = [
       font-size: 0.72rem; color: var(--text-secondary);
     }
     .cal-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .month-block { margin-bottom: 2rem; }
-    .month-title {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--text);
-      padding: 10px 14px 8px;
-      background: #1A1A1A;
-      border: 1px solid var(--border);
-      border-radius: 10px 10px 0 0;
-    }
-    .month-phase { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
     .cal-wrap {
       background: #161616;
       border: 1px solid var(--border);
-      border-top: none;
       border-radius: 0 0 10px 10px;
       overflow: hidden;
     }
@@ -667,6 +669,8 @@ $months = [
       color: var(--text-secondary);
     }
     .dci-info-box strong { color: #FFD700; display: block; margin-bottom: 6px; font-size: 0.88rem; }
+    .month-view { display: none; }
+    .month-view.active { display: block; }
     @media (max-width: 540px) {
       .cal-cell { min-height: 58px; padding: 3px 3px; }
       .event-pill { font-size: 0.56rem; padding: 2px 3px; }
@@ -923,7 +927,16 @@ $months = [
 
   <!-- Full Season Calendar -->
   <div class="calendar-section">
-    <h2>Full 2026 Season Schedule</h2>
+
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="cal-prev" onclick="calNav(-1)" aria-label="Previous month">&#8592;</button>
+      <div class="cal-nav-center">
+        <div class="cal-month-name" id="cal-month-name"></div>
+        <div class="cal-phase" id="cal-phase"></div>
+      </div>
+      <button class="cal-nav-btn" id="cal-next" onclick="calNav(1)" aria-label="Next month">&#8594;</button>
+    </div>
+
     <div class="cal-legend">
       <?php foreach ([
         'show'      => ['#7DD9A2','Show'],
@@ -940,16 +953,15 @@ $months = [
       </div>
       <?php endforeach; ?>
     </div>
-    <?php foreach ($months as $m):
+
+    <?php foreach ($months as $idx => $m):
       $year = $m['year']; $mon = $m['month'];
       $first_dow = (int)date('w', mktime(0,0,0,$mon,1,$year));
       $days_in_month = (int)date('t', mktime(0,0,0,$mon,1,$year));
     ?>
-    <div class="month-block">
-      <div class="month-title">
-        <?= $m['name'] ?>
-        <div class="month-phase"><?= htmlspecialchars($m['phase']) ?></div>
-      </div>
+    <div class="month-view" id="month-<?= $idx ?>"
+         data-name="<?= htmlspecialchars($m['name']) ?>"
+         data-phase="<?= htmlspecialchars($m['phase']) ?>">
       <div class="cal-wrap">
         <div class="cal-dow-row">
           <?php foreach (['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $d): ?>
@@ -983,12 +995,48 @@ $months = [
       </div>
     </div>
     <?php endforeach; ?>
-    <div class="dci-info-box">
+
+    <div class="dci-info-box" id="dci-info-box" style="display:none;">
       <strong>DCI Championships — Indianapolis, IN (Aug 6–9)</strong>
       <p>Housing: Lawrence Armory · 9920 E 59th St, Indianapolis IN 46216</p>
       <p>Rehearsal (Tue–Fri): Carmel Dad's Club · 5459 E Main St, Carmel IN 46033</p>
     </div>
+
   </div>
+
+  <script>
+    var CAL_COUNT = <?= count($months) ?>;
+    var CAL_LAST  = CAL_COUNT - 1;
+
+    // Default to the current month if it falls in range, otherwise first month
+    var todayStr = '<?= $today ?>';
+    var todayMonth = parseInt(todayStr.slice(5,7), 10);
+    var monthMap = <?= json_encode(array_map(fn($m) => $m['month'], $months)) ?>;
+    var initIdx = monthMap.indexOf(todayMonth);
+    if (initIdx === -1) initIdx = 0;
+
+    var curIdx = initIdx;
+
+    function calShow(idx) {
+      document.querySelectorAll('.month-view').forEach(function(el) { el.classList.remove('active'); });
+      var el = document.getElementById('month-' + idx);
+      el.classList.add('active');
+      document.getElementById('cal-month-name').textContent = el.dataset.name;
+      document.getElementById('cal-phase').textContent       = el.dataset.phase;
+      document.getElementById('cal-prev').disabled = (idx === 0);
+      document.getElementById('cal-next').disabled = (idx === CAL_LAST);
+      document.getElementById('dci-info-box').style.display = (idx === CAL_LAST) ? 'block' : 'none';
+    }
+
+    function calNav(dir) {
+      var next = curIdx + dir;
+      if (next < 0 || next > CAL_LAST) return;
+      curIdx = next;
+      calShow(curIdx);
+    }
+
+    calShow(curIdx);
+  </script>
 
 </body>
 </html>
