@@ -401,24 +401,7 @@ $months = [
 
   <div class="tab-panel" id="tab-media">
     <div class="content">
-      <div class="section-label" style="margin-top:1.5rem;">Photos</div>
-      <div class="gallery-grid" id="gallery">
-      <div class="gallery-item wide" onclick="openLightbox(this)">
-        <img src="images/photo1.jpg" alt="Phantom Regiment snare line rehearsal" loading="lazy" />
-      </div>
-      <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="images/photo2.jpg" alt="Phantom Regiment — Bloodline" loading="lazy" />
-      </div>
-      <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="images/photo3.jpg" alt="Phantom Regiment percussion" loading="lazy" />
-      </div>
-      <!-- Add more photos: copy a .gallery-item div and point src to images/photoN.jpg -->
-    </div>
-      <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-      <button class="lightbox-close" onclick="closeLightbox()">×</button>
-      <img id="lightbox-img" src="" alt="" />
-    </div>
-      <div class="section-label" style="margin-top:1.75rem;">Videos &amp; Social</div>
+      <div class="section-label" style="margin-top:1.5rem;">Videos &amp; Social</div>
       <div class="social-section">
         <div class="video-wrap">
         <iframe
