@@ -161,7 +161,7 @@ $months = [
 
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--page-bg); color: var(--text); min-height: 100vh; padding-bottom: <?= !empty($_ticker_msgs) ? '4.5rem' : '3rem' ?>; font-size: 16px; }
 
-    .hero { position: relative; width: 100%; height: clamp(320px, 50vw, 520px); overflow: hidden; background: #000; }
+    .hero { position: relative; width: 100%; height: clamp(416px, 65vw, 676px); overflow: hidden; background: #000; }
     .hero > img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
     .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.0) 10%, rgba(0,0,0,0.95) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(1.25rem, 4vw, 2.5rem); }
     .hero-bottom-row { position: relative; }
