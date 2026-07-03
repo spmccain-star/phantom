@@ -129,7 +129,7 @@ $months = [
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Come watch Mateo perform — DCI San Antonio</title>
+  <title>Come watch Matéo perform — DCI San Antonio</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -278,7 +278,7 @@ $months = [
 <body>
 
   <div class="hero">
-    <img src="/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
+    <img src="/assets/mateo.jpg" alt="Matéo — Phantom Regiment 2026">
     <div class="hero-overlay">
       <?php if ($next_event): ?>
       <div class="hero-eyebrow"><span class="pulse-dot"></span>Next up &nbsp;&middot;&nbsp; <?= $ne_dow ?>, <?= $ne_date_fmt ?></div>
@@ -287,11 +287,11 @@ $months = [
       <?php else: ?>
       <div class="hero-eyebrow">Phantom Regiment 2026</div>
       <div class="hero-title">What a season.</div>
-      <div class="hero-sub">Mateo &middot; <em>Bloodline</em> &middot; DCI Championships, Indianapolis</div>
+      <div class="hero-sub">Matéo &middot; <em>Bloodline</em> &middot; DCI Championships, Indianapolis</div>
       <?php endif; ?>
       <a class="msg-btn" href="/fanmail.php">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Leave Mateo a message
+        Leave Matéo a message
       </a>
     </div>
   </div>
@@ -384,7 +384,7 @@ $months = [
           </div>
         </div>
         <div class="card-body">
-          <p>Phantom performs <em>Bloodline</em> inside the Alamodome around 9 PM. The full event runs from 1:30 PM. Mateo will be near <strong>Section 116</strong> on the field sideline. Exact times post day-of.</p>
+          <p>Phantom performs <em>Bloodline</em> inside the Alamodome around 9 PM. The full event runs from 1:30 PM. Matéo will be near <strong>Section 116</strong> on the field sideline. Exact times post day-of.</p>
         </div>
         <div class="divider"></div>
         <div class="details">
@@ -398,7 +398,7 @@ $months = [
           </div>
           <div class="detail">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Mateo performs ~9 PM
+            Matéo performs ~9 PM
           </div>
         </div>
         <a class="ticket-btn" href="https://www.ticketmaster.com/event/3A00636CF94C7C32" target="_blank" rel="noopener">
@@ -527,7 +527,7 @@ $months = [
     <div class="content">
       <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
       <div class="footer-card">
-      We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
+      We're also flying to <strong>Indianapolis on August 8</strong> to watch Matéo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
     </div>
     </div>
     <div class="calendar-section">

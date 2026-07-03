@@ -176,7 +176,7 @@ try {
 <div class="page-content">
 
   <div class="form-card">
-    <h2>Send Mateo a message</h2>
+    <h2>Send Matéo a message</h2>
     <p class="subtitle">Drop him a note — add a photo and it'll show up in the gallery below.</p>
 
     <?php if ($error): ?>
@@ -220,7 +220,7 @@ try {
 <?php if (empty($photos)): ?>
   <div class="empty-state">
     <p>No photos yet — be the first to send one!</p>
-    <a href="/messages.php">Leave Mateo a message</a>
+    <a href="/messages.php">Leave Matéo a message</a>
   </div>
 <?php else: ?>
   <div class="photo-grid">

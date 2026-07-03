@@ -114,7 +114,7 @@ $messages = $db->query("SELECT * FROM messages ORDER BY created_at DESC")->fetch
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Messages for Mateo — Phantom Regiment 2026</title>
+  <title>Messages for Matéo — Phantom Regiment 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -182,7 +182,7 @@ $messages = $db->query("SELECT * FROM messages ORDER BY created_at DESC")->fetch
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     Back
   </a>
-  <h1>Messages for Mateo</h1>
+  <h1>Messages for Matéo</h1>
   <a href="/fanmail.php" style="margin-left:auto;font-size:13px;color:var(--text-muted);text-decoration:none;display:flex;align-items:center;gap:5px;">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     Fanmail
@@ -192,14 +192,14 @@ $messages = $db->query("SELECT * FROM messages ORDER BY created_at DESC")->fetch
 <div class="page-content">
 
   <div class="form-card">
-    <h2>Leave Mateo a message</h2>
-    <p class="subtitle">Mateo is performing with Phantom Regiment this summer. Drop him a note of encouragement — he'll see every one.</p>
+    <h2>Leave Matéo a message</h2>
+    <p class="subtitle">Matéo is performing with Phantom Regiment this summer. Drop him a note of encouragement — he'll see every one.</p>
 
     <?php if ($error): ?>
     <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
     <?php if ($success): ?>
-    <div class="alert alert-success">Message sent! Mateo will see it.</div>
+    <div class="alert alert-success">Message sent! Matéo will see it.</div>
     <?php endif; ?>
 
     <form method="POST" action="/messages.php" enctype="multipart/form-data">
