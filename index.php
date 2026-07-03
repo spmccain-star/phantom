@@ -146,11 +146,11 @@ $months = [
     }
     .hero-overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.82) 100%);
+      background: linear-gradient(to bottom, transparent 0%, transparent 28%, rgba(0,0,0,0.55) 58%, rgba(0,0,0,0.91) 100%);
       display: flex; flex-direction: column; justify-content: flex-end;
       padding: clamp(1.25rem, 4vw, 2.5rem);
     }
-    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #E07070; margin-bottom: 0.5rem; }
+    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #E07070; margin-top: 0.5rem; margin-bottom: 0.75rem; }
     .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
@@ -268,8 +268,8 @@ $months = [
   <div class="hero">
     <img src="/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
     <div class="hero-overlay">
-      <div class="hero-eyebrow">Saturday, July 18, 2026 &nbsp;&middot;&nbsp; San Antonio, TX</div>
       <div class="hero-title">Come watch Mateo perform!</div>
+      <div class="hero-eyebrow">Saturday, July 18, 2026 &nbsp;&middot;&nbsp; San Antonio, TX</div>
       <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em> &middot; DCI Southwestern Championship</div>
       <div><span class="show-pill">Bloodline</span></div>
     </div>
