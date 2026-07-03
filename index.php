@@ -343,6 +343,7 @@ $months = [
         </div>
         <div class="card-body">
           <p>Phantom Regiment rehearses at a high school about 1 hr 40 min south of the Alamodome. Free, up-close, and you'll likely see them run the full show.</p>
+          <p><strong>We'll be there</strong> — come say hi before heading into San Antonio for the show.</p>
         </div>
         <div class="divider"></div>
         <div class="details">
@@ -586,7 +587,7 @@ $months = [
     <div class="content">
       <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
       <div class="footer-card">
-      We're also flying to <strong>Indianapolis on August 8</strong> to watch Matéo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
+      We're also flying to <strong>Indianapolis August 6–9</strong> to watch Matéo compete at the DCI World Championships at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio!
     </div>
     </div>
     <div class="calendar-section">
