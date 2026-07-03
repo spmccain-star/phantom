@@ -461,24 +461,24 @@ $months = [
     <div class="calendar-section">
       <?php
       $monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      $months = [];
-      foreach ($events as $ev) {
-        $ts = strtotime($ev['date']);
+      $calMonths = [];
+      foreach ($events as $date_str => $ev) {
+        $ts = strtotime($date_str);
         $k  = date('Y-m', $ts);
-        if (!isset($months[$k])) $months[$k] = ['label'=>$monthNames[(int)date('m',$ts)-1].' '.date('Y',$ts), 'year'=>(int)date('Y',$ts), 'month'=>(int)date('m',$ts), 'events'=>[]];
-        $months[$k]['events'][] = ['day'=>(int)date('j',$ts)] + $ev;
+        if (!isset($calMonths[$k])) $calMonths[$k] = ['label'=>$monthNames[(int)date('m',$ts)-1].' '.date('Y',$ts), 'year'=>(int)date('Y',$ts), 'month'=>(int)date('m',$ts), 'events'=>[]];
+        $calMonths[$k]['events'][] = ['day'=>(int)date('j',$ts)] + $ev;
       }
-      ksort($months);
-      $mKeys    = array_keys($months);
+      ksort($calMonths);
+      $mKeys    = array_keys($calMonths);
       $todayY   = (int)date('Y');
       $todayM   = (int)date('m');
       $todayD   = (int)date('j');
       $curIdx   = 0;
       foreach ($mKeys as $i => $k) {
-        if ($months[$k]['year'] == $todayY && $months[$k]['month'] == $todayM) $curIdx = $i;
+        if ($calMonths[$k]['year'] == $todayY && $calMonths[$k]['month'] == $todayM) $curIdx = $i;
       }
       $eventsByMon = [];
-      foreach ($months as $k => $m) {
+      foreach ($calMonths as $k => $m) {
         $byDay = [];
         foreach ($m['events'] as $ev) $byDay[$ev['day']][] = $ev;
         $eventsByMon[$k] = ['meta'=>$m, 'byDay'=>$byDay];
@@ -521,11 +521,11 @@ $months = [
               <span class="day-num"><?= $d ?></span>
               <?php if (isset($byDay[$d])): ?>
               <?php foreach ($byDay[$d] as $ev): ?>
-              <?php $c = $type_colors[$ev['type']] ?? '#888'; $isDCI = ($ev['type']==='DCI Championship'); ?>
+              <?php $c = $type_colors[$ev['type']] ?? '#888'; $isDCI = ($ev['type']==='dci'); ?>
               <span class="event-pill<?= $isDCI ? ' dci' : '' ?>"
                 style="background:<?= $c ?>"
                 data-detail="<?= htmlspecialchars($ev['detail'] ?? '') ?>">
-                <?= htmlspecialchars($ev['name']) ?>
+                <?= htmlspecialchars($ev['label']) ?>
               </span>
               <?php endforeach; ?>
               <?php endif; ?>
