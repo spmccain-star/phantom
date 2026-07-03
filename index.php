@@ -276,9 +276,12 @@ $months = [
           </div>
           <div class="detail">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Address TBD — checking with Mateo
+            <a href="https://maps.app.goo.gl/T7ppQ4y9r49DTmVV6" target="_blank" rel="noopener" style="color:inherit;">Pleasanton High School, 900 W Adams St, Pleasanton, TX</a>
           </div>
         </div>
+        <a href="https://maps.app.goo.gl/T7ppQ4y9r49DTmVV6" target="_blank" rel="noopener" style="display:block;margin:0 1.5rem 1.25rem;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+          <iframe src="https://maps.google.com/maps?q=Pleasanton+High+School,+900+W+Adams+St,+Pleasanton,+TX+78064&output=embed&z=15" width="100%" height="130" style="border:0;display:block;pointer-events:none;" loading="lazy"></iframe>
+        </a>
       </div>
 
       <!-- Option 2 -->
