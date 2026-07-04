@@ -1344,7 +1344,23 @@ $months = [
             <text x="298" y="378" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Gulf Coast</text>
             <text x="598" y="108" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">New England</text>
             <text x="558" y="250" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Mid-Atlantic</text>
-            <?php foreach($_map_cities as $mc):
+            <?php
+            // Per-city label offsets to avoid cluster overlap
+            $_map_label = [
+              'La Crosse WI'   => [-9, -8,  'end'],    // above-left
+              'Madison WI'     => [-9,  4,  'end'],    // left
+              'Whitewater WI'  => [ 9, -8, 'start'],   // above-right
+              'Rockford IL'    => [-9,  4,  'end'],    // left
+              'DeKalb IL'      => [ 9, 14, 'start'],   // below-right
+              'Lisle IL'       => [ 9, 24, 'start'],   // further below-right
+              'Evansville IN'  => [-9,  4,  'end'],    // left
+              'Lexington KY'   => [ 9, 16, 'start'],   // below-right
+              'Mason OH'       => [ 9,  4, 'start'],   // right
+              'Indianapolis IN'=> [ 9, -8, 'start'],   // above-right (DCI pulse dot)
+              'Lawrence MA'    => [-9,  4,  'end'],    // left (near right edge)
+              'Allentown PA'   => [-9,  4,  'end'],    // left
+            ];
+            foreach($_map_cities as $mc):
               list($city,$dciShow,$date,$mx,$my) = $mc;
               $mts = strtotime($date);
               $isTonight = ($date === $today);
@@ -1354,9 +1370,13 @@ $months = [
               elseif ($isPast)      { $fill='rgba(255,255,255,0.25)'; $fc='rgba(255,255,255,0.3)'; $r=4; }
               elseif ($isDCIChamp)  { $fill='#FFD700'; $fc='#FFD700'; $r=8; }
               else                  { $fill='#7DD9A2'; $fc='rgba(255,255,255,0.72)'; $r=5; }
-              // Label side: left edge if near right border
-              $lx=$mx+9; $ly=$my+4; $anchor='start';
-              if($mx>580){ $lx=$mx-9; $anchor='end'; }
+              // Use per-city offset or fall back to generic right-side label
+              if (isset($_map_label[$city])) {
+                  [$dx,$dy,$anchor] = $_map_label[$city];
+                  $lx=$mx+$dx; $ly=$my+$dy;
+              } else {
+                  $lx=$mx+9; $ly=$my+4; $anchor='start';
+              }
             ?>
             <g>
               <title><?= htmlspecialchars($dciShow.' · '.date('M j',strtotime($date))) ?></title>
