@@ -72,10 +72,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 try {
-    $photos = $db->query("SELECT id, name, message, image_path, created_at FROM messages WHERE image_path IS NOT NULL ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $all_msgs = $db->query("SELECT id, name, message, image_path, created_at FROM messages ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    $photos = [];
+    $all_msgs = [];
 }
+$photos    = array_values(array_filter($all_msgs, fn($m) => !empty($m['image_path'])));
+$text_only = array_values(array_filter($all_msgs, fn($m) =>  empty($m['image_path'])));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -158,6 +160,12 @@ try {
     .alert-success { background: rgba(125,217,162,0.12); border: 1px solid rgba(125,217,162,0.3); color: #7DD9A2; }
 
     .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; }
+    .text-msgs { display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
+    .text-msg-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; }
+    .text-msg-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+    .text-msg-name { font-weight: 700; font-size: 14px; color: var(--text); }
+    .text-msg-date { font-size: 11px; color: var(--text-muted); }
+    .text-msg-body { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
   </style>
 </head>
 <body>
@@ -168,8 +176,8 @@ try {
     Back
   </a>
   <h1>Phanmail</h1>
-  <?php if ($photos): ?>
-  <span class="count"><?= count($photos) ?> photo<?= count($photos) !== 1 ? 's' : '' ?></span>
+  <?php if ($all_msgs): ?>
+  <span class="count"><?= count($all_msgs) ?> message<?= count($all_msgs) !== 1 ? 's' : '' ?></span>
   <?php endif; ?>
 </div>
 
@@ -213,16 +221,14 @@ try {
     </form>
   </div>
 
-  <?php if (!empty($photos)): ?>
-  <div class="section-label"><?= count($photos) ?> photo<?= count($photos) !== 1 ? 's' : '' ?> from fans</div>
+  <?php if (empty($all_msgs)): ?>
+  <div class="empty-state">
+    <p>No messages yet — be the first!</p>
+  </div>
   <?php endif; ?>
 
-<?php if (empty($photos)): ?>
-  <div class="empty-state">
-    <p>No photos yet — be the first to send one!</p>
-    <a href="/messages.php">Leave Matéo a message</a>
-  </div>
-<?php else: ?>
+  <?php if (!empty($photos)): ?>
+  <div class="section-label"><?= count($photos) ?> photo<?= count($photos) !== 1 ? 's' : '' ?> from fans</div>
   <div class="photo-grid">
     <?php foreach ($photos as $i => $p): ?>
     <div class="photo-item" onclick="openLightbox(<?= $i ?>)">
@@ -234,7 +240,22 @@ try {
     </div>
     <?php endforeach; ?>
   </div>
-<?php endif; ?>
+  <?php endif; ?>
+
+  <?php if (!empty($text_only)): ?>
+  <div class="section-label" style="margin-top:<?= !empty($photos) ? '1.75rem' : '0' ?>;"><?= count($text_only) ?> message<?= count($text_only) !== 1 ? 's' : '' ?></div>
+  <div class="text-msgs">
+    <?php foreach ($text_only as $m): ?>
+    <div class="text-msg-card">
+      <div class="text-msg-header">
+        <span class="text-msg-name"><?= htmlspecialchars($m['name']) ?></span>
+        <span class="text-msg-date"><?= date('M j', strtotime($m['created_at'])) ?></span>
+      </div>
+      <div class="text-msg-body"><?= nl2br(htmlspecialchars($m['message'])) ?></div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
 
 </div>
 
