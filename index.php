@@ -474,6 +474,26 @@ $months = [
     /* Score update toast */
     .score-toast { position: fixed; bottom: 5.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: #1A1A1A; border: 1px solid rgba(255,215,0,0.5); border-radius: 12px; padding: 11px 20px; font-size: 14px; font-weight: 700; color: #FFD700; z-index: 500; transition: transform 0.35s ease, opacity 0.35s ease; opacity: 0; pointer-events: none; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.7); }
     .score-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    /* 2026 Season Rankings */
+    .rankings-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .rank-row { display: grid; grid-template-columns: 28px 32px 1fr 80px 64px; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row-phantom { background: rgba(176,26,28,0.08); border-left: 3px solid #B01A1C; padding-left: 11px; }
+    .rank-num { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: right; }
+    .rank-row-phantom .rank-num { color: #B01A1C; }
+    .rank-logo { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+    .rank-logo img { width: 28px; height: 28px; object-fit: contain; }
+    .rank-name { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+    .rank-row-phantom .rank-name { color: #E07070; }
+    .rank-div-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; background: rgba(255,255,255,0.08); color: var(--text-muted); padding: 1px 5px; border-radius: 3px; }
+    .rank-bar-wrap { height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+    .rank-bar { height: 100%; background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .rank-row-phantom .rank-bar { background: #B01A1C; }
+    .rank-score { font-size: 13px; font-weight: 700; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+    @media (max-width: 480px) {
+      .rank-row { grid-template-columns: 24px 28px 1fr 56px; gap: 8px; padding: 8px 10px; }
+      .rank-bar-wrap { display: none; }
+    }
     /* DCI Finals history */
     .hist-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
     .hist-chart-wrap { padding: 0.75rem 0.75rem 0; border-bottom: 1px solid var(--border); }
@@ -1183,6 +1203,61 @@ $months = [
       </div>
 
     <?php endif; ?>
+
+      <!-- 2026 Season Rankings -->
+      <?php
+      $_rankings = [
+        ['rank'=>1, 'name'=>'Santa Clara Vanguard', 'div'=>'World', 'score'=>79.100,
+         'logo'=>'https://production.assets.dci.org/5a18117cd670bd001b2e6387_MJHtTWe9hESYCjjk5gijQHS1BiA14M6Y.png'],
+        ['rank'=>2, 'name'=>'Blue Devils',           'div'=>'World', 'score'=>77.250,
+         'logo'=>'https://production.assets.dci.org/5a181124d670bd001f490b07_8xOFgbZF3ijakryaqz0UGPXLp0-uTtnG.png'],
+        ['rank'=>3, 'name'=>'Phantom Regiment',      'div'=>'World', 'score'=>76.400,
+         'logo'=>'https://production.assets.dci.org/63db1e325c9f3d71ff0f3572_5Y27rZO3PlACjdvRXZpkhOJdaYq-7SgK.png'],
+        ['rank'=>4, 'name'=>'Troopers',              'div'=>'World', 'score'=>71.850,
+         'logo'=>'https://production.assets.dci.org/63db1ffdf3587c77c40c26f4_e7iiBM79ch4cFFFPGleYxCjMd54izkiu.png'],
+        ['rank'=>5, 'name'=>'Blue Knights',          'div'=>'World', 'score'=>70.850,
+         'logo'=>'https://production.assets.dci.org/664e443b03a281abe60e72a2_fG7jyZ6fFvU8vSeg0iqQCJsG_P4ce4rQ.png'],
+        ['rank'=>6, 'name'=>'Colts',                 'div'=>'World', 'score'=>69.700,
+         'logo'=>'https://production.assets.dci.org/5a181125d670bd001f490b12_kKAfWISGqTfPVu7Qvz-Q9xxUeupl2zpF.png'],
+        ['rank'=>7, 'name'=>'The Battalion',         'div'=>'Open',  'score'=>63.300,
+         'logo'=>'https://production.assets.dci.org/5a181124d670bd001f490b05_BbTrlTSgNnEDESUEFxCRXf7FBTu2CY1b.png'],
+        ['rank'=>8, 'name'=>'Genesis',               'div'=>'World', 'score'=>63.200,
+         'logo'=>'https://production.assets.dci.org/5a181125d670bd001f490b16_vTp0iccgUqUXcPdxJBuDSSHGi-pVJbFB.png'],
+        ['rank'=>9, 'name'=>'Seattle Cascades',      'div'=>'World', 'score'=>63.000,
+         'logo'=>'https://production.assets.dci.org/663e2b1226854458d407cb02_VpDNYpkmNqpDG5Ytj_qBWPeNOOaNSe4H.png'],
+        ['rank'=>10,'name'=>'Columbians',            'div'=>'Open',  'score'=>58.850,
+         'logo'=>'https://production.assets.dci.org/5a1b3042d670bd00c32a3462_hwL7IfrTqh2Z6YCegGpdUCjjdF1vJ-tV.png'],
+        ['rank'=>11,'name'=>'Impulse',               'div'=>'Open',  'score'=>58.000,
+         'logo'=>'https://production.assets.dci.org/5a181168d670bd001b2e6373_R9dJDn02NU52v0STlbGASaWwfvlvxRG5.png'],
+        ['rank'=>12,'name'=>'Colt Cadets',           'div'=>'Open',  'score'=>55.450,
+         'logo'=>'https://production.assets.dci.org/5a181124d670bd001f490b11_A4Ndqer0pihrDjJx8CSsr9chF9_69GxA.png'],
+        ['rank'=>13,'name'=>'7th Regiment',          'div'=>'Open',  'score'=>47.250,
+         'logo'=>'https://images.dci.org/wp-content/uploads/2025/05/7th-regiment-logo-2025-800x800-1.png'],
+      ];
+      $topScore = $_rankings[0]['score'];
+      ?>
+      <div class="section-label" style="margin-top:1.75rem;">2026 Season Rankings <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px;">as of Jul 1 · drumcorps.app</span></div>
+      <div class="rankings-card">
+        <?php foreach ($_rankings as $r):
+          $isPhantom = $r['name'] === 'Phantom Regiment';
+          $barPct    = round(($r['score'] / $topScore) * 100, 1);
+        ?>
+        <div class="rank-row <?= $isPhantom ? 'rank-row-phantom' : '' ?>">
+          <div class="rank-num"><?= $r['rank'] ?></div>
+          <div class="rank-logo">
+            <img src="<?= htmlspecialchars($r['logo']) ?>" alt="<?= htmlspecialchars($r['name']) ?>" loading="lazy" />
+          </div>
+          <div class="rank-name">
+            <?= htmlspecialchars($r['name']) ?>
+            <?php if ($r['div'] === 'Open'): ?><span class="rank-div-badge">Open</span><?php endif; ?>
+          </div>
+          <div class="rank-bar-wrap">
+            <div class="rank-bar" style="width:<?= $barPct ?>%"></div>
+          </div>
+          <div class="rank-score"><?= number_format($r['score'], 3) ?></div>
+        </div>
+        <?php endforeach; ?>
+      </div>
 
       <!-- DCI Finals History -->
       <?php
