@@ -207,6 +207,7 @@ $months = [
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="/assets/favicon.png" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1303,118 +1304,109 @@ $months = [
       <?php
       // Tour map city data: [city label, dci show name, date, svg_x, svg_y]
       $_map_cities = [
-        ['Rockford IL',       'Show of Shows',               '2026-07-03', 427, 134],
-        ['La Crosse WI',      'River City Rhapsody',         '2026-07-05', 388, 100],
-        ['Lisle IL',          'Cavalcade of Brass',          '2026-07-10', 452, 148],
-        ['Whitewater WI',     'The Whitewater Classic',      '2026-07-11', 432, 117],
-        ['Olathe KS',         'Brass Impact',                '2026-07-13', 355, 196],
-        ['Broken Arrow OK',   'DCI Broken Arrow',            '2026-07-14', 343, 248],
-        ['Denton TX',         'DCI Denton',                  '2026-07-16', 323, 302],
-        ['San Antonio TX',    'DCI Southwestern Champ.',     '2026-07-18', 308, 368],
-        ['McKinney TX',       'DCI McKinney',                '2026-07-20', 340, 310],
-        ['Evansville IN',     'Drums on the Ohio',           '2026-07-22', 447, 214],
-        ['Madison WI',        'Drums on Parade',             '2026-07-24', 420, 119],
-        ['DeKalb IL',         'Midwestern Championship',     '2026-07-25', 436, 142],
-        ['Mason OH',          'Summer Music Games',          '2026-07-27', 484, 188],
-        ['Lawrence MA',       'DCI East Coast Showcase',     '2026-07-30', 638, 128],
-        ['Allentown PA',      'DCI Eastern Classic',         '2026-08-01', 587, 166],
-        ['Lexington KY',      'DCI Kentucky',                '2026-08-03', 479, 213],
-        ['Indianapolis IN',   'DCI World Championships',     '2026-08-06', 461, 178],
+        // [city, show name, date, lat, lon]
+        ['Rockford IL',     'Show of Shows',           '2026-07-03', 42.27, -89.09],
+        ['La Crosse WI',    'River City Rhapsody',     '2026-07-05', 43.80, -91.25],
+        ['Lisle IL',        'Cavalcade of Brass',      '2026-07-10', 41.80, -88.07],
+        ['Whitewater WI',   'The Whitewater Classic',  '2026-07-11', 42.83, -88.73],
+        ['Olathe KS',       'Brass Impact',            '2026-07-13', 38.88, -94.82],
+        ['Broken Arrow OK', 'DCI Broken Arrow',        '2026-07-14', 36.06, -95.79],
+        ['Denton TX',       'DCI Denton',              '2026-07-16', 33.21, -97.13],
+        ['San Antonio TX',  'DCI Southwestern Champ.', '2026-07-18', 29.42, -98.49],
+        ['McKinney TX',     'DCI McKinney',            '2026-07-20', 33.20, -96.64],
+        ['Evansville IN',   'Drums on the Ohio',       '2026-07-22', 37.97, -87.57],
+        ['Madison WI',      'Drums on Parade',         '2026-07-24', 43.07, -89.40],
+        ['DeKalb IL',       'Midwestern Championship', '2026-07-25', 41.93, -88.75],
+        ['Mason OH',        'Summer Music Games',      '2026-07-27', 39.36, -84.31],
+        ['Lawrence MA',     'DCI East Coast Showcase', '2026-07-30', 42.71, -71.16],
+        ['Allentown PA',    'DCI Eastern Classic',     '2026-08-01', 40.61, -75.49],
+        ['Lexington KY',    'DCI Kentucky',            '2026-08-03', 38.04, -84.50],
+        ['Indianapolis IN', 'DCI World Championships', '2026-08-06', 39.77, -86.16],
       ];
       ?>
       <div class="tour-map-wrap">
         <div class="tour-map-header">
           <div>
             <div class="tour-map-title">2026 Tour Map</div>
-            <div class="tour-map-sub"><?= count($_map_cities) ?> DCI judged competitions &nbsp;&middot;&nbsp; hover for show name</div>
+            <div class="tour-map-sub"><?= count($_map_cities) ?> DCI judged competitions &nbsp;&middot;&nbsp; click markers for details</div>
           </div>
         </div>
-        <div class="tour-map-svg-wrap">
-          <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" style="min-width:340px;width:100%;max-width:700px;display:block;">
-            <rect width="700" height="420" fill="#0E0E0E" rx="4"/>
-            <?php for($gx=100;$gx<700;$gx+=100): ?>
-            <line x1="<?=$gx?>" y1="0" x2="<?=$gx?>" y2="420" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
-            <?php endfor; ?>
-            <?php for($gy=84;$gy<420;$gy+=84): ?>
-            <line x1="0" y1="<?=$gy?>" x2="700" y2="<?=$gy?>" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
-            <?php endfor; ?>
-            <!-- Continental US outline (simplified polygon, projection matches city dots) -->
-            <path d="M -5 22 L 2 120 L 5 190 L 44 274 L 85 310
-                     L 160 332 L 212 324 L 298 400 L 318 430
-                     L 345 362 L 410 358 L 447 346 L 503 393 L 530 430
-                     L 512 350 L 522 318 L 588 261 L 582 231
-                     L 594 196 L 606 162 L 650 144 L 690 93
-                     L 660 42 L 576 90 L 546 111 L 494 144
-                     L 452 86 L 412 56 L 352 13 L 244 13 L 92 13 L -5 13 Z"
-                  fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-linejoin="round"/>
-            <!-- Great Lakes (simplified ellipses; dark fill punches through the land fill) -->
-            <ellipse cx="432" cy="58" rx="47" ry="8"  fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Superior -->
-            <ellipse cx="450" cy="107" rx="13" ry="36" fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Michigan -->
-            <ellipse cx="516" cy="136" rx="28" ry="10" fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Erie -->
-            <ellipse cx="520" cy="93"  rx="13" ry="26" fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Huron -->
-            <ellipse cx="559" cy="114" rx="17" ry="6"  fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Ontario -->
-            <!-- Faint region labels for orientation -->
-            <text x="55" y="200" font-size="10" fill="rgba(255,255,255,0.1)" font-style="italic">Rocky Mts.</text>
-            <text x="298" y="378" font-size="10" fill="rgba(255,255,255,0.1)" font-style="italic">Gulf Coast</text>
-            <text x="598" y="108" font-size="10" fill="rgba(255,255,255,0.1)" font-style="italic">New England</text>
-            <text x="558" y="250" font-size="10" fill="rgba(255,255,255,0.1)" font-style="italic">Mid-Atlantic</text>
-            <?php
-            // Per-city label offsets to avoid cluster overlap
-            $_map_label = [
-              'La Crosse WI'   => [-9, -8,  'end'],    // above-left
-              'Madison WI'     => [-9,  4,  'end'],    // left
-              'Whitewater WI'  => [ 9, -8, 'start'],   // above-right
-              'Rockford IL'    => [-9,  4,  'end'],    // left
-              'DeKalb IL'      => [ 9, 14, 'start'],   // below-right
-              'Lisle IL'       => [ 9, 24, 'start'],   // further below-right
-              'Evansville IN'  => [-9,  4,  'end'],    // left
-              'Lexington KY'   => [ 9, 16, 'start'],   // below-right
-              'Mason OH'       => [ 9,  4, 'start'],   // right
-              'Indianapolis IN'=> [ 9, -8, 'start'],   // above-right (DCI pulse dot)
-              'Lawrence MA'    => [-9,  4,  'end'],    // left (near right edge)
-              'Allentown PA'   => [-9,  4,  'end'],    // left
+        <div id="tour-map" style="height:400px;border-radius:0 0 var(--radius) var(--radius);overflow:hidden;"></div>
+        <?php
+        // Build JS city data for Leaflet
+        $map_js_cities = [];
+        foreach ($_map_cities as $mc) {
+            list($city, $dciShow, $date, $lat, $lon) = $mc;
+            $mts = strtotime($date);
+            $isTonight  = ($date === $today);
+            $isPast     = ($mts < $today_ts);
+            $isDCIChamp = ($date >= '2026-08-06');
+            if ($isTonight)      { $color = '#B01A1C'; $r = 10; $opacity = 1.0; }
+            elseif ($isPast)     { $color = 'rgba(255,255,255,0.5)'; $r = 6; $opacity = 0.5; }
+            elseif ($isDCIChamp) { $color = '#FFD700'; $r = 11; $opacity = 1.0; }
+            else                 { $color = '#7DD9A2'; $r = 8; $opacity = 1.0; }
+            $map_js_cities[] = [
+                'city'     => $city,
+                'show'     => $dciShow,
+                'date'     => date('M j, Y', $mts),
+                'lat'      => $lat,
+                'lon'      => $lon,
+                'color'    => $color,
+                'r'        => $r,
+                'opacity'  => $opacity,
+                'tonight'  => $isTonight,
+                'champ'    => $isDCIChamp,
             ];
-            foreach($_map_cities as $mc):
-              list($city,$dciShow,$date,$mx,$my) = $mc;
-              $mts = strtotime($date);
-              $isTonight = ($date === $today);
-              $isPast    = ($mts < $today_ts);
-              $isDCIChamp = ($date >= '2026-08-06');
-              if ($isTonight)       { $fill='#B01A1C'; $fc='#E07070'; $r=7; }
-              elseif ($isPast)      { $fill='rgba(255,255,255,0.25)'; $fc='rgba(255,255,255,0.3)'; $r=4; }
-              elseif ($isDCIChamp)  { $fill='#FFD700'; $fc='#FFD700'; $r=8; }
-              else                  { $fill='#7DD9A2'; $fc='rgba(255,255,255,0.72)'; $r=5; }
-              // Use per-city offset or fall back to generic right-side label
-              if (isset($_map_label[$city])) {
-                  [$dx,$dy,$anchor] = $_map_label[$city];
-                  $lx=$mx+$dx; $ly=$my+$dy;
-              } else {
-                  $lx=$mx+9; $ly=$my+4; $anchor='start';
-              }
-            ?>
-            <g>
-              <title><?= htmlspecialchars($dciShow.' · '.date('M j',strtotime($date))) ?></title>
-              <?php if($isTonight): ?>
-              <circle cx="<?=$mx?>" cy="<?=$my?>" r="14" fill="rgba(176,26,28,0)" stroke="rgba(176,26,28,0.5)" stroke-width="1.5">
-                <animate attributeName="r" values="8;15;8" dur="2s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/>
-              </circle>
-              <?php endif; ?>
-              <circle cx="<?=$mx?>" cy="<?=$my?>" r="<?=$r?>" fill="<?=$fill?>" <?=$isPast?'opacity="0.5"':''?>/>
-              <text x="<?=$lx?>" y="<?=$ly?>" text-anchor="<?=$anchor?>" font-size="8.5" fill="<?=$fc?>" font-weight="<?=$isTonight||$isDCIChamp?'700':'400'?>"><?= htmlspecialchars($city) ?></text>
-            </g>
-            <?php endforeach; ?>
-            <!-- Legend -->
-            <circle cx="20" cy="408" r="5" fill="#7DD9A2"/>
-            <text x="29" y="412" font-size="9" fill="rgba(255,255,255,0.45)">Upcoming</text>
-            <circle cx="102" cy="408" r="4" fill="rgba(255,255,255,0.25)" opacity="0.5"/>
-            <text x="110" y="412" font-size="9" fill="rgba(255,255,255,0.3)">Past</text>
-            <circle cx="152" cy="408" r="5" fill="#B01A1C"/>
-            <text x="161" y="412" font-size="9" fill="rgba(255,255,255,0.45)">Tonight</text>
-            <circle cx="218" cy="408" r="6" fill="#FFD700"/>
-            <text x="228" y="412" font-size="9" fill="rgba(255,255,255,0.45)">DCI Championships</text>
-          </svg>
-        </div>
+        }
+        ?>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+        <script>
+        (function() {
+          var cities = <?= json_encode($map_js_cities) ?>;
+          var map = L.map('tour-map', {
+            center: [38.5, -88],
+            zoom: 5,
+            scrollWheelZoom: false,
+            zoomControl: true,
+            attributionControl: true
+          });
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+          }).addTo(map);
+          cities.forEach(function(c) {
+            var circle = L.circleMarker([c.lat, c.lon], {
+              radius: c.r,
+              fillColor: c.color,
+              color: c.tonight ? '#FF6B6B' : (c.champ ? '#FFF176' : 'rgba(255,255,255,0.3)'),
+              weight: c.tonight || c.champ ? 2 : 1,
+              fillOpacity: c.opacity,
+              opacity: 1
+            }).addTo(map);
+            circle.bindTooltip(
+              '<strong>' + c.city + '</strong><br>' + c.show + '<br><span style="opacity:.7">' + c.date + '</span>',
+              { direction: 'top', offset: [0, -8], className: 'map-tip' }
+            );
+            if (c.tonight) {
+              var pulse = function() {
+                circle.setStyle({ radius: c.r });
+                setTimeout(function() { circle.setStyle({ radius: c.r + 5 }); }, 500);
+                setTimeout(function() { circle.setStyle({ radius: c.r }); }, 1000);
+              };
+              setInterval(pulse, 2000);
+            }
+          });
+        })();
+        </script>
+        <style>
+          .map-tip { background: #1A1A1A; border: 1px solid rgba(255,255,255,0.15); color: #F0EDE8; font-size: 12px; padding: 6px 10px; border-radius: 6px; box-shadow: none; }
+          .map-tip::before { display: none; }
+          .leaflet-control-zoom a { background: #1A1A1A; color: #ccc; border-color: rgba(255,255,255,0.15); }
+          .leaflet-control-zoom a:hover { background: #2A2A2A; color: #fff; }
+          .leaflet-control-attribution { background: rgba(0,0,0,0.5) !important; color: rgba(255,255,255,0.3) !important; font-size: 10px; }
+          .leaflet-control-attribution a { color: rgba(255,255,255,0.4) !important; }
+        </style>
       </div>
     </div>
 
