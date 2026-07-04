@@ -1363,7 +1363,7 @@ $months = [
         <script>
         (function() {
           var cities = <?= json_encode($map_js_cities) ?>;
-          var map = L.map('tour-map', {
+          var map = window._tourMap = L.map('tour-map', {
             center: [38.5, -88],
             zoom: 5,
             scrollWheelZoom: false,
@@ -1469,6 +1469,7 @@ $months = [
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
     if (name === 'more' && typeof calShow === 'function') calShow(curIdx);
+    if (name === 'more' && window._tourMap) setTimeout(function() { window._tourMap.invalidateSize(); }, 50);
   }
 
   // Score toast notification
