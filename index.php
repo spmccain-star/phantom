@@ -474,6 +474,18 @@ $months = [
     /* Score update toast */
     .score-toast { position: fixed; bottom: 5.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: #1A1A1A; border: 1px solid rgba(255,215,0,0.5); border-radius: 12px; padding: 11px 20px; font-size: 14px; font-weight: 700; color: #FFD700; z-index: 500; transition: transform 0.35s ease, opacity 0.35s ease; opacity: 0; pointer-events: none; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.7); }
     .score-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    /* DCI Finals history */
+    .hist-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .hist-chart-wrap { padding: 0.75rem 0.75rem 0; border-bottom: 1px solid var(--border); }
+    .hist-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 340px; }
+    .hist-table th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .hist-table td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-secondary); }
+    .hist-table td:first-child { font-weight: 700; color: var(--text); }
+    .hist-table td:nth-child(2) { font-weight: 600; color: var(--text); }
+    .hist-table td:nth-child(3) { font-family: monospace; font-size: 12px; }
+    .hist-table tr.hist-champ td { background: rgba(255,215,0,0.05); }
+    .hist-table tr.hist-champ td:nth-child(2) { color: #FFD700; }
+    .hist-table tbody tr:last-child td { border-bottom: none; }
     /* Tour map */
     .tour-map-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 1.5rem; margin-bottom: 1.5rem; }
     .tour-map-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
@@ -1172,8 +1184,96 @@ $months = [
 
     <?php endif; ?>
 
+      <!-- DCI Finals History -->
+      <?php
+      // Phantom Regiment DCI Finals results (verify/update each year as needed)
+      $_pr_history = [
+        ['year'=>2024,'placement'=>5,'score'=>93.613,'show'=>'Phantasm'],
+        ['year'=>2023,'placement'=>5,'score'=>92.188,'show'=>'Somewhere in Time'],
+        ['year'=>2022,'placement'=>6,'score'=>90.750,'show'=>'Somewhere in Time'],
+        ['year'=>2019,'placement'=>7,'score'=>90.863,'show'=>'Phantasm'],
+        ['year'=>2018,'placement'=>8,'score'=>90.375,'show'=>'The Impresario'],
+        ['year'=>2017,'placement'=>6,'score'=>89.538,'show'=>'Year One'],
+        ['year'=>2016,'placement'=>5,'score'=>89.050,'show'=>'As Dreams Are Made On'],
+        ['year'=>2015,'placement'=>7,'score'=>87.625,'show'=>'The Sacrifice'],
+        ['year'=>2014,'placement'=>3,'score'=>94.213,'show'=>'Scheherazade'],
+        ['year'=>2013,'placement'=>2,'score'=>95.950,'show'=>'Triumph'],
+        ['year'=>2012,'placement'=>3,'score'=>95.025,'show'=>'Juliet'],
+        ['year'=>2011,'placement'=>5,'score'=>93.650,'show'=>'Don Quixote'],
+        ['year'=>2010,'placement'=>4,'score'=>94.300,'show'=>'MMVI'],
+        ['year'=>2009,'placement'=>2,'score'=>97.050,'show'=>'Angels in the Architecture'],
+        ['year'=>2008,'placement'=>1,'score'=>99.650,'show'=>'Angels in the Architecture'],
+      ];
+      // Chart: inverted placement line (1st at top)
+      $H_hist = 160; $W_hist = 680; $ML = 28; $MR = 16; $MT = 14; $MB = 24;
+      $n = count($_pr_history);
+      $cW = ($W_hist - $ML - $MR) / ($n - 1);
+      $maxP = 12; // y-axis: placements 1–12
+      function histY(int $place, int $H, int $MT, int $MB, int $maxP): float {
+          return $MT + ($place - 1) / ($maxP - 1) * ($H - $MT - $MB);
+      }
+      // Build polyline points
+      $pts = '';
+      foreach (array_reverse($_pr_history) as $i => $r) {
+          $x = $ML + $i * $cW;
+          $y = histY($r['placement'], $H_hist, $MT, $MB, $maxP);
+          $pts .= "$x,$y ";
+      }
+      ?>
+      <div class="section-label" style="margin-top:1.75rem;">DCI Finals History</div>
+      <div class="hist-card">
+        <div class="hist-chart-wrap">
+          <svg viewBox="0 0 <?=$W_hist?> <?=$H_hist?>" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+            <?php // Placement guide lines for 1st, 3rd, 6th, 10th
+            foreach ([1,3,6,10] as $gp):
+              $gy = histY($gp, $H_hist, $MT, $MB, $maxP); ?>
+            <line x1="<?=$ML?>" y1="<?=$gy?>" x2="<?=$W_hist-$MR?>" y2="<?=$gy?>" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <text x="<?=$ML-4?>" y="<?=$gy+4?>" text-anchor="end" font-size="8.5" fill="rgba(255,255,255,0.25)"><?=$gp?></text>
+            <?php endforeach; ?>
+            <!-- Main line -->
+            <polyline points="<?= trim($pts) ?>" fill="none" stroke="#B01A1C" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- Championship years highlighted -->
+            <?php foreach (array_reverse($_pr_history) as $i => $r):
+              $x = $ML + $i * $cW;
+              $y = histY($r['placement'], $H_hist, $MT, $MB, $maxP);
+              $isChamp = $r['placement'] === 1;
+              $dotFill = $isChamp ? '#FFD700' : '#B01A1C';
+              $dotR    = $isChamp ? 5 : 3.5;
+            ?>
+            <circle cx="<?=$x?>" cy="<?=$y?>" r="<?=$dotR?>" fill="<?=$dotFill?>"/>
+            <?php if ($isChamp): ?>
+            <text x="<?=$x?>" y="<?=$y-8?>" text-anchor="middle" font-size="8" fill="#FFD700" font-weight="700">★ 1st</text>
+            <?php endif; ?>
+            <!-- Year label -->
+            <text x="<?=$x?>" y="<?=$H_hist-4?>" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.3)"><?= substr($r['year'],2) ?></text>
+            <?php endforeach; ?>
+            <!-- Y-axis label -->
+            <text x="4" y="<?=$MT+6?>" font-size="8" fill="rgba(255,255,255,0.2)" font-style="italic">Place</text>
+          </svg>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="hist-table">
+            <thead>
+              <tr><th>Year</th><th>Place</th><th>Score</th><th>Show</th></tr>
+            </thead>
+            <tbody>
+            <?php foreach ($_pr_history as $r):
+              $medal = match($r['placement']) { 1=>'🥇', 2=>'🥈', 3=>'🥉', default=>'' };
+            ?>
+              <tr class="<?= $r['placement']===1 ? 'hist-champ' : '' ?>">
+                <td><?= $r['year'] ?></td>
+                <td><?= $r['placement'] ?><?= $medal ? ' '.$medal : '' ?></td>
+                <td><?= number_format($r['score'],3) ?></td>
+                <td><?= htmlspecialchars($r['show']) ?></td>
+              </tr>
+            <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- External links -->
-      <div class="section-label">Full Standings</div>
+      <div class="section-label" style="margin-top:1.75rem;">Full Standings</div>
       <div class="ext-links">
         <a class="ext-link" href="https://drumcorps.app/corps/phantom-regiment" target="_blank" rel="noopener">
           drumcorps.app <span>Phantom Regiment →</span>
