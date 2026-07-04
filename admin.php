@@ -82,6 +82,14 @@ if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' 
     exit;
 }
 
+// Mark SmugMug as checked
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['smugmug_checked'])) {
+    $f = __DIR__ . '/data/smugmug_check.json';
+    file_put_contents($f, json_encode(['last_checked' => date('Y-m-d H:i:s')], JSON_PRETTY_PRINT));
+    header('Location: /admin.php#smugmug');
+    exit;
+}
+
 // Save score
 if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['score_text'])) {
     $score_data = json_encode([
@@ -239,6 +247,41 @@ $messages = !empty($_SESSION['phantom_admin'])
       </div>
       <button class="btn-sm btn-save" type="submit" style="grid-column:1;">Save Score</button>
     </form>
+  </div>
+
+  <!-- SmugMug photo check -->
+  <?php
+    $smug_file = __DIR__ . '/data/smugmug_check.json';
+    $smug = file_exists($smug_file) ? json_decode(file_get_contents($smug_file), true) : [];
+    $smug_last = $smug['last_checked'] ?? null;
+    $smug_days = $smug_last ? (int)floor((time() - strtotime($smug_last)) / 86400) : null;
+    $smug_overdue = $smug_days === null || $smug_days >= 7;
+  ?>
+  <div class="msg-card" id="smugmug" style="margin-bottom:1.5rem;<?= $smug_overdue ? 'border-color:rgba(176,26,28,0.5);' : '' ?>">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+      <div class="msg-name">SmugMug — New Photos of Matéo</div>
+      <?php if ($smug_overdue): ?>
+      <span style="font-size:11px;font-weight:700;color:#E07070;background:rgba(176,26,28,0.15);padding:3px 8px;border-radius:4px;">
+        <?= $smug_days === null ? 'Never checked' : "Last checked {$smug_days}d ago" ?>
+      </span>
+      <?php else: ?>
+      <span style="font-size:11px;color:var(--text-muted);">Checked <?= $smug_days ?>d ago</span>
+      <?php endif; ?>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;line-height:1.5;">Official Phantom Regiment photos — check for new shots of Matéo to add to the gallery.</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <a href="https://phantomregiment.smugmug.com/2026" target="_blank" rel="noopener"
+         class="btn-sm btn-save" style="text-decoration:none;display:inline-block;">
+        Open SmugMug →
+      </a>
+      <form method="POST">
+        <input type="hidden" name="smugmug_checked" value="1">
+        <button class="btn-sm" type="submit" style="background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border);">Mark as checked</button>
+      </form>
+      <?php if ($smug_last): ?>
+      <span style="font-size:12px;color:var(--text-muted);">Last: <?= date('M j, g:i A', strtotime($smug_last)) ?></span>
+      <?php endif; ?>
+    </div>
   </div>
 
   <!-- Phanmail Settings -->
