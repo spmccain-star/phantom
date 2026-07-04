@@ -1338,12 +1338,26 @@ $months = [
             <?php for($gy=84;$gy<420;$gy+=84): ?>
             <line x1="0" y1="<?=$gy?>" x2="700" y2="<?=$gy?>" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
             <?php endfor; ?>
+            <!-- Continental US outline (simplified polygon, projection matches city dots) -->
+            <path d="M -5 22 L 2 120 L 5 190 L 44 274 L 85 310
+                     L 160 332 L 212 324 L 298 400 L 318 430
+                     L 345 362 L 410 358 L 447 346 L 503 393 L 530 430
+                     L 512 350 L 522 318 L 588 261 L 582 231
+                     L 594 196 L 606 162 L 650 144 L 690 93
+                     L 660 42 L 576 90 L 546 111 L 494 144
+                     L 452 86 L 412 56 L 352 13 L 244 13 L 92 13 L -5 13 Z"
+                  fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-linejoin="round"/>
+            <!-- Great Lakes (simplified ellipses; dark fill punches through the land fill) -->
+            <ellipse cx="432" cy="58" rx="47" ry="8"  fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Superior -->
+            <ellipse cx="450" cy="107" rx="13" ry="36" fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Michigan -->
+            <ellipse cx="516" cy="136" rx="28" ry="10" fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Erie -->
+            <ellipse cx="520" cy="93"  rx="13" ry="26" fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Huron -->
+            <ellipse cx="559" cy="114" rx="17" ry="6"  fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.09)" stroke-width="0.5"/><!-- Ontario -->
             <!-- Faint region labels for orientation -->
-            <text x="55" y="200" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Rocky Mts.</text>
-            <text x="360" y="88" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Great Lakes</text>
-            <text x="298" y="378" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Gulf Coast</text>
-            <text x="598" y="108" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">New England</text>
-            <text x="558" y="250" font-size="10" fill="rgba(255,255,255,0.07)" font-style="italic">Mid-Atlantic</text>
+            <text x="55" y="200" font-size="10" fill="rgba(255,255,255,0.1)" font-style="italic">Rocky Mts.</text>
+            <text x="298" y="378" font-size="10" fill="rgba(255,255,255,0.1)" font-style="italic">Gulf Coast</text>
+            <text x="598" y="108" font-size="10" fill="rgba(255,255,255,0.1)" font-style="italic">New England</text>
+            <text x="558" y="250" font-size="10" fill="rgba(255,255,255,0.1)" font-style="italic">Mid-Atlantic</text>
             <?php
             // Per-city label offsets to avoid cluster overlap
             $_map_label = [
