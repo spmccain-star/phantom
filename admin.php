@@ -151,25 +151,37 @@ function admin_process_image(string $tmp_path, string $mime, string $out_path, i
     return file_exists($out_path);
 }
 
-$gallery_dir  = __DIR__ . '/data/gallery';
-$hidden_file  = __DIR__ . '/data/gallery_hidden.json';
-$read_hidden  = fn() => file_exists($hidden_file) ? (json_decode(file_get_contents($hidden_file), true) ?: []) : [];
-$write_hidden = function(array $h) use ($hidden_file) { file_put_contents($hidden_file, json_encode(array_values(array_unique($h)), JSON_PRETTY_PRINT)); };
+$gallery_dir   = __DIR__ . '/data/gallery';
+$hidden_file   = __DIR__ . '/data/gallery_hidden.json';
+$featured_file = __DIR__ . '/data/featured.json';
+$read_hidden   = fn() => file_exists($hidden_file) ? (json_decode(file_get_contents($hidden_file), true) ?: []) : [];
+$write_hidden  = function(array $h) use ($hidden_file) { file_put_contents($hidden_file, json_encode(array_values(array_unique($h)), JSON_PRETTY_PRINT)); };
+$read_featured = fn() => file_exists($featured_file) ? (json_decode(file_get_contents($featured_file), true)['key'] ?? null) : null;
 
-// Gallery: upload photos
+function is_video_ext(string $ext): bool { return in_array(strtolower($ext), ['mp4','mov','m4v','webm']); }
+
+// Gallery: upload photos and video clips
 if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['gallery_photos'])) {
     if (!is_dir($gallery_dir)) @mkdir($gallery_dir, 0755, true);
     $ok = 0; $fail = 0;
     $files = $_FILES['gallery_photos'];
-    $allowed = ['image/jpeg','image/png','image/gif','image/webp','image/heic','image/heif'];
+    $img_mimes = ['image/jpeg','image/png','image/gif','image/webp','image/heic','image/heif'];
+    $vid_mimes = ['video/mp4','video/quicktime','video/webm','video/x-m4v'];
     $count = is_array($files['name']) ? count($files['name']) : 0;
     for ($i = 0; $i < $count; $i++) {
         if ($files['error'][$i] !== UPLOAD_ERR_OK) { $fail++; continue; }
-        if ($files['size'][$i] > 25 * 1024 * 1024) { $fail++; continue; }
         $mime = @mime_content_type($files['tmp_name'][$i]) ?: $files['type'][$i];
-        if (!in_array($mime, $allowed)) { $fail++; continue; }
-        $out = $gallery_dir . '/' . bin2hex(random_bytes(10)) . '.jpg';
-        if (admin_process_image($files['tmp_name'][$i], $mime, $out)) $ok++; else $fail++;
+        if (in_array($mime, $img_mimes)) {
+            if ($files['size'][$i] > 25 * 1024 * 1024) { $fail++; continue; }
+            $out = $gallery_dir . '/' . bin2hex(random_bytes(10)) . '.jpg';
+            if (admin_process_image($files['tmp_name'][$i], $mime, $out)) $ok++; else $fail++;
+        } elseif (in_array($mime, $vid_mimes)) {
+            if ($files['size'][$i] > 125 * 1024 * 1024) { $fail++; continue; }
+            // .mov (quicktime) → serve with .mp4 extension (H.264 mov plays as mp4 in browsers)
+            $ext = ($mime === 'video/webm') ? 'webm' : 'mp4';
+            $out = $gallery_dir . '/' . bin2hex(random_bytes(10)) . '.' . $ext;
+            if (@move_uploaded_file($files['tmp_name'][$i], $out)) { @chmod($out, 0644); $ok++; } else { $fail++; }
+        } else { $fail++; }
     }
     header('Location: /admin.php?gallery=up_' . $ok . '_' . $fail . '#gallery');
     exit;
@@ -184,6 +196,8 @@ if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' 
     } else { // assets/ — can't delete (deploy restores), so hide it
         $h = $read_hidden(); $h[] = $key; $write_hidden($h);
     }
+    // If the removed item was featured, clear the feature
+    if ($read_featured() === $key && file_exists($featured_file)) @unlink($featured_file);
     header('Location: /admin.php?gallery=removed#gallery');
     exit;
 }
@@ -193,6 +207,18 @@ if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' 
     $h = array_values(array_filter($read_hidden(), fn($x) => $x !== $_POST['gallery_restore']));
     $write_hidden($h);
     header('Location: /admin.php?gallery=restored#gallery');
+    exit;
+}
+
+// Gallery: set / clear the featured media (shows on the Latest page)
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gallery_feature'])) {
+    $key = $_POST['gallery_feature'];
+    if ($key === '' || $read_featured() === $key) {
+        if (file_exists($featured_file)) @unlink($featured_file);  // toggle off
+    } else {
+        file_put_contents($featured_file, json_encode(['key' => $key, 'caption' => trim($_POST['gallery_feature_caption'] ?? '')], JSON_PRETTY_PRINT));
+    }
+    header('Location: /admin.php?gallery=featured#gallery');
     exit;
 }
 
@@ -399,13 +425,17 @@ $messages = !empty($_SESSION['phantom_admin'])
     $g_asset_dir = __DIR__ . '/assets';
     $g_skip = ['bloodline.png','bloodline.webp','mateo.jpg','favicon.png','apple-touch-icon.png','apple-touch-icon-v2.png'];
     $g_hidden = $read_hidden();
+    $g_featured = $read_featured();
 
-    // Uploaded photos (newest first)
+    // Uploaded photos + video clips (newest first)
     $g_uploads = [];
     if (is_dir($gallery_dir)) {
-        $u = glob($gallery_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
+        $u = glob($gallery_dir . '/*.{jpg,jpeg,png,webp,mp4,mov,m4v,webm}', GLOB_BRACE);
         usort($u, fn($a, $b) => filemtime($b) <=> filemtime($a));
-        foreach ($u as $p) $g_uploads[] = ['key' => 'gallery/' . basename($p), 'src' => '/data/gallery/' . basename($p)];
+        foreach ($u as $p) {
+            $bn = basename($p);
+            $g_uploads[] = ['key' => 'gallery/' . $bn, 'src' => '/data/gallery/' . $bn, 'video' => is_video_ext(pathinfo($bn, PATHINFO_EXTENSION))];
+        }
     }
     // Stock photos grouped by stem
     $g_stems = [];
@@ -426,20 +456,49 @@ $messages = !empty($_SESSION['phantom_admin'])
 
     $g_notice = '';
     if (isset($_GET['gallery'])) {
-        if (str_starts_with($_GET['gallery'], 'up_')) { $parts = explode('_', $_GET['gallery']); $o = $parts[1] ?? '0'; $fa = $parts[2] ?? '0'; $g_notice = "Uploaded {$o} photo" . ($o !== '1' ? 's' : '') . ($fa > 0 ? ", {$fa} failed" : '') . '.'; }
-        elseif ($_GET['gallery'] === 'removed')  $g_notice = 'Photo removed from the gallery.';
+        if (str_starts_with($_GET['gallery'], 'up_')) { $parts = explode('_', $_GET['gallery']); $o = $parts[1] ?? '0'; $fa = $parts[2] ?? '0'; $g_notice = "Uploaded {$o} item" . ($o !== '1' ? 's' : '') . ($fa > 0 ? ", {$fa} failed (check type/size)" : '') . '.'; }
+        elseif ($_GET['gallery'] === 'removed')  $g_notice = 'Removed from the gallery.';
         elseif ($_GET['gallery'] === 'restored') $g_notice = 'Photo restored.';
+        elseif ($_GET['gallery'] === 'featured') $g_notice = 'Featured media updated — check the Latest page.';
     }
+    // Render one gallery cell (image or video) with feature + remove controls
+    $render_cell = function(array $g, bool $is_upload) use ($g_featured) {
+        $isFeat = ($g_featured === $g['key']);
+        ?>
+        <div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--surface-2);<?= $isFeat ? 'outline:2px solid #FFD700;outline-offset:-2px;' : '' ?>">
+          <?php if (!empty($g['video'])): ?>
+          <video src="<?= htmlspecialchars($g['src']) ?>#t=0.1" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+          <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;pointer-events:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+          </span>
+          <?php else: ?>
+          <img src="<?= htmlspecialchars($g['src']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <?php endif; ?>
+
+          <form method="POST" style="position:absolute;top:4px;left:4px;">
+            <input type="hidden" name="gallery_feature" value="<?= htmlspecialchars($g['key']) ?>">
+            <button type="submit" title="<?= $isFeat ? 'Unset featured' : 'Feature on Latest page' ?>" style="width:26px;height:26px;border:none;border-radius:6px;background:<?= $isFeat ? '#FFD700' : 'rgba(0,0,0,0.55)' ?>;color:<?= $isFeat ? '#111' : '#fff' ?>;font-size:14px;line-height:1;cursor:pointer;">★</button>
+          </form>
+          <form method="POST" <?= $is_upload ? "onsubmit=\"return confirm('Remove this from the gallery? This deletes it permanently.');\"" : '' ?> style="position:absolute;top:4px;right:4px;">
+            <input type="hidden" name="gallery_remove" value="<?= htmlspecialchars($g['key']) ?>">
+            <button type="submit" title="<?= $is_upload ? 'Delete' : 'Hide from gallery' ?>" style="width:26px;height:26px;border:none;border-radius:6px;background:rgba(176,26,28,0.85);color:#fff;font-size:15px;line-height:1;cursor:pointer;">&times;</button>
+          </form>
+          <?php if ($isFeat): ?>
+          <span style="position:absolute;bottom:4px;left:4px;background:#FFD700;color:#111;font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:2px 6px;border-radius:4px;">Featured</span>
+          <?php endif; ?>
+        </div>
+        <?php
+    };
   ?>
   <div class="msg-card" id="gallery" style="margin-bottom:1.5rem;">
-    <div class="msg-name" style="margin-bottom:0.5rem;">Photo Gallery</div>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.9rem;line-height:1.5;">Upload photos to the Media tab, or remove ones you don't want. Uploads are auto-resized. Your uploads always show first.</p>
+    <div class="msg-name" style="margin-bottom:0.5rem;">Photo &amp; Video Gallery</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.9rem;line-height:1.5;">Upload photos or short video clips (up to ~125&nbsp;MB). Tap <strong style="color:#FFD700;">★</strong> to feature one on the Latest page. Photos are auto-resized; your uploads show first in the Media tab.</p>
     <?php if ($g_notice): ?>
     <div style="font-size:13px;color:#7DD9A2;background:rgba(125,217,162,0.12);padding:8px 12px;border-radius:8px;margin-bottom:0.9rem;"><?= htmlspecialchars($g_notice) ?></div>
     <?php endif; ?>
 
     <form method="POST" enctype="multipart/form-data" style="margin-bottom:1.1rem;">
-      <input type="file" name="gallery_photos[]" accept="image/*" multiple required
+      <input type="file" name="gallery_photos[]" accept="image/*,video/mp4,video/quicktime,video/webm,.mov,.mp4,.m4v,.webm" multiple required
              style="display:block;width:100%;font-size:13px;color:var(--text-secondary);background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:14px;margin-bottom:8px;cursor:pointer;">
       <button class="btn-sm btn-save" type="submit">Upload to gallery</button>
     </form>
@@ -447,29 +506,13 @@ $messages = !empty($_SESSION['phantom_admin'])
     <?php if ($g_uploads): ?>
     <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Your uploads (<?= count($g_uploads) ?>)</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:1.1rem;">
-      <?php foreach ($g_uploads as $g): ?>
-      <div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--surface-2);">
-        <img src="<?= htmlspecialchars($g['src']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
-        <form method="POST" onsubmit="return confirm('Remove this photo from the gallery? This deletes it permanently.');" style="position:absolute;top:4px;right:4px;">
-          <input type="hidden" name="gallery_remove" value="<?= htmlspecialchars($g['key']) ?>">
-          <button type="submit" title="Delete" style="width:26px;height:26px;border:none;border-radius:6px;background:rgba(176,26,28,0.85);color:#fff;font-size:15px;line-height:1;cursor:pointer;">&times;</button>
-        </form>
-      </div>
-      <?php endforeach; ?>
+      <?php foreach ($g_uploads as $g) $render_cell($g, true); ?>
     </div>
     <?php endif; ?>
 
     <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Bundled photos (<?= count($g_stock) ?>)</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;">
-      <?php foreach ($g_stock as $g): ?>
-      <div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--surface-2);">
-        <img src="<?= htmlspecialchars($g['src']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
-        <form method="POST" style="position:absolute;top:4px;right:4px;">
-          <input type="hidden" name="gallery_remove" value="<?= htmlspecialchars($g['key']) ?>">
-          <button type="submit" title="Hide from gallery" style="width:26px;height:26px;border:none;border-radius:6px;background:rgba(176,26,28,0.85);color:#fff;font-size:15px;line-height:1;cursor:pointer;">&times;</button>
-        </form>
-      </div>
-      <?php endforeach; ?>
+      <?php foreach ($g_stock as $g) $render_cell($g, false); ?>
     </div>
 
     <?php if ($g_hidden): ?>

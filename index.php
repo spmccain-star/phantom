@@ -223,6 +223,28 @@ $_city_coords = [
 $_loc_name   = $current_city ?: ($next_event['city'] ?? null);
 $_loc_coords = $_loc_name && isset($_city_coords[$_loc_name]) ? $_city_coords[$_loc_name] : null;
 
+// Featured media (chosen in admin) shown on the Latest page
+$_featured = null;
+$_feat_file = __DIR__ . '/data/featured.json';
+if (file_exists($_feat_file)) {
+    $ff = json_decode(file_get_contents($_feat_file), true) ?: [];
+    $fkey = $ff['key'] ?? null;
+    if ($fkey) {
+        $fhidden = file_exists(__DIR__ . '/data/gallery_hidden.json') ? (json_decode(file_get_contents(__DIR__ . '/data/gallery_hidden.json'), true) ?: []) : [];
+        $fpath = null; $furl = null;
+        if (str_starts_with($fkey, 'gallery/')) { $fpath = __DIR__ . '/data/gallery/' . basename($fkey); $furl = '/data/gallery/' . basename($fkey); }
+        elseif (str_starts_with($fkey, 'assets/')) { $fpath = __DIR__ . '/assets/' . basename($fkey); $furl = '/assets/' . basename($fkey); }
+        if ($fpath && is_file($fpath) && !in_array($fkey, $fhidden)) {
+            $fext = strtolower(pathinfo($fpath, PATHINFO_EXTENSION));
+            $_featured = [
+                'url'     => $furl,
+                'video'   => in_array($fext, ['mp4','mov','m4v','webm']),
+                'caption' => trim($ff['caption'] ?? ''),
+            ];
+        }
+    }
+}
+
 $type_colors = [
     'milestone' => '#FFD97D',
     'show'      => '#7DD9A2',
@@ -585,7 +607,9 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .gallery-item { border-radius: 8px; overflow: hidden; aspect-ratio: 1 / 1; background: var(--surface-2); cursor: pointer; position: relative; }
     .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
     .gallery-item:hover img { transform: scale(1.05); }
-    @media (max-width: 480px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; } }
+    .gallery-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; pointer-events: none; backdrop-filter: blur(2px); }
+    @media (max-width: 480px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; } .gallery-play { width: 36px; height: 36px; } }
     .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
     .lightbox.open { display: flex; }
     .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; object-fit: contain; }
@@ -738,6 +762,14 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .snapshot-next-v { font-size: 16px; font-weight: 700; color: var(--text); }
     .snapshot-next-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
     .snapshot-next svg { color: var(--text-muted); flex-shrink: 0; }
+    /* Featured media */
+    .featured-card { background: var(--surface); border: 1px solid rgba(255,215,0,0.3); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 4px 20px rgba(0,0,0,0.35); }
+    .featured-head { display: flex; align-items: center; gap: 10px; padding: 0.7rem 1rem 0.65rem; }
+    .featured-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #FFD700; }
+    .featured-cap { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .featured-media { width: 100%; display: block; background: #000; }
+    img.featured-media { max-height: 460px; object-fit: cover; }
+    video.featured-media { max-height: 70vh; }
     /* Current-location locator map */
     .loc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; }
     .loc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.85rem 1.25rem; }
@@ -856,6 +888,20 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   <div class="tab-panel active" id="tab-latest">
     <div class="content">
       <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
+
+      <?php if ($_featured): ?>
+      <div class="featured-card">
+        <div class="featured-head">
+          <span class="featured-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Featured</span>
+          <?php if ($_featured['caption']): ?><span class="featured-cap"><?= htmlspecialchars($_featured['caption']) ?></span><?php endif; ?>
+        </div>
+        <?php if ($_featured['video']): ?>
+        <video class="featured-media" src="<?= htmlspecialchars($_featured['url']) ?>" controls playsinline preload="metadata"></video>
+        <?php else: ?>
+        <img class="featured-media" src="<?= htmlspecialchars($_featured['url']) ?>" alt="Featured — Matéo" loading="lazy" />
+        <?php endif; ?>
+      </div>
+      <?php endif; ?>
 
       <?php if ($_announcement): ?>
       <div class="announcement-banner"><strong>Update</strong><?= nl2br(htmlspecialchars($_announcement)) ?></div>
@@ -1057,14 +1103,16 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
 
       $render = [];
 
-      // Admin-uploaded photos first (newest first) — live in data/gallery, survive deploys
+      // Admin-uploaded photos + video clips first (newest first) — live in data/gallery, survive deploys
+      $_vid_exts = ['mp4','mov','m4v','webm'];
       if (is_dir($upload_dir)) {
-          $ups = glob($upload_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
+          $ups = glob($upload_dir . '/*.{jpg,jpeg,png,webp,mp4,mov,m4v,webm}', GLOB_BRACE);
           usort($ups, fn($a, $b) => filemtime($b) <=> filemtime($a));
           foreach ($ups as $path) {
               $fname = basename($path);
               if (in_array('gallery/' . $fname, $hidden)) continue;
-              $render[] = ['src' => '/data/gallery/' . $fname, 'webp' => null];
+              $is_vid = in_array(strtolower(pathinfo($fname, PATHINFO_EXTENSION)), $_vid_exts);
+              $render[] = ['src' => '/data/gallery/' . $fname, 'webp' => null, 'video' => $is_vid];
           }
       }
 
@@ -1096,14 +1144,22 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
         }
         ?>
         <?php foreach ($render as $item): ?>
+          <?php if (!empty($item['video'])): ?>
+          <div class="gallery-item gallery-video" onclick="openVideoLightbox(this)" data-src="<?= htmlspecialchars($item['src']) ?>">
+            <video src="<?= htmlspecialchars($item['src']) ?>#t=0.1" muted playsinline preload="metadata"></video>
+            <span class="gallery-play"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          </div>
+          <?php else: ?>
           <div class="gallery-item" onclick="openLightbox(this)">
             <?= gallery_picture($item) ?>
           </div>
+          <?php endif; ?>
         <?php endforeach; ?>
       </div>
       <div class="lightbox" id="lightbox" onclick="closeLightbox()">
         <button class="lightbox-close" onclick="closeLightbox()">&#215;</button>
         <img id="lightbox-img" src="" alt="" />
+        <video id="lightbox-video" controls playsinline style="display:none;max-width:100%;max-height:90vh;border-radius:8px;"></video>
       </div>
       <div class="section-label" style="margin-top:1.75rem;">Videos &amp; Social</div>
       <div class="social-section">
@@ -1742,14 +1798,32 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   })();
   function openLightbox(el) {
     var img = el.querySelector('img');
-    document.getElementById('lightbox-img').src = img.src;
-    document.getElementById('lightbox-img').alt = img.alt;
+    var lbImg = document.getElementById('lightbox-img');
+    var lbVid = document.getElementById('lightbox-video');
+    if (lbVid) { lbVid.pause(); lbVid.removeAttribute('src'); lbVid.style.display = 'none'; }
+    lbImg.style.display = '';
+    lbImg.src = img.src;
+    lbImg.alt = img.alt;
     document.getElementById('lightbox').classList.add('open');
     document.body.style.overflow = 'hidden';
+  }
+  function openVideoLightbox(el) {
+    var src = el.getAttribute('data-src');
+    var lbImg = document.getElementById('lightbox-img');
+    var lbVid = document.getElementById('lightbox-video');
+    lbImg.style.display = 'none';
+    lbImg.removeAttribute('src');
+    lbVid.src = src;
+    lbVid.style.display = '';
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    lbVid.play().catch(function(){});
   }
   function closeLightbox() {
     document.getElementById('lightbox').classList.remove('open');
     document.body.style.overflow = '';
+    var lbVid = document.getElementById('lightbox-video');
+    if (lbVid) { lbVid.pause(); }
   }
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeLightbox();
