@@ -27,6 +27,43 @@ $_msg_db->exec("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTO
 $_ticker_msgs = $_msg_db->query("SELECT name, message FROM messages ORDER BY created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
 $_msg_count = (int)$_msg_db->query("SELECT COUNT(*) FROM messages")->fetchColumn();
 $_photo_count = (int)$_msg_db->query("SELECT COUNT(*) FROM messages WHERE image_path IS NOT NULL")->fetchColumn();
+
+// Latest show + season best (shared by Latest snapshot and Results tab)
+$_latest_hist = !empty($_scores_history) ? end($_scores_history) : null;
+$_best_score = null;
+if (!empty($_scores_history)) {
+    $best = null;
+    foreach ($_scores_history as $h) {
+        if ($best === null || (float)$h['score'] > (float)$best['score']) $best = $h;
+    }
+    $_best_score = $best['score'] ?? null;
+}
+
+// Official DCI World Class Rankings — avg of last 3 shows (as of Jul 13)
+$_rankings = [
+    ['rank'=>1,  'name'=>'Bluecoats',             'div'=>'World', 'score'=>86.542, 'recent'=>87.575],
+    ['rank'=>2,  'name'=>'Blue Devils',            'div'=>'World', 'score'=>85.408, 'recent'=>86.675],
+    ['rank'=>3,  'name'=>'Boston Crusaders',       'div'=>'World', 'score'=>83.817, 'recent'=>84.550],
+    ['rank'=>4,  'name'=>'Santa Clara Vanguard',   'div'=>'World', 'score'=>83.767, 'recent'=>84.650],
+    ['rank'=>5,  'name'=>'Phantom Regiment',       'div'=>'World', 'score'=>81.117, 'recent'=>83.350],
+    ['rank'=>6,  'name'=>'Blue Stars',             'div'=>'World', 'score'=>80.042, 'recent'=>81.925],
+    ['rank'=>7,  'name'=>'The Cavaliers',          'div'=>'World', 'score'=>79.342, 'recent'=>80.975],
+    ['rank'=>8,  'name'=>'Blue Knights',           'div'=>'World', 'score'=>76.250, 'recent'=>77.150],
+    ['rank'=>9,  'name'=>'Troopers',               'div'=>'World', 'score'=>76.092, 'recent'=>77.925],
+    ['rank'=>10, 'name'=>'Colts',                  'div'=>'World', 'score'=>75.433, 'recent'=>78.250],
+    ['rank'=>11, 'name'=>'Madison Scouts',         'div'=>'World', 'score'=>75.308, 'recent'=>76.925],
+    ['rank'=>12, 'name'=>'Spirit of Atlanta',      'div'=>'World', 'score'=>74.733, 'recent'=>76.300],
+    ['rank'=>13, 'name'=>'Pacific Crest',          'div'=>'World', 'score'=>74.042, 'recent'=>76.225],
+    ['rank'=>14, 'name'=>'The Academy',            'div'=>'World', 'score'=>73.183, 'recent'=>74.600],
+    ['rank'=>15, 'name'=>'Music City',             'div'=>'World', 'score'=>70.250, 'recent'=>71.550],
+    ['rank'=>16, 'name'=>'Genesis',                'div'=>'World', 'score'=>69.308, 'recent'=>69.875],
+    ['rank'=>17, 'name'=>'Seattle Cascades',       'div'=>'World', 'score'=>67.708, 'recent'=>70.075],
+];
+$_season_rank = null;
+$_season_field = count($_rankings);
+foreach ($_rankings as $rc) {
+    if (stripos($rc['name'], 'Phantom') !== false) { $_season_rank = $rc['rank']; break; }
+}
 $events = [
     '2026-05-20' => ['label' => 'Move In Day',                       'detail' => 'Fly via Nashville (BNA) · transport provided to Owensboro', 'type' => 'milestone', 'city' => 'Owensboro, KY'],
     '2026-05-25' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM · Memorial Day',                                    'type' => 'practice'],
@@ -213,9 +250,9 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Keep up with Matéo — Phantom Regiment 2026</title>
-  <meta name="description" content="Follow Matéo's 2026 DCI season with Phantom Regiment performing Bloodline. Dates, tickets, and ways to watch." />
+  <meta name="description" content="Follow Matéo's 2026 DCI season with Phantom Regiment performing Bloodline — scores, rankings, photos, and tour dates." />
   <meta property="og:title" content="Keep up with Matéo — Phantom Regiment 2026" />
-  <meta property="og:description" content="Follow Matéo's 2026 DCI season with Phantom Regiment performing Bloodline. Dates, tickets, and ways to watch." />
+  <meta property="og:description" content="Follow Matéo's 2026 DCI season with Phantom Regiment performing Bloodline — scores, rankings, photos, and tour dates." />
   <meta property="og:image" content="https://phantom.agavelabs.dev/assets/mateo.jpg" />
   <meta property="og:url" content="https://phantom.agavelabs.dev" />
   <meta property="og:type" content="website" />
@@ -483,10 +520,6 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .results-link:hover { background: var(--surface-2); }
     .results-link span { font-size: 11px; color: var(--text-muted); display: block; font-weight: 400; margin-top: 2px; }
 
-    .venue-banner { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-    .venue-banner-title { font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); line-height: 1.2; }
-    .venue-banner-sub { font-size: 14px; color: var(--text-secondary); margin-top: 3px; }
-    .venue-banner-right { display: flex; align-items: center; gap: 6px; color: var(--text-muted); flex-shrink: 0; }
     .card-title { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
     .badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; margin-top: 4px; }
     .badge-us { background: var(--green-bg); color: var(--green); }
@@ -661,6 +694,32 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .caption-trend-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 0.5rem 1rem 0.75rem; }
     .clt-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
     .clt-line { width: 18px; height: 2px; border-radius: 1px; }
+    /* Latest snapshot */
+    .snapshot { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; }
+    .snapshot-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .snapshot-status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+    .snapshot-loc { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    .snapshot-main { display: grid; grid-template-columns: 1fr 1fr; }
+    .snapshot-block { display: block; padding: 1.1rem 1.25rem; text-decoration: none; color: inherit; border-right: 1px solid var(--border); transition: background 0.15s; }
+    .snapshot-main .snapshot-block:last-child { border-right: none; }
+    .snapshot-block:hover { background: var(--surface-2); }
+    .snapshot-k { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; }
+    .snapshot-v { font-size: 34px; font-weight: 900; color: var(--text); line-height: 1; letter-spacing: -0.02em; }
+    .snapshot-v-gold { color: #FFD700; }
+    .snapshot-ord { font-size: 16px; font-weight: 700; margin-left: 1px; }
+    .snapshot-sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.35; }
+    .snapshot-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border); }
+    .snapshot-cell { padding: 0.85rem 0.75rem; text-align: center; border-right: 1px solid var(--border); }
+    .snapshot-cell:last-child { border-right: none; }
+    .snapshot-cell-v { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1; }
+    .snapshot-cell-v span { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+    .snapshot-cell-k { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-top: 5px; }
+    .snapshot-next { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.95rem 1.25rem; border-top: 1px solid var(--border); text-decoration: none; color: inherit; transition: background 0.15s; }
+    .snapshot-next:hover { background: var(--surface-2); }
+    .snapshot-next-k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); margin-bottom: 3px; }
+    .snapshot-next-v { font-size: 16px; font-weight: 700; color: var(--text); }
+    .snapshot-next-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .snapshot-next svg { color: var(--text-muted); flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -785,193 +844,80 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
       </div>
       <?php endif; ?>
 
-      <?php if (!empty($_score['score'])): ?>
-      <a class="score-chip" href="javascript:switchTab('results',document.querySelectorAll('.tab-btn')[2])">
-        <span class="score-chip-num" id="live-score-num"><?= htmlspecialchars($_score['score']) ?></span>
-        <span class="score-chip-meta"><?= htmlspecialchars($_score['placement']) ?> place &nbsp;&middot;&nbsp; <?= htmlspecialchars($_score['show']) ?></span>
-        <span class="score-chip-cta">Season results →</span>
-      </a>
-      <?php endif; ?>
-
-      <?php if ($next_event):
-        $days_to_next = (int)floor(($ne_ts - $today_ts) / 86400);
-        if ($days_to_next <= 0)      $next_label = 'Tonight!';
-        elseif ($days_to_next === 1) $next_label = 'Tomorrow';
-        else                         $next_label = 'In ' . $days_to_next . ' days';
+      <!-- Snapshot: where things stand right now -->
+      <?php
+        $snap_status = $_is_show_night ? 'Competition night' : ($next_event ? 'On tour' : 'Season complete');
+        $snap_loc = $current_city ?: ($next_event['city'] ?? ($ne_location ?: null));
+        $rank_suf = '';
+        if ($_season_rank) {
+            $rank_suf = in_array($_season_rank % 100, [11,12,13]) ? 'th' : ([1=>'st',2=>'nd',3=>'rd'][$_season_rank % 10] ?? 'th');
+        }
       ?>
-      <div class="countdown-strip">
-        <div class="countdown-label">Next show</div>
-        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
-          <span style="font-size:22px;font-weight:800;color:var(--text);line-height:1;"><?= $next_label ?></span>
-          <span style="font-size:13px;color:var(--text-secondary);"><?= htmlspecialchars($next_event['label']) ?> &nbsp;&middot;&nbsp; <?= date('M j', $ne_ts) ?></span>
+      <div class="snapshot">
+        <div class="snapshot-head">
+          <span class="snapshot-status"><span class="pulse-dot"></span><?= htmlspecialchars($snap_status) ?></span>
+          <?php if ($snap_loc): ?>
+          <span class="snapshot-loc">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <?= htmlspecialchars($snap_loc) ?>
+          </span>
+          <?php endif; ?>
         </div>
-      </div>
-      <?php endif; ?>
 
-      <div class="venue-banner">
-        <div class="venue-banner-left">
-          <div class="venue-banner-title">San Antonio, TX</div>
-          <div class="venue-banner-sub">Alamodome &nbsp;·&nbsp; July 17–18, 2026</div>
-        </div>
-        <div class="venue-banner-right">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <a href="https://maps.google.com/?q=Alamodome,+San+Antonio,+TX" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;font-size:13px;font-weight:600;">Get directions</a>
-        </div>
-      </div>
-      <div class="section-label">Ways to watch in person</div>
-      <p style="font-size:13px;color:var(--text-muted);margin:-0.5rem 0 1rem;">These stack — many fans do the rehearsal Friday, then the lots and show on Saturday.</p>
-      <div class="cards">
-
-      <!-- Option 1 -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-option-num">Friday · Free</div>
-            <div class="card-title">Free rehearsal</div>
-            <div class="card-date">Saturday, July 18 &nbsp;·&nbsp; 7:00 PM</div>
-          </div>
-          <span class="badge badge-free">Skipping</span>
-        </div>
-        <div class="card-body">
-          <p>Phantom Regiment rehearses at a high school about 1 hr 40 min south of the Alamodome. Free, up-close, and you'll likely see them run the full show.</p>
-          <p>We won't be attending the rehearsal this year — heading straight to San Antonio for the show.</p>
-        </div>
-        <div class="divider"></div>
-        <div class="details">
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Free admission
-          </div>
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            No uniforms — outdoor practice setting
-          </div>
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <a href="https://maps.app.goo.gl/T7ppQ4y9r49DTmVV6" target="_blank" rel="noopener" style="color:inherit;">Pleasanton High School, 900 W Adams St, Pleasanton, TX</a>
-          </div>
-        </div>
-        <a href="https://maps.app.goo.gl/T7ppQ4y9r49DTmVV6" target="_blank" rel="noopener" style="display:block;margin:0 1.5rem 1.25rem;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
-          <iframe src="https://maps.google.com/maps?q=Pleasanton+High+School,+900+W+Adams+St,+Pleasanton,+TX+78064&output=embed&z=15" width="100%" height="130" style="border:0;display:block;pointer-events:none;" loading="lazy"></iframe>
-        </a>
-      </div>
-
-      <!-- Option 2 -->
-      <div class="card featured">
-        <div class="card-header">
-          <div>
-            <div class="card-option-num">Saturday · Free</div>
-            <div class="card-title">The Lots</div>
-            <div class="card-date">Saturday, July 18 · ~6 PM</div>
-          </div>
-          <span class="badge badge-us">We'll be here</span>
-        </div>
-        <div class="card-body">
-          <p>Starting around 6 PM, corps warm up in the parking lots around the Alamodome in partial uniform. You'll see the horn lines and snare lines running drills separately — not the full show, but a cool behind-the-scenes look at how it all comes together.</p>
-          <p>You're free to roam and listen to different sections up close. Multiple corps will be doing the same thing. Phantom wears bright red — hard to miss. Once we find them, we'll text everyone a pin so you can find us!</p>
-          <p>If you're joining us, let us know — once we get a head count we can figure out if dinner together works out after!</p>
-          <p style="font-size:13px;color:var(--text-muted);margin-top:0.5rem;"><strong style="color:var(--text-secondary);">Weather:</strong> Expect 95°F+ on the pavement. Bring a full water bottle, wear light clothing, and bring a portable chair.</p>
-        </div>
-        <div class="divider"></div>
-        <div class="details">
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-            Parking ~$35
-          </div>
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            Hot on the pavement — bring water
-          </div>
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Starts ~6 PM, about an hour
-          </div>
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            Bring a chair if you want to sit
-          </div>
-        </div>
-      </div>
-
-      <!-- Option 3 -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-option-num">Saturday · Ticketed</div>
-            <div class="card-title">Official performance</div>
-            <div class="card-date">Saturday, July 18 · Showtime 8:38 PM</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <p>Phantom performs <em>Bloodline</em> inside the Alamodome. Matéo will be near <strong>Section 116</strong> on the field sideline.</p>
-        </div>
-        <div class="day-schedule">
-          <div class="day-schedule-title">Day-of schedule</div>
-          <div class="sched-row">
-            <div class="sched-time">6:00 PM</div>
-            <div class="sched-dot"></div>
-            <div class="sched-label">Matéo arrives at the Alamodome</div>
-          </div>
-          <div class="sched-row">
-            <div class="sched-time">6:30 PM</div>
-            <div class="sched-dot"></div>
-            <div class="sched-label">Warmup in the parking lots</div>
-          </div>
-          <div class="sched-row sched-highlight">
-            <div class="sched-time">8:38 PM</div>
-            <div class="sched-dot"></div>
-            <div class="sched-label">Showtime — <em>Bloodline</em></div>
-          </div>
-          <div class="sched-row">
-            <div class="sched-time">10:30 PM</div>
-            <div class="sched-dot"></div>
-            <div class="sched-label">Matéo can say hi until this time</div>
-          </div>
-        </div>
-        <div class="divider"></div>
-        <div class="details">
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>
-            Tickets from ~$129
-          </div>
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Watch near Section 116
-          </div>
-        </div>
-        <a class="ticket-btn" href="https://www.ticketmaster.com/event/3A00636CF94C7C32" target="_blank" rel="noopener">
-          Buy tickets on Ticketmaster →
-        </a>
-        <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Phantom+Regiment+%E2%80%94+Bloodline+%7C+DCI+San+Antonio&dates=20260718T203800/20260718T223000&location=Alamodome,+San+Antonio,+TX&details=Matéo+performs+with+Phantom+Regiment.+Section+116." target="_blank" rel="noopener" style="display:block;text-align:center;font-size:12px;color:var(--text-muted);padding:0.5rem 1.5rem 1rem;text-decoration:none;">
-          + Add to Google Calendar
-        </a>
-      </div>
-
-    </div>
-
-      <!-- Watch online — horizontal card -->
-      <div class="card card-horizontal" style="margin-bottom:1.5rem;">
-        <div class="card-horizontal-left">
-          <div class="card-option-num">Also available</div>
-          <div class="card-title" style="font-size:18px;">Watch online</div>
-          <div class="card-date">Saturday, July 18 · 8:38 PM CT</div>
-          <p style="font-size:14px;color:var(--text-secondary);margin-top:0.5rem;line-height:1.6;">FloMarching streams DCI events live — watch Phantom perform <em>Bloodline</em> from anywhere.</p>
-        </div>
-        <div class="card-horizontal-right">
-          <div class="details" style="padding:0;margin-bottom:1rem;">
-            <div class="detail">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
-              Live stream on FloMarching
-            </div>
-            <div class="detail">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              Watch from anywhere
-            </div>
-          </div>
-          <a class="ticket-btn" href="https://www.flomarching.com/signup" target="_blank" rel="noopener" style="margin:0;">
-            Sign up for FloMarching →
+        <div class="snapshot-main">
+          <?php if (!empty($_score['score'])): ?>
+          <a class="snapshot-block" href="javascript:switchTab('results',document.querySelectorAll('.tab-btn')[2])">
+            <div class="snapshot-k">Latest score</div>
+            <div class="snapshot-v snapshot-v-gold" id="live-score-num"><?= htmlspecialchars($_score['score']) ?></div>
+            <div class="snapshot-sub"><?= htmlspecialchars($_score['placement']) ?> &middot; <?= htmlspecialchars($_score['show']) ?></div>
           </a>
+          <?php endif; ?>
+          <?php if ($_season_rank): ?>
+          <a class="snapshot-block" href="javascript:switchTab('results',document.querySelectorAll('.tab-btn')[2])">
+            <div class="snapshot-k">Season rank</div>
+            <div class="snapshot-v"><?= $_season_rank ?><span class="snapshot-ord"><?= $rank_suf ?></span></div>
+            <div class="snapshot-sub">of <?= $_season_field ?> World Class corps</div>
+          </a>
+          <?php endif; ?>
         </div>
+
+        <div class="snapshot-grid">
+          <div class="snapshot-cell">
+            <div class="snapshot-cell-v"><?= $_past_shows ?><span>/<?= $_total_shows ?></span></div>
+            <div class="snapshot-cell-k">Shows</div>
+          </div>
+          <div class="snapshot-cell">
+            <div class="snapshot-cell-v"><?= $_days_to_finals ?></div>
+            <div class="snapshot-cell-k">Days to Finals</div>
+          </div>
+          <div class="snapshot-cell">
+            <div class="snapshot-cell-v"><?= $_best_score ? htmlspecialchars($_best_score) : '&mdash;' ?></div>
+            <div class="snapshot-cell-k">Season best</div>
+          </div>
+        </div>
+
+        <?php if ($next_event):
+          $days_to_next = (int)floor(($ne_ts - $today_ts) / 86400);
+          $next_when = $days_to_next <= 0 ? 'Tonight' : ($days_to_next === 1 ? 'Tomorrow' : 'In ' . $days_to_next . ' days');
+        ?>
+        <a class="snapshot-next" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">
+          <div>
+            <div class="snapshot-next-k">Next show &middot; <?= htmlspecialchars($next_when) ?></div>
+            <div class="snapshot-next-v"><?= htmlspecialchars($next_event['label']) ?></div>
+            <div class="snapshot-next-sub"><?= date('l, M j', $ne_ts) ?><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?></div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+        <?php else: ?>
+        <a class="snapshot-next" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">
+          <div>
+            <div class="snapshot-next-k">Grand finale</div>
+            <div class="snapshot-next-v">DCI World Championships</div>
+            <div class="snapshot-next-sub">Lucas Oil Stadium, Indianapolis &middot; Aug 6&ndash;9</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+        <?php endif; ?>
       </div>
 
       <a class="fanmail-hook" href="/fanmail.php">
@@ -1140,43 +1086,8 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   <div class="tab-panel" id="tab-results">
     <div class="content">
     <?php
-      $_latest_hist = !empty($_scores_history) ? end($_scores_history) : null;
-      $_has_leader  = !empty($_latest_hist['leaderboard']);
-
-      $_best_score = null;
-      if (!empty($_scores_history)) {
-          $best = null;
-          foreach ($_scores_history as $h) {
-              if ($best === null || (float)$h['score'] > (float)$best['score']) $best = $h;
-          }
-          $_best_score = $best['score'] ?? null;
-      }
-
-      // Official DCI World Class Rankings — avg of last 3 shows (as of Jul 13)
-      $_rankings = [
-        ['rank'=>1,  'name'=>'Bluecoats',             'div'=>'World', 'score'=>86.542, 'recent'=>87.575],
-        ['rank'=>2,  'name'=>'Blue Devils',            'div'=>'World', 'score'=>85.408, 'recent'=>86.675],
-        ['rank'=>3,  'name'=>'Boston Crusaders',       'div'=>'World', 'score'=>83.817, 'recent'=>84.550],
-        ['rank'=>4,  'name'=>'Santa Clara Vanguard',   'div'=>'World', 'score'=>83.767, 'recent'=>84.650],
-        ['rank'=>5,  'name'=>'Phantom Regiment',       'div'=>'World', 'score'=>81.117, 'recent'=>83.350],
-        ['rank'=>6,  'name'=>'Blue Stars',             'div'=>'World', 'score'=>80.042, 'recent'=>81.925],
-        ['rank'=>7,  'name'=>'The Cavaliers',          'div'=>'World', 'score'=>79.342, 'recent'=>80.975],
-        ['rank'=>8,  'name'=>'Blue Knights',           'div'=>'World', 'score'=>76.250, 'recent'=>77.150],
-        ['rank'=>9,  'name'=>'Troopers',               'div'=>'World', 'score'=>76.092, 'recent'=>77.925],
-        ['rank'=>10, 'name'=>'Colts',                  'div'=>'World', 'score'=>75.433, 'recent'=>78.250],
-        ['rank'=>11, 'name'=>'Madison Scouts',         'div'=>'World', 'score'=>75.308, 'recent'=>76.925],
-        ['rank'=>12, 'name'=>'Spirit of Atlanta',      'div'=>'World', 'score'=>74.733, 'recent'=>76.300],
-        ['rank'=>13, 'name'=>'Pacific Crest',          'div'=>'World', 'score'=>74.042, 'recent'=>76.225],
-        ['rank'=>14, 'name'=>'The Academy',            'div'=>'World', 'score'=>73.183, 'recent'=>74.600],
-        ['rank'=>15, 'name'=>'Music City',             'div'=>'World', 'score'=>70.250, 'recent'=>71.550],
-        ['rank'=>16, 'name'=>'Genesis',                'div'=>'World', 'score'=>69.308, 'recent'=>69.875],
-        ['rank'=>17, 'name'=>'Seattle Cascades',       'div'=>'World', 'score'=>67.708, 'recent'=>70.075],
-      ];
-
-      $_season_rank = null;
-      foreach ($_rankings as $rc) {
-          if (stripos($rc['name'], 'Phantom') !== false) { $_season_rank = $rc['rank']; break; }
-      }
+      // $_latest_hist, $_best_score, $_rankings, $_season_rank are defined in the header.
+      $_has_leader = !empty($_latest_hist['leaderboard']);
 
       $_pr_history = [
         ['year'=>2024,'placement'=>5,'score'=>93.613,'show'=>'Phantasm'],
