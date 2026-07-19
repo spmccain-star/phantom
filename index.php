@@ -206,6 +206,23 @@ foreach ($events as $date_str => $ev) {
     }
 }
 
+// Coordinates for tour cities → drives the "current location" locator map
+$_city_coords = [
+    'Owensboro, KY'    => [37.77, -87.11],  'Evansville, IN'  => [37.97, -87.57],
+    'Lincoln, NE'      => [40.81, -96.70],  'Eaton, CO'       => [40.53, -104.71],
+    'Fort Collins, CO' => [40.59, -105.08], 'Omaha, NE'       => [41.26, -95.93],
+    'Rockford, IL'     => [42.27, -89.09],  'La Crosse, WI'   => [43.80, -91.25],
+    'DeKalb, IL'       => [41.93, -88.75],  'Lisle, IL'       => [41.80, -88.07],
+    'Whitewater, WI'   => [42.83, -88.73],  'Olathe, KS'      => [38.88, -94.82],
+    'Broken Arrow, OK' => [36.06, -95.79],  'Denton, TX'      => [33.21, -97.13],
+    'San Antonio, TX'  => [29.42, -98.49],  'McKinney, TX'    => [33.20, -96.64],
+    'Madison, WI'      => [43.07, -89.40],  'Mason, OH'       => [39.36, -84.31],
+    'Lawrence, MA'     => [42.71, -71.16],  'Allentown, PA'   => [40.61, -75.49],
+    'Lexington, KY'    => [38.04, -84.50],  'Indianapolis, IN'=> [39.77, -86.16],
+];
+$_loc_name   = $current_city ?: ($next_event['city'] ?? null);
+$_loc_coords = $_loc_name && isset($_city_coords[$_loc_name]) ? $_city_coords[$_loc_name] : null;
+
 $type_colors = [
     'milestone' => '#FFD97D',
     'show'      => '#7DD9A2',
@@ -263,6 +280,7 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -720,6 +738,19 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .snapshot-next-v { font-size: 16px; font-weight: 700; color: var(--text); }
     .snapshot-next-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
     .snapshot-next svg { color: var(--text-muted); flex-shrink: 0; }
+    /* Current-location locator map */
+    .loc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; }
+    .loc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.85rem 1.25rem; }
+    .loc-card-k { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .loc-card-v { font-size: 17px; font-weight: 700; color: var(--text); margin-top: 2px; }
+    .loc-card-link { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+    .loc-card-link:hover { color: var(--text); }
+    #loc-map { height: 210px; width: 100%; background: #12161c; }
+    .loc-map-wrap { position: relative; }
+    .loc-pin { position: relative; width: 20px; height: 20px; }
+    .loc-pin-dot { position: absolute; top: 50%; left: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: var(--red); border: 2px solid #fff; box-shadow: 0 0 8px rgba(176,26,28,0.95); z-index: 2; }
+    .loc-pin-pulse { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: rgba(176,26,28,0.55); z-index: 1; animation: locpulse 2s ease-out infinite; }
+    @keyframes locpulse { 0% { transform: scale(0.5); opacity: 0.85; } 70% { transform: scale(2.8); opacity: 0; } 100% { transform: scale(2.8); opacity: 0; } }
   </style>
 </head>
 <body>
@@ -919,6 +950,31 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
         </a>
         <?php endif; ?>
       </div>
+
+      <?php if ($_loc_coords): ?>
+      <div class="loc-card">
+        <div class="loc-card-head">
+          <div>
+            <div class="loc-card-k">Matéo is currently in</div>
+            <div class="loc-card-v"><?= htmlspecialchars($_loc_name) ?></div>
+          </div>
+          <a class="loc-card-link" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">Full tour map &rsaquo;</a>
+        </div>
+        <div class="loc-map-wrap"><div id="loc-map"></div></div>
+      </div>
+      <script>
+        (function() {
+          var el = document.getElementById('loc-map');
+          if (!el || typeof L === 'undefined') return;
+          var lat = <?= $_loc_coords[0] ?>, lon = <?= $_loc_coords[1] ?>;
+          var m = L.map('loc-map', { zoomControl: false, attributionControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false, touchZoom: false, keyboard: false, tap: false }).setView([lat, lon], 6);
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 12 }).addTo(m);
+          var icon = L.divIcon({ className: '', html: '<div class="loc-pin"><span class="loc-pin-pulse"></span><span class="loc-pin-dot"></span></div>', iconSize: [20, 20], iconAnchor: [10, 10] });
+          L.marker([lat, lon], { icon: icon }).addTo(m);
+          window._locMap = m;
+        })();
+      </script>
+      <?php endif; ?>
 
       <a class="fanmail-hook" href="/fanmail.php">
         <div class="fanmail-hook-left">
@@ -1573,7 +1629,6 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
             ];
         }
         ?>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
         <script>
         (function() {
           var cities = <?= json_encode($map_js_cities) ?>;
