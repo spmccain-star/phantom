@@ -2,6 +2,10 @@
 $today    = date('Y-m-d');
 $today_ts = strtotime($today);
 
+// Photo sources (site uploads + PhanMail dirs)
+require __DIR__ . '/photos.php';
+$latest_photos = phantom_latest_photos(24);
+
 // Announcement + score
 $_announcement = '';
 $_ann_file = __DIR__ . '/data/announcement.txt';
@@ -34,11 +38,11 @@ $events = [
     '2026-06-05' => ['label' => 'Football Camp',                     'detail' => '5–8 PM',                                                    'type' => 'practice'],
     '2026-06-08' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM',                                                    'type' => 'practice'],
     '2026-06-10' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM · Flag Football Stadium (Evening)',                  'type' => 'practice'],
-    '2026-06-14' => ['label' => 'Community Performance',             'detail' => '',                                                          'type' => 'show'],
+    '2026-06-14' => ['label' => 'Community Performance',             'detail' => '',                                                          'type' => 'show',      'city' => 'Owensboro, KY'],
     '2026-06-15' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM',                                                    'type' => 'practice'],
     '2026-06-16' => ['label' => 'Cleaning & Moving Day',             'detail' => 'Spring training ends',                                      'type' => 'milestone'],
     '2026-06-17' => ['label' => 'Travel — Evansville',               'detail' => 'H: Evansville North HS · EVV',                             'type' => 'travel',    'city' => 'Evansville, IN'],
-    '2026-06-18' => ['label' => 'Evansville Community Perf.',        'detail' => 'H: Evansville North HS',                                   'type' => 'show'],
+    '2026-06-18' => ['label' => 'Evansville Community Perf.',        'detail' => 'H: Evansville North HS',                                   'type' => 'show',      'city' => 'Evansville, IN'],
     '2026-06-19' => ['label' => 'NIU Spring Training',               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal', 'city' => 'DeKalb, IL'],
     '2026-06-20' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-06-21' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
@@ -47,49 +51,49 @@ $events = [
     '2026-06-24' => ['label' => 'Travel — Lincoln, NE',              'detail' => 'H: Lincoln Sports Foundation',                             'type' => 'travel',    'city' => 'Lincoln, NE'],
     '2026-06-25' => ['label' => 'Rehearsal',                         'detail' => 'H: Eaton HS, CO · No Fly',                                 'type' => 'rehearsal', 'city' => 'Eaton, CO'],
     '2026-06-26' => ['label' => 'Rehearsal',                         'detail' => 'H: Eaton HS, CO · DEN',                                    'type' => 'rehearsal'],
-    '2026-06-27' => ['label' => 'Fort Collins Show / DCI Denver',    'detail' => 'H: Eaton HS · No Fly',                                     'type' => 'show'],
+    '2026-06-27' => ['label' => 'Fort Collins Show / DCI Denver',    'detail' => 'H: Eaton HS · No Fly',                                     'type' => 'show',      'city' => 'Fort Collins, CO', 'result' => '2nd · 72.650'],
     '2026-06-28' => ['label' => 'Denver Free Day + Laundry',         'detail' => 'H: Eaton HS · DEN',                                        'type' => 'free'],
     '2026-06-29' => ['label' => 'CSU Rehearsal',                     'detail' => 'H: Eaton HS · DEN',                                        'type' => 'rehearsal'],
-    '2026-06-30' => ['label' => 'Omaha Area Rehearsal',              'detail' => 'H: Bellevue East HS, NE · OMA',                            'type' => 'rehearsal', 'city' => 'Bellevue, NE'],
-    '2026-07-01' => ['label' => 'Omaha Show',                        'detail' => 'H: Bellevue East HS · OMA',                                'type' => 'show'],
-    '2026-07-02' => ['label' => 'Travel',                            'detail' => 'H: Guilford · ORD',                                        'type' => 'travel',    'city' => 'Rockford, IL'],
-    '2026-07-03' => ['label' => 'Rockford Show',                     'detail' => 'H: Guilford · ORD',                                        'type' => 'show'],
+    '2026-06-30' => ['label' => 'Omaha Area Rehearsal',              'detail' => 'H: Bellevue East HS, NE · OMA',                            'type' => 'rehearsal'],
+    '2026-07-01' => ['label' => 'Omaha Show',                        'detail' => 'H: Bellevue East HS · OMA',                                'type' => 'show',      'city' => 'Omaha, NE', 'result' => '1st · 76.400'],
+    '2026-07-02' => ['label' => 'Travel',                            'detail' => 'H: Guilford · ORD',                                        'type' => 'travel'],
+    '2026-07-03' => ['label' => 'Rockford Show',                     'detail' => 'H: Guilford · ORD',                                        'type' => 'show',      'city' => 'Rockford, IL'],
     '2026-07-04' => ['label' => 'Laundry Day',                       'detail' => 'H: Guilford · ORD',                                        'type' => 'free'],
-    '2026-07-05' => ['label' => 'La Crosse, WI Show',                'detail' => 'H: St. Charles HS, MN · No Fly',                           'type' => 'show',      'city' => 'St. Charles, MN'],
-    '2026-07-06' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal', 'city' => 'DeKalb, IL'],
+    '2026-07-05' => ['label' => 'La Crosse, WI Show',                'detail' => 'H: St. Charles HS, MN · No Fly',                           'type' => 'show',      'city' => 'La Crosse, WI', 'result' => '1st · 79.200'],
+    '2026-07-06' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-07-07' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-07-08' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-07-09' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
-    '2026-07-10' => ['label' => 'Lisle Show',                        'detail' => 'H: Rockford University · ORD',                             'type' => 'show',      'city' => 'Rockford, IL'],
-    '2026-07-11' => ['label' => 'Whitewater Show',                   'detail' => 'H: Rockford University · No Fly',                          'type' => 'show'],
-    '2026-07-12' => ['label' => 'Des Moines Transition Day',         'detail' => 'Visual clinic @ Theodore Roosevelt HS · No Fly',           'type' => 'travel',    'city' => 'Des Moines, IA'],
-    '2026-07-13' => ['label' => 'Olathe Show',                       'detail' => 'H: Fort Osage HS, Independence · MCI',                    'type' => 'show',      'city' => 'Independence, MO'],
-    '2026-07-14' => ['label' => 'Broken Arrow Show',                 'detail' => 'H: Owasso HS · TUL',                                      'type' => 'show',      'city' => 'Owasso, OK'],
-    '2026-07-15' => ['label' => 'Travel',                            'detail' => 'H: Naamen Forest HS · No Fly',                             'type' => 'travel',    'city' => 'Denton, TX'],
-    '2026-07-16' => ['label' => 'Denton Show',                       'detail' => 'H: Naamen Forest HS · DFW',                               'type' => 'show'],
-    '2026-07-17' => ['label' => 'Travel',                            'detail' => 'H: Midway High School · No Fly',                           'type' => 'travel',    'city' => 'Pleasanton, TX'],
-    '2026-07-18' => ['label' => 'San Antonio Show',                  'detail' => 'H: Pleasanton High School · SAT',                         'type' => 'show'],
+    '2026-07-10' => ['label' => 'Lisle Show',                        'detail' => 'H: Rockford University · ORD',                             'type' => 'show',      'city' => 'Lisle, IL', 'result' => '1st · 80.800'],
+    '2026-07-11' => ['label' => 'Whitewater Show',                   'detail' => 'H: Rockford University · No Fly',                          'type' => 'show',      'city' => 'Whitewater, WI', 'result' => '1st · 83.350'],
+    '2026-07-12' => ['label' => 'Des Moines Transition Day',         'detail' => 'Visual clinic @ Theodore Roosevelt HS · No Fly',           'type' => 'travel'],
+    '2026-07-13' => ['label' => 'Olathe Show',                       'detail' => 'H: Fort Osage HS, Independence · MCI',                    'type' => 'show',      'city' => 'Olathe, KS', 'result' => '1st · 84.300'],
+    '2026-07-14' => ['label' => 'Broken Arrow Show',                 'detail' => 'H: Owasso HS · TUL',                                      'type' => 'show',      'city' => 'Broken Arrow, OK', 'result' => '3rd · 85.000'],
+    '2026-07-15' => ['label' => 'Travel',                            'detail' => 'H: Naamen Forest HS · No Fly',                             'type' => 'travel'],
+    '2026-07-16' => ['label' => 'Denton Show',                       'detail' => 'H: Naamen Forest HS · DFW',                               'type' => 'show',      'city' => 'Denton, TX'],
+    '2026-07-17' => ['label' => 'Rehearsal — Midway High School',    'detail' => '10 ish – 2 ish · No Fly',                              'type' => 'rehearsal'],
+    '2026-07-18' => ['label' => 'San Antonio Show',                  'detail' => 'H: Pleasanton High School · SAT',                         'type' => 'show',      'city' => 'San Antonio, TX'],
     '2026-07-19' => ['label' => 'San Antonio Free Day + Laundry',    'detail' => 'H: Pleasanton High School · SAT',                         'type' => 'free'],
-    '2026-07-20' => ['label' => 'McKinney Show',                     'detail' => 'H: Pilot Point Middle School · No Fly',                   'type' => 'show',      'city' => 'Pilot Point, TX'],
-    '2026-07-21' => ['label' => 'Travel',                            'detail' => 'H: Collierville HS · No Fly',                             'type' => 'travel',    'city' => 'Collierville, TN'],
+    '2026-07-20' => ['label' => 'McKinney Show',                     'detail' => 'H: Pilot Point Middle School · No Fly',                   'type' => 'show',      'city' => 'McKinney, TX'],
+    '2026-07-21' => ['label' => 'Travel',                            'detail' => 'H: Collierville HS · No Fly',                             'type' => 'travel'],
     '2026-07-22' => ['label' => 'Evansville Show',                   'detail' => 'H: Evansville North HS · EVV',                            'type' => 'show',      'city' => 'Evansville, IN'],
-    '2026-07-23' => ['label' => 'Travel',                            'detail' => 'H: NIU · ORD (no van)',                                   'type' => 'travel',    'city' => 'DeKalb, IL'],
-    '2026-07-24' => ['label' => 'Madison Show',                      'detail' => 'H: NIU · No Fly',                                         'type' => 'show'],
-    '2026-07-25' => ['label' => 'NIU Show',                          'detail' => 'H: NIU · ORD',                                            'type' => 'show'],
+    '2026-07-23' => ['label' => 'Travel',                            'detail' => 'H: NIU · ORD (no van)',                                   'type' => 'travel'],
+    '2026-07-24' => ['label' => 'Madison Show',                      'detail' => 'H: NIU · No Fly',                                         'type' => 'show',      'city' => 'Madison, WI'],
+    '2026-07-25' => ['label' => 'NIU Show',                          'detail' => 'H: NIU · ORD',                                            'type' => 'show',      'city' => 'DeKalb, IL'],
     '2026-07-26' => ['label' => 'NIU Rehearsal',                     'detail' => 'H: NIU · ORD',                                            'type' => 'rehearsal'],
     '2026-07-27' => ['label' => 'Mason, OH Show',                    'detail' => 'H: TBD · CVG',                                            'type' => 'show',      'city' => 'Mason, OH'],
-    '2026-07-28' => ['label' => 'Travel — Pennsylvania',             'detail' => 'H: Salamanca HS, NY · No Fly',                            'type' => 'travel',    'city' => 'Salamanca, NY'],
-    '2026-07-29' => ['label' => 'Boston Free Day + Laundry',         'detail' => 'BOS',                                                     'type' => 'free',      'city' => 'Lawrence, MA'],
-    '2026-07-30' => ['label' => 'Lawrence, MA Show',                 'detail' => 'BOS',                                                     'type' => 'show'],
-    '2026-07-31' => ['label' => 'Travel — Pennsylvania',             'detail' => 'H: Wilson High School, Reading · No Fly',                 'type' => 'travel',    'city' => 'Reading, PA'],
-    '2026-08-01' => ['label' => 'Allentown Show',                    'detail' => 'H: Wilson High School · ABE',                             'type' => 'show'],
-    '2026-08-02' => ['label' => 'Travel — Indiana',                  'detail' => 'H: Indiana University of PA',                            'type' => 'travel',    'city' => 'Indiana, PA'],
+    '2026-07-28' => ['label' => 'Travel — Pennsylvania',             'detail' => 'H: Salamanca HS, NY · No Fly',                            'type' => 'travel'],
+    '2026-07-29' => ['label' => 'Boston Free Day + Laundry',         'detail' => 'BOS',                                                     'type' => 'free'],
+    '2026-07-30' => ['label' => 'Lawrence, MA Show',                 'detail' => 'BOS',                                                     'type' => 'show',      'city' => 'Lawrence, MA'],
+    '2026-07-31' => ['label' => 'Travel — Pennsylvania',             'detail' => 'H: Wilson High School, Reading · No Fly',                 'type' => 'travel'],
+    '2026-08-01' => ['label' => 'Allentown Show',                    'detail' => 'H: Wilson High School · ABE',                             'type' => 'show',      'city' => 'Allentown, PA'],
+    '2026-08-02' => ['label' => 'Travel — Indiana',                  'detail' => 'H: Indiana University of PA',                            'type' => 'travel'],
     '2026-08-03' => ['label' => 'Lexington, KY Show',                'detail' => 'H: Lexington Catholic HS',                               'type' => 'show',      'city' => 'Lexington, KY'],
-    '2026-08-04' => ['label' => 'Rehearsal',                         'detail' => "Carmel Dad\'s Club, Carmel IN · IND",                     'type' => 'rehearsal', 'city' => 'Carmel, IN'],
+    '2026-08-04' => ['label' => 'Rehearsal',                         'detail' => "Carmel Dad\'s Club, Carmel IN · IND",                     'type' => 'rehearsal'],
     '2026-08-05' => ['label' => 'Rehearsal',                         'detail' => "Carmel Dad\'s Club, Carmel IN · IND",                     'type' => 'rehearsal'],
     '2026-08-06' => ['label' => 'DCI PRELIMS',                       'detail' => 'Indianapolis, IN',                                        'type' => 'dci',       'city' => 'Indianapolis, IN'],
-    '2026-08-07' => ['label' => 'DCI SEMIFINALS',                    'detail' => 'Indianapolis, IN',                                        'type' => 'dci'],
-    '2026-08-08' => ['label' => 'DCI FINALS',                        'detail' => 'Indianapolis, IN',                                        'type' => 'dci'],
+    '2026-08-07' => ['label' => 'DCI SEMIFINALS',                    'detail' => 'Indianapolis, IN',                                        'type' => 'dci',       'city' => 'Indianapolis, IN'],
+    '2026-08-08' => ['label' => 'DCI FINALS',                        'detail' => 'Indianapolis, IN',                                        'type' => 'dci',       'city' => 'Indianapolis, IN'],
     '2026-08-09' => ['label' => 'Banquet',                           'detail' => 'End of season',                                           'type' => 'milestone'],
 ];
 
@@ -191,6 +195,17 @@ $months = [
     ['year' => 2026, 'month' => 7,  'name' => 'July 2026',   'phase' => 'Summer Tour'],
     ['year' => 2026, 'month' => 8,  'name' => 'August 2026', 'phase' => 'Summer Tour → DCI Championships · Indianapolis IN'],
 ];
+
+// Next upcoming show/championship drives the hero; today's entry feeds the banner.
+$next_show = null;
+foreach ($events as $d => $e) {
+    if ($d >= $today && in_array($e['type'], ['show', 'dci'], true)) {
+        $next_show = ['date' => $d] + $e;
+        break;
+    }
+}
+$today_event    = $events[$today] ?? null;
+$days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 86400);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -258,6 +273,24 @@ $months = [
     .ticker-item { font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
     .ticker-item strong { color: var(--text); }
     @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+    .countdown-pill { display: inline-block; background: rgba(255,215,0,0.14); border: 1px solid rgba(255,215,0,0.45); color: #FFD700; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; backdrop-filter: blur(4px); margin-left: 6px; }
+
+    .today-banner { background: var(--surface-2); border-bottom: 1px solid var(--border); }
+    .today-banner-inner { max-width: 1100px; margin: 0 auto; padding: 10px 1.5rem; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-secondary); flex-wrap: wrap; }
+    .today-banner-inner strong { color: var(--text); font-weight: 600; }
+    .today-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .today-detail { color: var(--text-muted); font-size: 13px; }
+
+    .latest-strip { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.1rem 0 1.3rem; }
+    .latest-strip .section-label { max-width: 1100px; margin: 0 auto 0.8rem; padding: 0 1.5rem; }
+    .strip { display: flex; gap: 10px; overflow-x: auto; padding: 0 1.5rem 6px; max-width: 1100px; margin: 0 auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    .strip-item { position: relative; flex: 0 0 auto; width: 156px; height: 156px; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; scroll-snap-align: start; }
+    .strip-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
+    .strip-item:hover img { transform: scale(1.04); }
+    .strip-badge { position: absolute; top: 7px; left: 7px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 10px; backdrop-filter: blur(3px); }
+    .strip-time { position: absolute; bottom: 6px; right: 9px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    @media (max-width: 600px) { .strip-item { width: 124px; height: 124px; } }
 
     .tab-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
     .tab-btn { flex: 1; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 16px 8px 13px; cursor: pointer; transition: color 0.15s, border-color 0.15s; text-align: center; }
@@ -500,6 +533,11 @@ $months = [
     .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; object-fit: contain; }
     .lightbox-close { position: fixed; top: 1rem; right: 1.25rem; background: none; border: none; color: white; font-size: 2rem; cursor: pointer; line-height: 1; opacity: 0.8; }
     .lightbox-close:hover { opacity: 1; }
+    .lightbox-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #fff; width: 46px; height: 46px; border-radius: 50%; font-size: 1.7rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.85; z-index: 1001; padding-bottom: 4px; }
+    .lightbox-nav:hover { opacity: 1; background: rgba(255,255,255,0.16); }
+    .lightbox-nav.prev { left: 1rem; }
+    .lightbox-nav.next { right: 1rem; }
+    @media (max-width: 600px) { .lightbox-nav { width: 38px; height: 38px; font-size: 1.4rem; } }
     .video-wrap { position: relative; border-radius: var(--radius); overflow: hidden; aspect-ratio: 16 / 9; background: #000; }
     .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
@@ -527,20 +565,30 @@ $months = [
     .today-num-wrap { display: flex; align-items: center; gap: 4px; }
     .today-dot { width: 6px; height: 6px; border-radius: 50%; background: #B01A1C; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(176,26,28,0.5); animation: pulse 2s infinite; }
     .day-num { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block; }
-    .event-pill { display: block; border-radius: 5px; padding: 4px 7px; margin-bottom: 4px; font-size: 0.72rem; font-weight: 600; line-height: 1.3; color: #000; cursor: default; overflow: hidden; position: relative; }
+    .event-pill { display: block; border-radius: 5px; padding: 4px 7px; margin-bottom: 4px; font-size: 0.72rem; font-weight: 600; line-height: 1.3; color: #000; cursor: default; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; position: relative; }
     .event-pill.dci { font-size: 0.78rem; font-weight: 800; letter-spacing: .02em; }
     .event-pill:hover::after { content: attr(data-detail); position: absolute; bottom: calc(100% + 4px); left: 0; min-width: 150px; max-width: 220px; background: #2a2a2a; color: #F2F0EA; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 6px 9px; font-size: 0.7rem; font-weight: 400; white-space: normal; z-index: 10; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.6); }
+    .event-city { display: block; font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event-result { display: block; font-size: 0.63rem; font-weight: 700; color: #FFD700; margin-top: 1px; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .dci-info-box { margin-top: 1.5rem; background: rgba(176,26,28,0.06); border: 1px solid rgba(176,26,28,0.2); border-radius: 10px; padding: 14px 18px; font-size: 0.82rem; color: var(--text-secondary); }
     .dci-info-box strong { color: #FFD700; display: block; margin-bottom: 6px; font-size: 0.88rem; }
     .month-view { display: none; }
     .month-view.active { display: block; }
 
+    .cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .cal-dow-row, .cal-grid { min-width: 280px; }
+    .cal-phase { white-space: normal; line-height: 1.4; }
+
     @media (max-width: 600px) {
-      .cal-cell { min-height: 64px; padding: 4px; }
-      .event-pill { font-size: 0.6rem; padding: 2px 4px; }
+      .cal-cell { min-height: 58px; padding: 3px; }
+      .day-num { font-size: 0.72rem; margin-bottom: 3px; }
+      .event-pill { font-size: 0.58rem; padding: 2px 3px; }
       .event-pill:hover::after { display: none; }
       .cal-month-name { font-size: 1rem; }
+      .cal-phase { font-size: 0.72rem; }
       .tab-btn { font-size: 13px; padding: 14px 4px 11px; }
+      .dci-info-box { font-size: 0.78rem; }
+      .dci-info-box p { margin-top: 4px; }
     }
 
     /* Show Night Mode */
@@ -624,6 +672,16 @@ $months = [
           <?php endif; ?>
           <div class="hero-title">Keep up with Matéo</div>
           <div class="hero-sub">Phantom Regiment &middot; Drum Corps International</div>
+          <div style="margin:0.6rem 0 0.9rem;">
+            <span class="show-pill">Bloodline</span>
+            <?php if ($days_to_finals > 1): ?>
+            <span class="countdown-pill">DCI Finals in <?= $days_to_finals ?> days</span>
+            <?php elseif ($days_to_finals === 1): ?>
+            <span class="countdown-pill">DCI Finals tomorrow!</span>
+            <?php elseif ($days_to_finals === 0): ?>
+            <span class="countdown-pill">DCI Finals — tonight!</span>
+            <?php endif; ?>
+          </div>
           <a class="msg-btn" href="/fanmail.php">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Post Phanmail to Matéo
@@ -638,6 +696,31 @@ $months = [
       </div>
     </div>
   </div>
+
+  <?php if ($today_event): ?>
+  <div class="today-banner">
+    <div class="today-banner-inner">
+      <span class="today-dot" style="background:<?= $type_colors[$today_event['type']] ?>"></span>
+      <span><strong>Today on tour:</strong> <?= htmlspecialchars($today_event['label']) ?></span>
+      <?php if (!empty($today_event['detail'])): ?><span class="today-detail"><?= htmlspecialchars($today_event['detail']) ?></span><?php endif; ?>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <?php if ($latest_photos): ?>
+  <section class="latest-strip">
+    <div class="section-label">Latest photos</div>
+    <div class="strip">
+      <?php foreach (array_slice($latest_photos, 0, 12) as $p): ?>
+      <div class="strip-item" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
+        <img src="<?= htmlspecialchars($p['thumb']) ?>" alt="Phantom Regiment tour photo" loading="lazy" />
+        <?php if ($p['label']): ?><span class="strip-badge"><?= htmlspecialchars($p['label']) ?></span><?php endif; ?>
+        <span class="strip-time"><?= date('M j', $p['mtime']) ?></span>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </section>
+  <?php endif; ?>
 
   <nav class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('latest', this)">Latest</button>
@@ -1471,6 +1554,8 @@ $months = [
                 data-detail="<?= htmlspecialchars($tipDetail) ?>">
                 <?= $isJudged ? '★ ' : '' ?><?= htmlspecialchars($ev['label']) ?>
               </span>
+              <?php if (!empty($ev['city'])): ?><span class="event-city"><?= htmlspecialchars($ev['city']) ?></span><?php endif; ?>
+              <?php if (!empty($ev['result'])): ?><span class="event-result"><?= htmlspecialchars($ev['result']) ?></span><?php endif; ?>
               <?php endforeach; ?>
               <?php endif; ?>
             </div>
