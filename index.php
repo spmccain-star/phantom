@@ -206,6 +206,9 @@ $months = [
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="/assets/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon-v2.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <style>
@@ -244,7 +247,7 @@ $months = [
     .hero-location { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); white-space: nowrap; margin-top: 0.6rem; }
     @media (min-width: 480px) { .hero-location { position: absolute; bottom: 0; right: 0; margin-top: 0; } }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
-    .msg-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--red); border: none; color: #fff; font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 20px; text-decoration: none; margin-top: 0.75rem; align-self: flex-start; transition: background 0.15s; }
+    .msg-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--red); border: none; color: #fff; font-size: 15px; font-weight: 700; padding: 13px 26px; border-radius: 24px; text-decoration: none; margin-top: 0.9rem; align-self: flex-start; transition: background 0.15s; }
     .msg-btn:hover { background: var(--red-dark); }
 
     .ticker-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(20,20,20,0.95); border-top: 1px solid var(--border); backdrop-filter: blur(8px); height: 36px; display: flex; align-items: center; overflow: hidden; }
@@ -362,18 +365,83 @@ $months = [
     .caption-score { width: 44px; text-align: right; font-size: 14px; font-weight: 700; color: var(--text); flex-shrink: 0; }
     .caption-row.percussion .caption-score { color: #FFD700; }
     .caption-max { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+    /* Results page */
+    .results-section-head { display: flex; align-items: baseline; gap: 10px; margin: 1.5rem 0 0.75rem; }
+    .results-section-head h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin: 0; }
+    .results-section-head span { font-size: 11px; color: var(--text-muted); opacity: 0.6; }
+    /* Latest show hero */
+    .show-hero { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 1.5rem; margin-bottom: 1rem; }
+    .show-hero-top { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+    .show-hero-score-row { display: flex; align-items: baseline; gap: 0.75rem; }
+    .show-hero-score { font-size: 52px; font-weight: 900; color: #FFD700; line-height: 1; letter-spacing: -0.02em; }
+    .show-hero-place { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; }
+    .show-hero-name { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+    .show-hero-sub { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+    .show-hero-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: rgba(255,215,0,0.15); color: #FFD700; letter-spacing: 0.06em; }
+    .show-hero-updated { font-size: 11px; color: var(--text-muted); }
     /* Leaderboard */
-    .leaderboard-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
-    .leaderboard-card-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text); }
-    .leaderboard-row { display: flex; align-items: center; gap: 10px; padding: 0.65rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 13px; }
-    .leaderboard-row:last-child { border-bottom: none; }
-    .leaderboard-row.phantom { background: rgba(255,215,0,0.07); border-left: 3px solid #FFD700; }
-    .leaderboard-rank { width: 24px; font-size: 12px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; text-align: center; }
-    .leaderboard-row.phantom .leaderboard-rank { color: #FFD700; }
-    .leaderboard-name { flex: 1; color: var(--text-secondary); }
-    .leaderboard-row.phantom .leaderboard-name { color: var(--text); font-weight: 700; }
-    .leaderboard-score { font-size: 14px; font-weight: 800; color: var(--text); }
-    .leaderboard-row.phantom .leaderboard-score { color: #FFD700; }
+    .lb-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .lb-header { padding: 0.8rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .lb-header-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .lb-header-sub { font-size: 11px; color: var(--text-muted); }
+    .lb-row { display: grid; grid-template-columns: 28px 1fr auto auto; align-items: center; gap: 8px; padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row.phantom { background: rgba(255,215,0,0.07); border-left: 3px solid #FFD700; padding-left: calc(1.25rem - 3px); }
+    .lb-rank { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: center; }
+    .lb-row.phantom .lb-rank { color: #FFD700; }
+    .lb-name { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-row.phantom .lb-name { color: var(--text); font-weight: 700; }
+    .lb-gap { font-size: 11px; color: var(--text-muted); text-align: right; min-width: 44px; }
+    .lb-row.phantom .lb-gap { color: rgba(255,215,0,0.5); }
+    .lb-score { font-size: 14px; font-weight: 800; color: var(--text); text-align: right; min-width: 52px; }
+    .lb-row.phantom .lb-score { color: #FFD700; }
+    .lb-divider { height: 1px; background: var(--border); opacity: 0.5; margin: 0; }
+    /* Season stats strip */
+    .season-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .season-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 0.9rem; text-align: center; }
+    .season-stat-val { font-size: 24px; font-weight: 900; color: var(--text); line-height: 1; }
+    .season-stat-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+    .season-stat-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    /* History table */
+    .history-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .history-row { display: grid; grid-template-columns: 1fr 64px 56px 52px; align-items: center; gap: 8px; padding: 0.7rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .history-row:last-child { border-bottom: none; }
+    .history-row.history-head { padding: 0.55rem 1.25rem; background: var(--surface-2); }
+    .history-head-cell { font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); text-align: right; }
+    .history-head-cell:first-child { text-align: left; }
+    .history-show { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .history-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .history-score { font-size: 14px; font-weight: 800; color: var(--text); text-align: right; }
+    .history-place { font-size: 15px; font-weight: 800; text-align: right; }
+    .history-trend { font-size: 12px; text-align: right; white-space: nowrap; }
+    .history-trend.up { color: #4CAF50; }
+    .history-trend.down { color: #E07070; }
+    .history-trend.same { color: var(--text-muted); }
+    /* Score trend chart */
+    .trend-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 0.5rem 0.5rem; margin-bottom: 1rem; overflow: hidden; }
+    /* Projection */
+    .proj-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid rgba(176,26,28,0.6); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1.25rem; }
+    .proj-score { font-size: 36px; font-weight: 900; color: var(--red); line-height: 1; }
+    .proj-label { font-size: 14px; font-weight: 700; color: var(--text); }
+    .proj-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    /* DCI history */
+    .dci-hist-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .dci-hist-chart { padding: 0.75rem 0.5rem 0.25rem; overflow-x: auto; }
+    .dci-hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .dci-hist-table th { padding: 0.5rem 1rem; text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .dci-hist-table th:not(:first-child) { text-align: right; }
+    .dci-hist-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .dci-hist-table td:not(:first-child) { text-align: right; }
+    .dci-hist-table tr:last-child td { border-bottom: none; }
+    .dci-hist-table tr.champ td { color: var(--text); font-weight: 700; }
+    .dci-hist-table .place-gold { color: #FFD700; }
+    .dci-hist-table .place-silver { color: #C0C0C0; }
+    .dci-hist-table .place-bronze { color: #CD7F32; }
+    /* Links */
+    .results-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 2rem; }
+    .results-link { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1.1rem; text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; transition: background 0.12s; }
+    .results-link:hover { background: var(--surface-2); }
+    .results-link span { font-size: 11px; color: var(--text-muted); display: block; font-weight: 400; margin-top: 2px; }
 
     .venue-banner { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .venue-banner-title { font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); line-height: 1.2; }
@@ -391,6 +459,17 @@ $months = [
     .detail svg { flex-shrink: 0; margin-top: 2px; }
     .ticket-btn { display: block; margin: 0 1.5rem 1.25rem; padding: 14px 20px; background: var(--red); color: white; text-align: center; border-radius: 10px; font-size: 15px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
     .ticket-btn:hover { background: var(--red-dark); }
+    /* Day-of schedule timeline */
+    .day-schedule { margin: 0 1.5rem 1.25rem; padding: 1rem 1.1rem; background: var(--surface-2); border-radius: 10px; }
+    .day-schedule-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.85rem; }
+    .sched-row { display: grid; grid-template-columns: 68px 16px 1fr; align-items: center; gap: 4px; position: relative; padding: 5px 0; }
+    .sched-time { font-size: 13px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .sched-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong, #555); justify-self: center; position: relative; z-index: 1; }
+    .sched-row:not(:last-child) .sched-dot::after { content: ''; position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 2px; height: calc(100% + 10px); background: var(--border); }
+    .sched-label { font-size: 14px; color: var(--text-secondary); line-height: 1.35; }
+    .sched-highlight .sched-time { color: #FFD700; }
+    .sched-highlight .sched-dot { background: #FFD700; box-shadow: 0 0 0 3px rgba(255,215,0,0.18); }
+    .sched-highlight .sched-label { color: var(--text); font-weight: 600; }
 
     .links-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
     .links-header { padding: 1.1rem 1.5rem 0.6rem; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
@@ -546,7 +625,7 @@ $months = [
           <div class="hero-title">Keep up with Matéo</div>
           <div class="hero-sub">Phantom Regiment &middot; Drum Corps International</div>
           <a class="msg-btn" href="/fanmail.php">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Post Phanmail to Matéo
           </a>
         </div>
@@ -632,14 +711,13 @@ $months = [
           <div>
             <div class="card-option-num">Friday · Free</div>
             <div class="card-title">Free rehearsal</div>
-            <div class="card-date">Friday, July 17</div>
+            <div class="card-date">Saturday, July 18 &nbsp;·&nbsp; 7:00 PM</div>
           </div>
-          <span class="badge badge-us">We'll be here</span>
+          <span class="badge badge-free">Skipping</span>
         </div>
         <div class="card-body">
           <p>Phantom Regiment rehearses at a high school about 1 hr 40 min south of the Alamodome. Free, up-close, and you'll likely see them run the full show.</p>
-          <p><strong>We'll be there</strong> — come say hi before heading into San Antonio for the show.</p>
-          <p style="font-size:13px;color:var(--text-muted);margin-top:0.5rem;"><strong style="color:var(--text-secondary);">What to bring:</strong> Sunscreen, water, folding chair or blanket, hat, comfortable shoes, cash for gas. It's South Texas in July — expect 95–100°F.</p>
+          <p>We won't be attending the rehearsal this year — heading straight to San Antonio for the show.</p>
         </div>
         <div class="divider"></div>
         <div class="details">
@@ -704,11 +782,34 @@ $months = [
           <div>
             <div class="card-option-num">Saturday · Ticketed</div>
             <div class="card-title">Official performance</div>
-            <div class="card-date">Saturday, July 18 · ~9 PM</div>
+            <div class="card-date">Saturday, July 18 · Showtime 8:38 PM</div>
           </div>
         </div>
         <div class="card-body">
-          <p>Phantom performs <em>Bloodline</em> inside the Alamodome around 9 PM. The full event runs from 1:30 PM. Matéo will be near <strong>Section 116</strong> on the field sideline. Exact times post day-of.</p>
+          <p>Phantom performs <em>Bloodline</em> inside the Alamodome. Matéo will be near <strong>Section 116</strong> on the field sideline.</p>
+        </div>
+        <div class="day-schedule">
+          <div class="day-schedule-title">Day-of schedule</div>
+          <div class="sched-row">
+            <div class="sched-time">6:00 PM</div>
+            <div class="sched-dot"></div>
+            <div class="sched-label">Matéo arrives at the Alamodome</div>
+          </div>
+          <div class="sched-row">
+            <div class="sched-time">6:30 PM</div>
+            <div class="sched-dot"></div>
+            <div class="sched-label">Warmup in the parking lots</div>
+          </div>
+          <div class="sched-row sched-highlight">
+            <div class="sched-time">8:38 PM</div>
+            <div class="sched-dot"></div>
+            <div class="sched-label">Showtime — <em>Bloodline</em></div>
+          </div>
+          <div class="sched-row">
+            <div class="sched-time">10:30 PM</div>
+            <div class="sched-dot"></div>
+            <div class="sched-label">Matéo can say hi until this time</div>
+          </div>
         </div>
         <div class="divider"></div>
         <div class="details">
@@ -720,15 +821,11 @@ $months = [
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             Watch near Section 116
           </div>
-          <div class="detail">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Matéo performs ~9 PM
-          </div>
         </div>
         <a class="ticket-btn" href="https://www.ticketmaster.com/event/3A00636CF94C7C32" target="_blank" rel="noopener">
           Buy tickets on Ticketmaster →
         </a>
-        <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Phantom+Regiment+%E2%80%94+Bloodline+%7C+DCI+San+Antonio&dates=20260718T210000/20260718T230000&location=Alamodome,+San+Antonio,+TX&details=Matéo+performs+with+Phantom+Regiment.+Section+116." target="_blank" rel="noopener" style="display:block;text-align:center;font-size:12px;color:var(--text-muted);padding:0.5rem 1.5rem 1rem;text-decoration:none;">
+        <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Phantom+Regiment+%E2%80%94+Bloodline+%7C+DCI+San+Antonio&dates=20260718T203800/20260718T223000&location=Alamodome,+San+Antonio,+TX&details=Matéo+performs+with+Phantom+Regiment.+Section+116." target="_blank" rel="noopener" style="display:block;text-align:center;font-size:12px;color:var(--text-muted);padding:0.5rem 1.5rem 1rem;text-decoration:none;">
           + Add to Google Calendar
         </a>
       </div>
@@ -740,7 +837,7 @@ $months = [
         <div class="card-horizontal-left">
           <div class="card-option-num">Also available</div>
           <div class="card-title" style="font-size:18px;">Watch online</div>
-          <div class="card-date">Saturday, July 18 · ~9 PM CT</div>
+          <div class="card-date">Saturday, July 18 · 8:38 PM CT</div>
           <p style="font-size:14px;color:var(--text-secondary);margin-top:0.5rem;line-height:1.6;">FloMarching streams DCI events live — watch Phantom perform <em>Bloodline</em> from anywhere.</p>
         </div>
         <div class="card-horizontal-right">
@@ -833,23 +930,39 @@ $months = [
     <div class="content">
       <div class="section-label" style="margin-top:1.5rem;">Photos</div>
       <?php
-      $asset_dir = __DIR__ . '/assets';
-      $gallery_files = glob($asset_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
-      $skip = ['bloodline.png','bloodline.webp','mateo.jpg','favicon.png'];
-      // Deduplicate: group by stem, prefer jpg/png as base, webp as source
+      $asset_dir   = __DIR__ . '/assets';
+      $upload_dir  = __DIR__ . '/data/gallery';
+      $hidden_file = __DIR__ . '/data/gallery_hidden.json';
+      $hidden = file_exists($hidden_file) ? (json_decode(file_get_contents($hidden_file), true) ?: []) : [];
+      $skip = ['bloodline.png','bloodline.webp','mateo.jpg','favicon.png','apple-touch-icon.png','apple-touch-icon-v2.png'];
+
+      $render = [];
+
+      // Admin-uploaded photos first (newest first) — live in data/gallery, survive deploys
+      if (is_dir($upload_dir)) {
+          $ups = glob($upload_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
+          usort($ups, fn($a, $b) => filemtime($b) <=> filemtime($a));
+          foreach ($ups as $path) {
+              $fname = basename($path);
+              if (in_array('gallery/' . $fname, $hidden)) continue;
+              $render[] = ['src' => '/data/gallery/' . $fname, 'webp' => null];
+          }
+      }
+
+      // Bundled stock photos — group by stem, prefer jpg/png as base, webp as source
       $stems = [];
-      foreach ($gallery_files as $path) {
+      foreach (glob($asset_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE) as $path) {
           $fname = basename($path);
           if (in_array($fname, $skip)) continue;
           $ext  = strtolower(pathinfo($fname, PATHINFO_EXTENSION));
           $stem = pathinfo($fname, PATHINFO_FILENAME);
-          if (!isset($stems[$stem])) $stems[$stem] = ['base' => null, 'webp' => null, 'path' => null];
+          if (!isset($stems[$stem])) $stems[$stem] = ['base' => null, 'webp' => null];
           if ($ext === 'webp') { $stems[$stem]['webp'] = '/assets/' . $fname; }
-          else { $stems[$stem]['base'] = '/assets/' . $fname; $stems[$stem]['path'] = $path; }
+          else { $stems[$stem]['base'] = '/assets/' . $fname; }
       }
-      // Build flat render list (no orientation classification needed)
-      $render = [];
       foreach ($stems as $stem => $f) {
+          $base_fname = basename($f['base'] ?? $f['webp']);
+          if (in_array('assets/' . $base_fname, $hidden)) continue;
           $render[] = ['src' => $f['base'] ?? $f['webp'], 'webp' => $f['webp']];
       }
       ?>
@@ -910,358 +1023,44 @@ $months = [
   <div class="tab-panel" id="tab-results">
     <div class="content">
     <?php
-      // Pull latest history entry for caption/leaderboard
-      $_latest_hist  = !empty($_scores_history) ? end($_scores_history) : null;
-      $_has_captions = !empty($_latest_hist['captions']);
-      $_has_leader   = !empty($_latest_hist['leaderboard']);
-      // Season best
-      $_best_score   = null; $_best_show = null;
+      $_latest_hist = !empty($_scores_history) ? end($_scores_history) : null;
+      $_has_leader  = !empty($_latest_hist['leaderboard']);
+
+      $_best_score = null;
       if (!empty($_scores_history)) {
           $best = null;
           foreach ($_scores_history as $h) {
               if ($best === null || (float)$h['score'] > (float)$best['score']) $best = $h;
           }
           $_best_score = $best['score'] ?? null;
-          $_best_show  = $best['show']  ?? null;
       }
-    ?>
 
-    <?php if (empty($_scores_history)): ?>
-      <!-- Empty state -->
-      <div style="margin-top:1.5rem;">
-        <div class="results-empty">
-          <strong>Season just getting started</strong>
-          Scores will appear here after each competition night.
-        </div>
-      </div>
-    <?php else: ?>
-
-      <!-- Hero score card -->
-      <?php if (!empty($_score['score'])): ?>
-      <div class="hero-score-card" style="margin-top:1.5rem;">
-        <div class="hero-score-label">Latest score</div>
-        <div class="hero-score-num"><?= htmlspecialchars($_score['score']) ?></div>
-        <div class="hero-score-chips">
-          <span class="score-badge score-badge-place"><?= htmlspecialchars($_score['placement'] ?? '') ?> place</span>
-          <span class="score-badge score-badge-show"><?= htmlspecialchars($_score['show'] ?? '') ?></span>
-          <?php if ($_best_score && $_score['score'] === $_best_score): ?>
-          <span class="score-badge score-badge-best">Season best</span>
-          <?php endif; ?>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <!-- Season at a glance -->
-      <div class="status-bar" style="margin-top:0.75rem;">
-        <div class="stat-card">
-          <div class="stat-val"><?= $_past_shows ?> <span style="font-size:14px;font-weight:400;color:var(--text-muted);">/ <?= $_total_shows ?></span></div>
-          <div class="stat-label">Shows</div>
-          <div class="stat-sub">this season</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-val"><?= $_days_to_finals ?></div>
-          <div class="stat-label">Days to Finals</div>
-          <div class="stat-sub">Aug 8 · Indianapolis</div>
-        </div>
-        <?php if ($_best_score): ?>
-        <div class="stat-card">
-          <div class="stat-val" style="font-size:18px;color:#FFD700;"><?= htmlspecialchars($_best_score) ?></div>
-          <div class="stat-label">Season Best</div>
-          <div class="stat-sub" style="font-size:11px;"><?= htmlspecialchars(explode(',', $_best_show ?? '')[0] ?? '') ?></div>
-        </div>
-        <?php else: ?>
-        <div class="stat-card" style="cursor:pointer;" onclick="location.href='/fanmail.php'">
-          <div class="stat-val"><?= $_msg_count ?></div>
-          <div class="stat-label">Fan Messages</div>
-          <div class="stat-sub"><?= $_photo_count ?> with photos</div>
-        </div>
-        <?php endif; ?>
-      </div>
-
-      <?php $_pct = $_total_shows > 0 ? round(($_past_shows / $_total_shows) * 100) : 0; ?>
-      <div class="season-progress">
-        <div class="progress-label">
-          <span>Season progress</span>
-          <span><?= $_pct ?>% &nbsp;&middot;&nbsp; <?= $_total_shows - $_past_shows ?> shows remaining</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" style="width:<?= $_pct ?>%;"></div></div>
-      </div>
-
-      <?php if ($_has_captions): ?>
-      <!-- Caption breakdown -->
-      <?php
-        $caps = $_latest_hist['captions'];
-        $cap_rows = [
-          ['key' => 'ge1',        'label' => 'GE Music',    'class' => ''],
-          ['key' => 'ge2',        'label' => 'GE Visual',   'class' => ''],
-          ['key' => 'visual',     'label' => 'Visual Perf', 'class' => ''],
-          ['key' => 'music',      'label' => 'Music',       'class' => ''],
-          ['key' => 'percussion', 'label' => 'Percussion',  'class' => 'percussion'],
-        ];
-        $cap_max = 20.0; // DCI: each caption out of 20 pts
-      ?>
-      <div class="caption-card">
-        <div class="caption-card-header">
-          <span class="caption-card-title">Caption Breakdown</span>
-          <span class="caption-card-sub"><?= htmlspecialchars($_latest_hist['show'] ?? '') ?></span>
-        </div>
-        <?php foreach ($cap_rows as $cr):
-          $val = isset($caps[$cr['key']]) ? (float)$caps[$cr['key']] : null;
-          $pct = $val !== null ? min(100, ($val / $cap_max) * 100) : 0;
-        ?>
-        <div class="caption-row <?= $cr['class'] ?>">
-          <div class="caption-name"><?= $cr['label'] ?></div>
-          <div class="caption-bar-wrap">
-            <div class="caption-bar" style="width:<?= number_format($pct, 1) ?>%"></div>
-          </div>
-          <div class="caption-score"><?= $val !== null ? number_format($val, 2) : '—' ?></div>
-          <div class="caption-max">/ <?= $cap_max ?></div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
-
-      <?php if ($_has_leader): ?>
-      <!-- Show leaderboard -->
-      <?php
-        $leader = $_latest_hist['leaderboard'];
-        $show_label = $_latest_hist['show'] ?? '';
-      ?>
-      <div class="leaderboard-card">
-        <div class="leaderboard-card-header">Show Leaderboard &mdash; <?= htmlspecialchars($show_label) ?></div>
-        <?php foreach ($leader as $corps):
-          $is_phantom = stripos($corps['name'] ?? '', 'Phantom') !== false;
-        ?>
-        <div class="leaderboard-row <?= $is_phantom ? 'phantom' : '' ?>">
-          <div class="leaderboard-rank"><?= (int)($corps['rank'] ?? 0) ?></div>
-          <div class="leaderboard-name"><?= htmlspecialchars($corps['name'] ?? '') ?></div>
-          <div class="leaderboard-score"><?= isset($corps['total']) ? number_format((float)$corps['total'], 3) : '—' ?></div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
-
-      <?php if (count($_scores_history) >= 2): ?>
-      <!-- Score trend chart -->
-      <?php
-        $scores_vals = array_map(fn($h) => (float)$h['score'], $_scores_history);
-        $min_s = min($scores_vals); $max_s = max($scores_vals);
-        $range = max($max_s - $min_s, 2.0);
-        $pad = $range * 0.2;
-        $y_min = $min_s - $pad; $y_max = $max_s + $pad;
-        $W = 560; $H = 140; $ML = 48; $MR = 16; $MT = 12; $MB = 28;
-        $cw = $W - $ML - $MR; $ch = $H - $MT - $MB;
-        $n = count($_scores_history);
-        function sx($i, $n, $cw, $ML) { return $ML + ($n > 1 ? ($i / ($n - 1)) * $cw : $cw / 2); }
-        function sy($v, $y_min, $y_max, $ch, $MT) { return $MT + $ch - (($v - $y_min) / ($y_max - $y_min)) * $ch; }
-        $pts = [];
-        for ($i = 0; $i < $n; $i++) $pts[] = sx($i,$n,$cw,$ML) . ',' . sy($scores_vals[$i],$y_min,$y_max,$ch,$MT);
-      ?>
-      <div class="section-label" style="margin-top:1.25rem;">Score Trend</div>
-      <div class="score-chart">
-        <svg viewBox="0 0 <?= $W ?> <?= $H ?>" xmlns="http://www.w3.org/2000/svg">
-          <?php for ($g = 0; $g <= 4; $g++): $gy = $MT + ($g / 4) * $ch; $gv = $y_max - ($g / 4) * ($y_max - $y_min); ?>
-          <line x1="<?= $ML ?>" y1="<?= $gy ?>" x2="<?= $W - $MR ?>" y2="<?= $gy ?>" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-          <text x="<?= $ML - 4 ?>" y="<?= $gy + 4 ?>" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)"><?= number_format($gv, 1) ?></text>
-          <?php endfor; ?>
-          <polyline points="<?= implode(' ', $pts) ?>" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-          <polygon points="<?= implode(' ', $pts) ?> <?= $W - $MR ?>,<?= $MT + $ch ?> <?= $ML ?>,<?= $MT + $ch ?>" fill="rgba(255,215,0,0.07)"/>
-          <?php for ($i = 0; $i < $n; $i++):
-            $px = sx($i,$n,$cw,$ML); $py = sy($scores_vals[$i],$y_min,$y_max,$ch,$MT);
-            $lbl = isset($_scores_history[$i]['show']) ? explode(',', $_scores_history[$i]['show'])[0] : '';
-            $lbl = mb_strimwidth($lbl, 0, 10, '');
-          ?>
-          <circle cx="<?= $px ?>" cy="<?= $py ?>" r="4" fill="#FFD700" stroke="#111" stroke-width="1.5"/>
-          <text x="<?= $px ?>" y="<?= $py - 8 ?>" text-anchor="middle" font-size="9.5" font-weight="700" fill="#FFD700"><?= number_format($scores_vals[$i], 3) ?></text>
-          <?php if ($n <= 10): ?>
-          <text x="<?= $px ?>" y="<?= $H - 4 ?>" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.35)"><?= htmlspecialchars($lbl) ?></text>
-          <?php endif; ?>
-          <?php endfor; ?>
-        </svg>
-      </div>
-      <?php endif; ?>
-
-      <?php
-      // Season Projection — linear regression on scores to project Finals score
-      if (count($_scores_history) >= 3):
-        $n = count($_scores_history);
-        $totalShows = 17; // Total judged shows in 2026 DCI season for Phantom
-        $sum_x=0; $sum_y=0; $sum_xy=0; $sum_x2=0;
-        foreach ($_scores_history as $i => $h) {
-          $x=$i+1; $y=(float)$h['score'];
-          $sum_x+=$x; $sum_y+=$y; $sum_xy+=$x*$y; $sum_x2+=$x*$x;
-        }
-        $denom = $n*$sum_x2 - $sum_x*$sum_x;
-        $slope = $denom!=0 ? ($n*$sum_xy - $sum_x*$sum_y)/$denom : 0;
-        $intercept = ($sum_y - $slope*$sum_x)/$n;
-        $proj = $slope*$totalShows + $intercept;
-        $proj_low  = max(0, $proj-1.8);
-        $proj_high = min(100, $proj+1.8);
-      ?>
-      <div class="projection-card" style="margin-top:1.25rem;">
-        <div class="projection-eyebrow">Season Projection</div>
-        <div class="projection-score"><?= number_format($proj, 2) ?></div>
-        <div class="projection-sub">Projected Finals score &nbsp;&middot;&nbsp; range <?= number_format($proj_low, 1) ?>–<?= number_format($proj_high, 1) ?></div>
-        <div class="projection-detail">Based on <?= $n ?> shows &nbsp;&middot;&nbsp; +<?= number_format($slope, 3) ?> pts/show trend &nbsp;&middot;&nbsp; extrapolated to show <?= $totalShows ?></div>
-      </div>
-      <?php endif; ?>
-
-      <?php
-      // Caption Trend — multi-line chart across all shows with caption data
-      $_shows_with_caps = array_values(array_filter($_scores_history, fn($h) => !empty($h['captions'])));
-      if (count($_shows_with_caps) >= 2):
-        $cap_defs = [
-          'ge1'        => ['label'=>'GE Music',   'color'=>'#7B9FD4'],
-          'ge2'        => ['label'=>'GE Visual',  'color'=>'#9B7DD4'],
-          'visual'     => ['label'=>'Visual',     'color'=>'#7DD4C5'],
-          'music'      => ['label'=>'Music',      'color'=>'#D4A07B'],
-          'percussion' => ['label'=>'Percussion', 'color'=>'#FFD700'],
-        ];
-        $CW=570; $CH=145; $CML=44; $CMR=12; $CMT=12; $CMB=28;
-        $ccw=$CW-$CML-$CMR; $cch=$CH-$CMT-$CMB;
-        $cn=count($_shows_with_caps);
-        $all_cv=[];
-        foreach($_shows_with_caps as $h) foreach($cap_defs as $k=>$_) if(isset($h['captions'][$k])) $all_cv[]=(float)$h['captions'][$k];
-        $cmin=$all_cv?min($all_cv):0; $cmax=$all_cv?max($all_cv):20;
-        $crange=max($cmax-$cmin,1.0); $cpad=$crange*0.15;
-        $cy_min=$cmin-$cpad; $cy_max=$cmax+$cpad;
-        function capX($i,$cn,$ccw,$CML){return $CML+($cn>1?($i/($cn-1))*$ccw:$ccw/2);}
-        function capY($v,$cy_min,$cy_max,$cch,$CMT){return $CMT+$cch-(($v-$cy_min)/($cy_max-$cy_min))*$cch;}
-      ?>
-      <div class="section-label" style="margin-top:1.25rem;">Caption Trend</div>
-      <div class="caption-trend-card">
-        <div class="caption-trend-header">
-          <div class="caption-trend-title">Caption Scores Across Shows</div>
-          <div class="caption-trend-sub">Percussion highlighted &nbsp;&middot;&nbsp; each out of 20 pts</div>
-        </div>
-        <div class="caption-trend-body">
-          <svg viewBox="0 0 <?=$CW?> <?=$CH?>" xmlns="http://www.w3.org/2000/svg" style="min-width:320px;display:block;width:100%;">
-            <?php for($g=0;$g<=4;$g++): $gy=$CMT+($g/4)*$cch; $gv=$cy_max-($g/4)*($cy_max-$cy_min); ?>
-            <line x1="<?=$CML?>" y1="<?=$gy?>" x2="<?=$CW-$CMR?>" y2="<?=$gy?>" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-            <text x="<?=$CML-4?>" y="<?=$gy+4?>" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)"><?=number_format($gv,1)?></text>
-            <?php endfor; ?>
-            <?php foreach($cap_defs as $k=>$cd):
-              $isperc=($k==='percussion');
-              $cpts=[];
-              for($ci=0;$ci<$cn;$ci++){
-                $cv=isset($_shows_with_caps[$ci]['captions'][$k])?(float)$_shows_with_caps[$ci]['captions'][$k]:null;
-                if($cv===null) continue;
-                $cpx=capX($ci,$cn,$ccw,$CML); $cpy=capY($cv,$cy_min,$cy_max,$cch,$CMT);
-                $cpts[]="$cpx,$cpy";
-              }
-              if(count($cpts)<2) continue;
-            ?>
-            <polyline points="<?=implode(' ',$cpts)?>" fill="none" stroke="<?=$cd['color']?>" stroke-width="<?=$isperc?2.5:1.5?>" stroke-linejoin="round" stroke-linecap="round" opacity="<?=$isperc?1:0.65?>"/>
-            <?php foreach($cpts as $cpstr): list($cpx,$cpy)=explode(',',$cpstr); ?>
-            <circle cx="<?=$cpx?>" cy="<?=$cpy?>" r="<?=$isperc?3.5:2.5?>" fill="<?=$cd['color']?>" opacity="<?=$isperc?1:0.65?>"/>
-            <?php endforeach; ?>
-            <?php endforeach; ?>
-            <?php if($cn<=9): for($ci=0;$ci<$cn;$ci++):
-              $cpx=capX($ci,$cn,$ccw,$CML);
-              $lbl=isset($_shows_with_caps[$ci]['show'])?explode(',',$_shows_with_caps[$ci]['show'])[0]:'';
-              $lbl=mb_strimwidth($lbl,0,10,'');
-            ?>
-            <text x="<?=$cpx?>" y="<?=$CH-4?>" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.28)"><?=htmlspecialchars($lbl)?></text>
-            <?php endfor; endif; ?>
-          </svg>
-        </div>
-        <div class="caption-trend-legend">
-          <?php foreach($cap_defs as $k=>$cd): ?>
-          <div class="clt-item"><div class="clt-line" style="background:<?=$cd['color']?>"></div><?=$cd['label']?></div>
-          <?php endforeach; ?>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <!-- Score history table -->
-      <div class="section-label" style="margin-top:1.25rem;">Score History</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem;">
-        <table class="results-table">
-          <thead><tr>
-            <th>Show</th><th>Score</th><th>Place</th><th></th>
-          </tr></thead>
-          <tbody>
-          <?php foreach (array_reverse($_scores_history) as $i => $h):
-            $prev = $i < count($_scores_history) - 1 ? $_scores_history[count($_scores_history) - 2 - $i] : null;
-            $trend = ''; $tclass = 'same';
-            if ($prev) {
-              $diff = (float)$h['score'] - (float)$prev['score'];
-              if ($diff > 0.001) { $trend = '↑'; $tclass = 'up'; }
-              elseif ($diff < -0.001) { $trend = '↓'; $tclass = 'down'; }
-              else { $trend = '—'; $tclass = 'same'; }
-            }
-          ?>
-          <tr>
-            <td><?= htmlspecialchars($h['show']) ?></td>
-            <td class="td-score"><?= htmlspecialchars($h['score']) ?></td>
-            <td class="td-place"><?= htmlspecialchars($h['placement']) ?></td>
-            <td class="td-trend <?= $tclass ?>"><?= $trend ?></td>
-          </tr>
-          <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-
-    <?php endif; ?>
-
-      <!-- 2026 Season Rankings -->
-      <?php
+      // Official DCI World Class Rankings — avg of last 3 shows (as of Jul 13)
       $_rankings = [
-        ['rank'=>1, 'name'=>'Santa Clara Vanguard', 'div'=>'World', 'score'=>79.100,
-         'logo'=>'https://production.assets.dci.org/5a18117cd670bd001b2e6387_MJHtTWe9hESYCjjk5gijQHS1BiA14M6Y.png'],
-        ['rank'=>2, 'name'=>'Blue Devils',           'div'=>'World', 'score'=>77.250,
-         'logo'=>'https://production.assets.dci.org/5a181124d670bd001f490b07_8xOFgbZF3ijakryaqz0UGPXLp0-uTtnG.png'],
-        ['rank'=>3, 'name'=>'Phantom Regiment',      'div'=>'World', 'score'=>76.400,
-         'logo'=>'https://production.assets.dci.org/63db1e325c9f3d71ff0f3572_5Y27rZO3PlACjdvRXZpkhOJdaYq-7SgK.png'],
-        ['rank'=>4, 'name'=>'Troopers',              'div'=>'World', 'score'=>71.850,
-         'logo'=>'https://production.assets.dci.org/63db1ffdf3587c77c40c26f4_e7iiBM79ch4cFFFPGleYxCjMd54izkiu.png'],
-        ['rank'=>5, 'name'=>'Blue Knights',          'div'=>'World', 'score'=>70.850,
-         'logo'=>'https://production.assets.dci.org/664e443b03a281abe60e72a2_fG7jyZ6fFvU8vSeg0iqQCJsG_P4ce4rQ.png'],
-        ['rank'=>6, 'name'=>'Colts',                 'div'=>'World', 'score'=>69.700,
-         'logo'=>'https://production.assets.dci.org/5a181125d670bd001f490b12_kKAfWISGqTfPVu7Qvz-Q9xxUeupl2zpF.png'],
-        ['rank'=>7, 'name'=>'The Battalion',         'div'=>'Open',  'score'=>63.300,
-         'logo'=>'https://production.assets.dci.org/5a181124d670bd001f490b05_BbTrlTSgNnEDESUEFxCRXf7FBTu2CY1b.png'],
-        ['rank'=>8, 'name'=>'Genesis',               'div'=>'World', 'score'=>63.200,
-         'logo'=>'https://production.assets.dci.org/5a181125d670bd001f490b16_vTp0iccgUqUXcPdxJBuDSSHGi-pVJbFB.png'],
-        ['rank'=>9, 'name'=>'Seattle Cascades',      'div'=>'World', 'score'=>63.000,
-         'logo'=>'https://production.assets.dci.org/663e2b1226854458d407cb02_VpDNYpkmNqpDG5Ytj_qBWPeNOOaNSe4H.png'],
-        ['rank'=>10,'name'=>'Columbians',            'div'=>'Open',  'score'=>58.850,
-         'logo'=>'https://production.assets.dci.org/5a1b3042d670bd00c32a3462_hwL7IfrTqh2Z6YCegGpdUCjjdF1vJ-tV.png'],
-        ['rank'=>11,'name'=>'Impulse',               'div'=>'Open',  'score'=>58.000,
-         'logo'=>'https://production.assets.dci.org/5a181168d670bd001b2e6373_R9dJDn02NU52v0STlbGASaWwfvlvxRG5.png'],
-        ['rank'=>12,'name'=>'Colt Cadets',           'div'=>'Open',  'score'=>55.450,
-         'logo'=>'https://production.assets.dci.org/5a181124d670bd001f490b11_A4Ndqer0pihrDjJx8CSsr9chF9_69GxA.png'],
-        ['rank'=>13,'name'=>'7th Regiment',          'div'=>'Open',  'score'=>47.250,
-         'logo'=>'https://images.dci.org/wp-content/uploads/2025/05/7th-regiment-logo-2025-800x800-1.png'],
+        ['rank'=>1,  'name'=>'Bluecoats',             'div'=>'World', 'score'=>86.542, 'recent'=>87.575],
+        ['rank'=>2,  'name'=>'Blue Devils',            'div'=>'World', 'score'=>85.408, 'recent'=>86.675],
+        ['rank'=>3,  'name'=>'Boston Crusaders',       'div'=>'World', 'score'=>83.817, 'recent'=>84.550],
+        ['rank'=>4,  'name'=>'Santa Clara Vanguard',   'div'=>'World', 'score'=>83.767, 'recent'=>84.650],
+        ['rank'=>5,  'name'=>'Phantom Regiment',       'div'=>'World', 'score'=>81.117, 'recent'=>83.350],
+        ['rank'=>6,  'name'=>'Blue Stars',             'div'=>'World', 'score'=>80.042, 'recent'=>81.925],
+        ['rank'=>7,  'name'=>'The Cavaliers',          'div'=>'World', 'score'=>79.342, 'recent'=>80.975],
+        ['rank'=>8,  'name'=>'Blue Knights',           'div'=>'World', 'score'=>76.250, 'recent'=>77.150],
+        ['rank'=>9,  'name'=>'Troopers',               'div'=>'World', 'score'=>76.092, 'recent'=>77.925],
+        ['rank'=>10, 'name'=>'Colts',                  'div'=>'World', 'score'=>75.433, 'recent'=>78.250],
+        ['rank'=>11, 'name'=>'Madison Scouts',         'div'=>'World', 'score'=>75.308, 'recent'=>76.925],
+        ['rank'=>12, 'name'=>'Spirit of Atlanta',      'div'=>'World', 'score'=>74.733, 'recent'=>76.300],
+        ['rank'=>13, 'name'=>'Pacific Crest',          'div'=>'World', 'score'=>74.042, 'recent'=>76.225],
+        ['rank'=>14, 'name'=>'The Academy',            'div'=>'World', 'score'=>73.183, 'recent'=>74.600],
+        ['rank'=>15, 'name'=>'Music City',             'div'=>'World', 'score'=>70.250, 'recent'=>71.550],
+        ['rank'=>16, 'name'=>'Genesis',                'div'=>'World', 'score'=>69.308, 'recent'=>69.875],
+        ['rank'=>17, 'name'=>'Seattle Cascades',       'div'=>'World', 'score'=>67.708, 'recent'=>70.075],
       ];
-      $topScore = $_rankings[0]['score'];
-      ?>
-      <div class="section-label" style="margin-top:1.75rem;">2026 Season Rankings <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px;">as of Jul 1 · drumcorps.app</span></div>
-      <div class="rankings-card">
-        <?php foreach ($_rankings as $r):
-          $isPhantom = $r['name'] === 'Phantom Regiment';
-          $barPct    = round(($r['score'] / $topScore) * 100, 1);
-        ?>
-        <div class="rank-row <?= $isPhantom ? 'rank-row-phantom' : '' ?>">
-          <div class="rank-num"><?= $r['rank'] ?></div>
-          <div class="rank-logo">
-            <img src="<?= htmlspecialchars($r['logo']) ?>" alt="<?= htmlspecialchars($r['name']) ?>" loading="lazy" />
-          </div>
-          <div class="rank-name">
-            <?= htmlspecialchars($r['name']) ?>
-            <?php if ($r['div'] === 'Open'): ?><span class="rank-div-badge">Open</span><?php endif; ?>
-          </div>
-          <div class="rank-bar-wrap">
-            <div class="rank-bar" style="width:<?= $barPct ?>%"></div>
-          </div>
-          <div class="rank-score"><?= number_format($r['score'], 3) ?></div>
-        </div>
-        <?php endforeach; ?>
-      </div>
 
-      <!-- DCI Finals History -->
-      <?php
-      // Phantom Regiment DCI Finals results (verify/update each year as needed)
+      $_season_rank = null;
+      foreach ($_rankings as $rc) {
+          if (stripos($rc['name'], 'Phantom') !== false) { $_season_rank = $rc['rank']; break; }
+      }
+
       $_pr_history = [
         ['year'=>2024,'placement'=>5,'score'=>93.613,'show'=>'Phantasm'],
         ['year'=>2023,'placement'=>5,'score'=>92.188,'show'=>'Somewhere in Time'],
@@ -1279,84 +1078,294 @@ $months = [
         ['year'=>2009,'placement'=>2,'score'=>97.050,'show'=>'Angels in the Architecture'],
         ['year'=>2008,'placement'=>1,'score'=>99.650,'show'=>'Angels in the Architecture'],
       ];
-      // Chart: inverted placement line (1st at top)
-      $H_hist = 160; $W_hist = 680; $ML = 28; $MR = 16; $MT = 14; $MB = 24;
-      $n = count($_pr_history);
-      $cW = ($W_hist - $ML - $MR) / ($n - 1);
-      $maxP = 12; // y-axis: placements 1–12
-      function histY(int $place, int $H, int $MT, int $MB, int $maxP): float {
-          return $MT + ($place - 1) / ($maxP - 1) * ($H - $MT - $MB);
-      }
-      // Build polyline points
-      $pts = '';
-      foreach (array_reverse($_pr_history) as $i => $r) {
-          $x = $ML + $i * $cW;
-          $y = histY($r['placement'], $H_hist, $MT, $MB, $maxP);
-          $pts .= "$x,$y ";
-      }
-      ?>
-      <div class="section-label" style="margin-top:1.75rem;">DCI Finals History</div>
-      <div class="hist-card">
-        <div class="hist-chart-wrap">
-          <svg viewBox="0 0 <?=$W_hist?> <?=$H_hist?>" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
-            <?php // Placement guide lines for 1st, 3rd, 6th, 10th
-            foreach ([1,3,6,10] as $gp):
-              $gy = histY($gp, $H_hist, $MT, $MB, $maxP); ?>
-            <line x1="<?=$ML?>" y1="<?=$gy?>" x2="<?=$W_hist-$MR?>" y2="<?=$gy?>" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-            <text x="<?=$ML-4?>" y="<?=$gy+4?>" text-anchor="end" font-size="8.5" fill="rgba(255,255,255,0.25)"><?=$gp?></text>
-            <?php endforeach; ?>
-            <!-- Main line -->
-            <polyline points="<?= trim($pts) ?>" fill="none" stroke="#B01A1C" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-            <!-- Championship years highlighted -->
-            <?php foreach (array_reverse($_pr_history) as $i => $r):
-              $x = $ML + $i * $cW;
-              $y = histY($r['placement'], $H_hist, $MT, $MB, $maxP);
-              $isChamp = $r['placement'] === 1;
-              $dotFill = $isChamp ? '#FFD700' : '#B01A1C';
-              $dotR    = $isChamp ? 5 : 3.5;
-            ?>
-            <circle cx="<?=$x?>" cy="<?=$y?>" r="<?=$dotR?>" fill="<?=$dotFill?>"/>
-            <?php if ($isChamp): ?>
-            <text x="<?=$x?>" y="<?=$y-8?>" text-anchor="middle" font-size="8" fill="#FFD700" font-weight="700">★ 1st</text>
-            <?php endif; ?>
-            <!-- Year label -->
-            <text x="<?=$x?>" y="<?=$H_hist-4?>" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.3)"><?= substr($r['year'],2) ?></text>
-            <?php endforeach; ?>
-            <!-- Y-axis label -->
-            <text x="4" y="<?=$MT+6?>" font-size="8" fill="rgba(255,255,255,0.2)" font-style="italic">Place</text>
-          </svg>
+    ?>
+
+    <!-- ═══ LATEST SHOW ═══ -->
+    <div style="margin-top:1.5rem;margin-bottom:0.75rem;">
+      <div style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.01em;">Latest Show Results</div>
+      <?php if (!empty($_latest_hist['show'])): ?>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:2px;"><?= htmlspecialchars($_latest_hist['show']) ?> &nbsp;·&nbsp; How Phantom placed against the field</div>
+      <?php endif; ?>
+    </div>
+
+    <?php if (empty($_scores_history)): ?>
+      <div class="results-empty"><strong>Season just getting started</strong> Scores will appear here after each competition night.</div>
+    <?php else: ?>
+
+    <?php if (!empty($_score['score'])): ?>
+    <div class="show-hero">
+      <div class="show-hero-top">
+        <?php $place_num=(int)preg_replace('/\D/','',$_score['placement']??''); $place_suf=match($place_num){1=>'st',2=>'nd',3=>'rd',default=>'th'}; ?>
+        <div class="show-hero-score-row">
+          <div class="show-hero-score"><?= htmlspecialchars($_score['score']) ?></div>
+          <div class="show-hero-place"><?= $place_num ?><?= $place_suf ?> place</div>
         </div>
-        <div style="overflow-x:auto;">
-          <table class="hist-table">
-            <thead>
-              <tr><th>Year</th><th>Place</th><th>Score</th><th>Show</th></tr>
-            </thead>
-            <tbody>
-            <?php foreach ($_pr_history as $r):
-              $medal = match($r['placement']) { 1=>'🥇', 2=>'🥈', 3=>'🥉', default=>'' };
-            ?>
-              <tr class="<?= $r['placement']===1 ? 'hist-champ' : '' ?>">
-                <td><?= $r['year'] ?></td>
-                <td><?= $r['placement'] ?><?= $medal ? ' '.$medal : '' ?></td>
-                <td><?= number_format($r['score'],3) ?></td>
-                <td><?= htmlspecialchars($r['show']) ?></td>
-              </tr>
-            <?php endforeach; ?>
-            </tbody>
-          </table>
+        <div class="show-hero-name"><?= htmlspecialchars($_score['show']??'') ?></div>
+        <div class="show-hero-sub">
+          <?php if ($_best_score && $_score['score']===$_best_score): ?><div class="show-hero-badge">Season best</div><?php endif; ?>
+          <?php if (!empty($_score['updated'])): ?><div class="show-hero-updated">Updated <?= htmlspecialchars(substr($_score['updated'],5)) ?></div><?php endif; ?>
         </div>
       </div>
 
-      <!-- External links -->
-      <div class="section-label" style="margin-top:1.75rem;">Full Standings</div>
-      <div class="ext-links">
-        <a class="ext-link" href="https://drumcorps.app/corps/phantom-regiment" target="_blank" rel="noopener">
-          drumcorps.app <span>Phantom Regiment →</span>
-        </a>
-        <a class="ext-link" href="https://drumcorps.app/rankings" target="_blank" rel="noopener">
-          DCI Rankings <span>drumcorps.app →</span>
-        </a>
+      <?php if ($_has_leader):
+        $leader=$_latest_hist['leaderboard'];
+        usort($leader,fn($a,$b)=>$b['total']<=>$a['total']);
+        $top_score=(float)($leader[0]['total']??0);
+        $prev_rank=0;
+        foreach ($leader as $idx=>$corps):
+          $is_phantom=stripos($corps['name']??'','Phantom')!==false;
+          $corps_rank=(int)($corps['rank']??($idx+1));
+          $corps_total=(float)($corps['total']??0);
+          $gap=$corps_total-$top_score;
+          $gap_str=$gap>=0?'':number_format($gap,3);
+          $show_divider=$idx>0&&$corps_rank<$prev_rank&&$corps_rank===1;
+          $prev_rank=$corps_rank;
+      ?>
+      <?php if($show_divider): ?><div style="border-top:1px dashed var(--border);opacity:.35;"></div><?php endif; ?>
+      <div class="lb-row <?= $is_phantom?'phantom':'' ?>">
+        <div class="lb-rank"><?= $corps_rank ?></div>
+        <div class="lb-name"><?= htmlspecialchars($corps['name']??'') ?></div>
+        <div class="lb-gap"><?= htmlspecialchars($gap_str) ?></div>
+        <div class="lb-score"><?= $corps_total>0?number_format($corps_total,3):'—' ?></div>
       </div>
+      <?php endforeach; endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- ═══ SEASON ═══ -->
+    <div class="results-section-head" style="margin-top:1.75rem;"><h2>2026 Season</h2></div>
+
+    <div class="season-strip">
+      <div class="season-stat">
+        <div class="season-stat-val"><?= $_past_shows ?><span style="font-size:14px;font-weight:400;color:var(--text-muted);">/<?= $_total_shows ?></span></div>
+        <div class="season-stat-label">Shows</div>
+        <div class="season-stat-sub">competed</div>
+      </div>
+      <div class="season-stat">
+        <?php if ($_season_rank): ?>
+        <div class="season-stat-val" style="color:#FFD700;"><?= $_season_rank ?><span style="font-size:14px;font-weight:600;"><?= match($_season_rank){1=>'st',2=>'nd',3=>'rd',default=>'th'} ?></span></div>
+        <div class="season-stat-label">Season Rank</div>
+        <div class="season-stat-sub">overall</div>
+        <?php else: ?>
+        <div class="season-stat-val">—</div><div class="season-stat-label">Rank</div><div class="season-stat-sub">&nbsp;</div>
+        <?php endif; ?>
+      </div>
+      <div class="season-stat">
+        <div class="season-stat-val"><?= $_days_to_finals ?></div>
+        <div class="season-stat-label">Days to Finals</div>
+        <div class="season-stat-sub">Aug 8 · Indy</div>
+      </div>
+    </div>
+
+    <?php $_pct=$_total_shows>0?round(($_past_shows/$_total_shows)*100):0; ?>
+    <div class="season-progress" style="margin-bottom:1.25rem;">
+      <div class="progress-label"><span>Season progress</span><span><?= $_pct ?>% &middot; <?= $_total_shows-$_past_shows ?> shows remaining</span></div>
+      <div class="progress-track"><div class="progress-fill" style="width:<?= $_pct ?>%;"></div></div>
+    </div>
+
+    <!-- World Class standings -->
+    <?php
+      $world=array_filter($_rankings,fn($r)=>$r['div']==="World");
+      $open=array_filter($_rankings,fn($r)=>$r['div']==="Open");
+      $top_world=max(array_column(array_values($world),'score'));
+    ?>
+    <div style="margin-bottom:0.75rem;">
+      <div style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.01em;">Overall Season Rankings</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Official DCI standings &nbsp;&middot;&nbsp; ranked by average of last 3 shows</div>
+    </div>
+    <div class="lb-card">
+      <div class="lb-header">
+        <div class="lb-header-title">World Class</div>
+        <div class="lb-header-sub">Updated Jul 13</div>
+      </div>
+      <div class="lb-row history-head" style="background:var(--surface-2);padding-top:.4rem;padding-bottom:.4rem;">
+        <div class="lb-rank"></div>
+        <div class="lb-name" style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);">Corps</div>
+        <div class="lb-gap" style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);">Recent</div>
+        <div class="lb-score" style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);">Avg</div>
+      </div>
+      <?php foreach($world as $r):
+        $is_phantom=stripos($r['name'],'Phantom')!==false;
+        $gap=$r['score']-$top_world;
+        $gap_str=$gap>=0?'—':number_format($gap,3);
+      ?>
+      <div class="lb-row <?= $is_phantom?'phantom':'' ?>">
+        <div class="lb-rank"><?= $r['rank'] ?></div>
+        <div class="lb-name"><?= htmlspecialchars($r['name']) ?></div>
+        <div class="lb-gap"><?= isset($r['recent']) ? number_format($r['recent'],3) : '—' ?></div>
+        <div class="lb-score"><?= number_format($r['score'],3) ?></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+    <?php if($open): $top_open=max(array_column(array_values($open),'score')); ?>
+    <div class="lb-card">
+      <div class="lb-header"><div class="lb-header-title">Open Class</div><div class="lb-header-sub">2026 season</div></div>
+      <?php foreach($open as $r): $gap=$r['score']-$top_open; ?>
+      <div class="lb-row">
+        <div class="lb-rank"><?= $r['rank'] ?></div>
+        <div class="lb-name"><?= htmlspecialchars($r['name']) ?></div>
+        <div class="lb-gap"><?= $gap>=0?'Leader':number_format($gap,3) ?></div>
+        <div class="lb-score"><?= number_format($r['score'],3) ?></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Performance log -->
+    <?php if(count($_scores_history)>=1): ?>
+    <div class="results-section-head" style="margin-top:1.75rem;">
+      <h2>Performance Log</h2>
+      <span><?= count($_scores_history) ?> show<?= count($_scores_history)!==1?'s':'' ?></span>
+    </div>
+    <div class="history-card">
+      <div class="history-row history-head">
+        <div class="history-head-cell">Show</div>
+        <div class="history-head-cell">Score</div>
+        <div class="history-head-cell">Place</div>
+        <div class="history-head-cell">+/−</div>
+      </div>
+      <?php
+        $history_rev=array_reverse($_scores_history);
+        $n_hist=count($history_rev);
+        foreach($history_rev as $i=>$h):
+          $prev_idx=$n_hist-2-$i;
+          $prev=($prev_idx>=0&&isset($_scores_history[$prev_idx]))?$_scores_history[$prev_idx]:null;
+          $diff=$prev?(float)$h['score']-(float)$prev['score']:null;
+          $tclass=$diff===null?'same':($diff>0.001?'up':($diff<-0.001?'down':'same'));
+          $trend=$diff===null?'—':($diff>0.001?'+'.number_format($diff,3):($diff<-0.001?number_format($diff,3):'—'));
+          $place_num=(int)preg_replace('/\D/','',$h['placement']??'');
+          $place_color=match($place_num){1=>'#FFD700',2=>'#C0C0C0',3=>'#CD7F32',default=>'var(--text-secondary)'};
+          $corps_at=!empty($h['leaderboard'])?count($h['leaderboard']):null;
+      ?>
+      <div class="history-row">
+        <div>
+          <div class="history-show"><?= htmlspecialchars($h['show']) ?></div>
+          <?php if(!empty($h['date'])): ?><div class="history-date"><?= date('M j, Y',strtotime($h['date'])) ?></div><?php endif; ?>
+        </div>
+        <div class="history-score"><?= htmlspecialchars($h['score']) ?></div>
+        <div class="history-place" style="color:<?= $place_color ?>;">
+          <?= htmlspecialchars($h['placement']??'—') ?>
+          <?php if($corps_at): ?><div style="font-size:10px;font-weight:400;color:var(--text-muted);">of <?= $corps_at ?></div><?php endif; ?>
+        </div>
+        <div class="history-trend <?= $tclass ?>"><?= $trend ?></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+    <?php if(count($_scores_history)>=2):
+      $scores_vals=array_map(fn($h)=>(float)$h['score'],$_scores_history);
+      $min_s=min($scores_vals);$max_s=max($scores_vals);
+      $range=max($max_s-$min_s,2.0);$pad=$range*0.2;
+      $y_min=$min_s-$pad;$y_max=$max_s+$pad;
+      $W=560;$H=130;$ML=46;$MR=12;$MT=14;$MB=26;
+      $cw=$W-$ML-$MR;$ch=$H-$MT-$MB;
+      $n=count($_scores_history);
+      function sx($i,$n,$cw,$ML){return $ML+($n>1?($i/($n-1))*$cw:$cw/2);}
+      function sy($v,$y_min,$y_max,$ch,$MT){return $MT+$ch-(($v-$y_min)/($y_max-$y_min))*$ch;}
+      $pts=[];
+      for($i=0;$i<$n;$i++) $pts[]=sx($i,$n,$cw,$ML).','.sy($scores_vals[$i],$y_min,$y_max,$ch,$MT);
+    ?>
+    <div class="trend-card">
+      <svg viewBox="0 0 <?= $W ?> <?= $H ?>" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+        <?php for($g=0;$g<=4;$g++): $gy=$MT+($g/4)*$ch; $gv=$y_max-($g/4)*($y_max-$y_min); ?>
+        <line x1="<?=$ML?>" y1="<?=$gy?>" x2="<?=$W-$MR?>" y2="<?=$gy?>" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+        <text x="<?=$ML-4?>" y="<?=$gy+4?>" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.28)"><?=number_format($gv,1)?></text>
+        <?php endfor; ?>
+        <polygon points="<?=implode(' ',$pts)?> <?=$W-$MR?>,<?=$MT+$ch?> <?=$ML?>,<?=$MT+$ch?>" fill="rgba(255,215,0,0.07)"/>
+        <polyline points="<?=implode(' ',$pts)?>" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <?php for($i=0;$i<$n;$i++):
+          $px=sx($i,$n,$cw,$ML);$py=sy($scores_vals[$i],$y_min,$y_max,$ch,$MT);
+          $lbl=mb_strimwidth(explode(',',$_scores_history[$i]['show']??'')[0]??'',0,9,'');
+        ?>
+        <circle cx="<?=$px?>" cy="<?=$py?>" r="4" fill="#FFD700" stroke="#111" stroke-width="1.5"/>
+        <text x="<?=$px?>" y="<?=$py-8?>" text-anchor="middle" font-size="9.5" font-weight="700" fill="#FFD700"><?=number_format($scores_vals[$i],3)?></text>
+        <?php if($n<=10): ?><text x="<?=$px?>" y="<?=$H-3?>" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.3)"><?=htmlspecialchars($lbl)?></text><?php endif; ?>
+        <?php endfor; ?>
+      </svg>
+    </div>
+    <?php endif; ?>
+
+    <?php if(count($_scores_history)>=3):
+      $n=count($_scores_history);$totalShows=17;
+      $sum_x=0;$sum_y=0;$sum_xy=0;$sum_x2=0;
+      foreach($_scores_history as $i=>$h){$x=$i+1;$y=(float)$h['score'];$sum_x+=$x;$sum_y+=$y;$sum_xy+=$x*$y;$sum_x2+=$x*$x;}
+      $denom=$n*$sum_x2-$sum_x*$sum_x;
+      $slope=$denom!=0?($n*$sum_xy-$sum_x*$sum_y)/$denom:0;
+      $intercept=($sum_y-$slope*$sum_x)/$n;
+      $proj=$slope*$totalShows+$intercept;
+    ?>
+    <div class="proj-card">
+      <div class="proj-score"><?=number_format($proj,2)?></div>
+      <div><div class="proj-label">Projected Finals Score</div><div class="proj-sub"><?=$n?> shows · <?=number_format($slope,3)?> pts/show · extrapolated to show <?=$totalShows?></div></div>
+    </div>
+    <?php endif; ?>
+    <?php endif; // count >= 1 ?>
+
+    <?php endif; // scores_history not empty ?>
+
+    <!-- ═══ DCI FINALS HISTORY ═══ -->
+    <div class="results-section-head" style="margin-top:1.75rem;"><h2>DCI Finals History</h2><span>Phantom Regiment</span></div>
+    <?php
+      $H_hist=155;$W_hist=680;$hML=26;$hMR=14;$hMT=14;$hMB=22;
+      $hn=count($_pr_history);
+      $hcW=($W_hist-$hML-$hMR)/($hn-1);
+      $hmaxP=12;
+      function histY(int $place,int $H,int $MT,int $MB,int $maxP):float{
+          return $MT+($place-1)/($maxP-1)*($H-$MT-$MB);
+      }
+      $hpts='';
+      foreach(array_reverse($_pr_history) as $i=>$r){
+          $x=$hML+$i*$hcW;$y=histY($r['placement'],$H_hist,$hMT,$hMB,$hmaxP);
+          $hpts.="$x,$y ";
+      }
+    ?>
+    <div class="dci-hist-card">
+      <div class="dci-hist-chart">
+        <svg viewBox="0 0 <?=$W_hist?> <?=$H_hist?>" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+          <?php foreach([1,3,5,8,10] as $gp): $gy=histY($gp,$H_hist,$hMT,$hMB,$hmaxP); ?>
+          <line x1="<?=$hML?>" y1="<?=$gy?>" x2="<?=$W_hist-$hMR?>" y2="<?=$gy?>" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <text x="<?=$hML-4?>" y="<?=$gy+4?>" text-anchor="end" font-size="8" fill="rgba(255,255,255,0.22)"><?=$gp?></text>
+          <?php endforeach; ?>
+          <polyline points="<?=trim($hpts)?>" fill="none" stroke="#B01A1C" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <?php foreach(array_reverse($_pr_history) as $i=>$r):
+            $x=$hML+$i*$hcW;$y=histY($r['placement'],$H_hist,$hMT,$hMB,$hmaxP);$isChamp=$r['placement']===1;
+          ?>
+          <circle cx="<?=$x?>" cy="<?=$y?>" r="<?=$isChamp?5:3?>" fill="<?=$isChamp?'#FFD700':'#B01A1C'?>"/>
+          <?php if($isChamp): ?><text x="<?=$x?>" y="<?=$y-9?>" text-anchor="middle" font-size="8" fill="#FFD700" font-weight="700">CHAMP</text><?php endif; ?>
+          <text x="<?=$x?>" y="<?=$H_hist-3?>" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.28)"><?=substr($r['year'],2)?></text>
+          <?php endforeach; ?>
+        </svg>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="dci-hist-table">
+          <thead><tr><th>Year</th><th>Show</th><th>Score</th><th>Place</th></tr></thead>
+          <tbody>
+          <?php foreach($_pr_history as $r):
+            $pclass=match($r['placement']){1=>'place-gold',2=>'place-silver',3=>'place-bronze',default=>''};
+          ?>
+          <tr class="<?=$r['placement']===1?'champ':''?>">
+            <td><?=$r['year']?></td><td><?=htmlspecialchars($r['show'])?></td>
+            <td><?=number_format($r['score'],3)?></td>
+            <td class="<?=$pclass?>"><?=$r['placement']?><?=match($r['placement']){1=>'st',2=>'nd',3=>'rd',default=>'th'}?></td>
+          </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="results-links" style="margin-top:1rem;">
+      <a class="results-link" href="https://drumcorps.app/corps/phantom-regiment" target="_blank" rel="noopener">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <div>drumcorps.app<span>Phantom Regiment profile</span></div>
+      </a>
+      <a class="results-link" href="https://drumcorps.app/rankings" target="_blank" rel="noopener">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <div>DCI Rankings<span>Full season standings</span></div>
+      </a>
+    </div>
+
     </div>
   </div>
 

