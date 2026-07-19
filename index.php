@@ -1,4 +1,6 @@
 <?php
+require __DIR__ . '/photos.php';
+$latest_photos = phantom_latest_photos(12);
 $today = date('Y-m-d');
 $events = [
     '2026-05-20' => ['label' => 'Move In Day',                       'detail' => 'Fly via Nashville (BNA) · transport provided to Owensboro', 'type' => 'milestone'],
@@ -155,6 +157,16 @@ $months = [
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
 
+    .latest-strip { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.1rem 0 1.3rem; }
+    .latest-strip .section-label { max-width: 1100px; margin: 0 auto 0.8rem; padding: 0 1.5rem; }
+    .strip { display: flex; gap: 10px; overflow-x: auto; padding: 0 1.5rem 6px; max-width: 1100px; margin: 0 auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    .strip-item { position: relative; flex: 0 0 auto; width: 156px; height: 156px; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; scroll-snap-align: start; }
+    .strip-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
+    .strip-item:hover img { transform: scale(1.04); }
+    .strip-badge { position: absolute; top: 7px; left: 7px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 10px; backdrop-filter: blur(3px); }
+    .strip-time { position: absolute; bottom: 6px; right: 9px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    @media (max-width: 600px) { .strip-item { width: 124px; height: 124px; } }
+
     .tab-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
     .tab-btn { flex: 1; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 16px 8px 13px; cursor: pointer; transition: color 0.15s, border-color 0.15s; text-align: center; }
     .tab-btn:hover { color: var(--text); }
@@ -275,6 +287,21 @@ $months = [
       <div><span class="show-pill">Bloodline</span></div>
     </div>
   </div>
+
+  <?php if ($latest_photos): ?>
+  <section class="latest-strip">
+    <div class="section-label">Latest photos</div>
+    <div class="strip">
+      <?php foreach ($latest_photos as $p): ?>
+      <div class="strip-item" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
+        <img src="<?= htmlspecialchars($p['thumb']) ?>" alt="Phantom Regiment tour photo" loading="lazy" />
+        <?php if ($p['label']): ?><span class="strip-badge"><?= htmlspecialchars($p['label']) ?></span><?php endif; ?>
+        <span class="strip-time"><?= date('M j', $p['mtime']) ?></span>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </section>
+  <?php endif; ?>
 
   <nav class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('watch', this)">Latest</button>
@@ -620,7 +647,7 @@ $months = [
 <script>
   function openLightbox(el) {
     var img = el.querySelector('img');
-    document.getElementById('lightbox-img').src = img.src;
+    document.getElementById('lightbox-img').src = el.dataset.full || img.src;
     document.getElementById('lightbox-img').alt = img.alt;
     document.getElementById('lightbox').classList.add('open');
     document.body.style.overflow = 'hidden';
