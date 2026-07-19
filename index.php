@@ -284,7 +284,14 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
 
     .latest-strip { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.1rem 0 1.3rem; }
     .latest-strip .section-label { max-width: 1100px; margin: 0 auto 0.8rem; padding: 0 1.5rem; }
-    .strip { display: flex; gap: 10px; overflow-x: auto; padding: 0 1.5rem 6px; max-width: 1100px; margin: 0 auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    .strip-wrap { position: relative; max-width: 1100px; margin: 0 auto; }
+    .strip { display: flex; gap: 10px; overflow-x: auto; padding: 0 1.5rem 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scroll-behavior: smooth; }
+    .strip-arrow { position: absolute; top: calc(50% - 6px); transform: translateY(-50%); z-index: 5; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border-strong); background: rgba(20,20,20,0.82); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0,0,0,0.5); transition: background 0.15s, opacity 0.15s; }
+    .strip-arrow:hover { background: var(--red); }
+    .strip-arrow-left { left: 0.5rem; }
+    .strip-arrow-right { right: 0.5rem; }
+    .strip-arrow[disabled] { opacity: 0; pointer-events: none; }
+    @media (max-width: 600px) { .strip-arrow { width: 32px; height: 32px; } }
     .strip-item { position: relative; flex: 0 0 auto; width: 122px; height: 122px; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; scroll-snap-align: start; }
     .strip-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
     .strip-item:hover img { transform: scale(1.04); }
@@ -723,20 +730,28 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   <?php if ($latest_photos || $strip_gallery): ?>
   <section class="latest-strip">
     <div class="section-label">Latest photos</div>
-    <div class="strip">
-      <?php foreach (array_slice($latest_photos, 0, 10) as $p): ?>
-      <div class="strip-item" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
-        <img src="<?= htmlspecialchars($p['thumb']) ?>" alt="Phantom Regiment tour photo" loading="lazy" />
-        <?php if ($p['label']): ?><span class="strip-badge"><?= htmlspecialchars($p['label']) ?></span><?php endif; ?>
-        <span class="strip-time"><?= date('M j', $p['mtime']) ?></span>
+    <div class="strip-wrap">
+      <button class="strip-arrow strip-arrow-left" onclick="stripScroll(-1)" aria-label="Scroll left">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="strip" id="photoStrip">
+        <?php foreach (array_slice($latest_photos, 0, 10) as $p): ?>
+        <div class="strip-item" onclick="location.href='/messages.php'" title="See this on the Phanmail board">
+          <img src="<?= htmlspecialchars($p['thumb']) ?>" alt="Phantom Regiment tour photo" loading="lazy" />
+          <?php if ($p['label']): ?><span class="strip-badge"><?= htmlspecialchars($p['label']) ?></span><?php endif; ?>
+          <span class="strip-time"><?= date('M j', $p['mtime']) ?></span>
+        </div>
+        <?php endforeach; ?>
+        <?php foreach ($strip_gallery as $gsrc): ?>
+        <div class="strip-item" onclick="switchTab('media', document.querySelectorAll('.tab-btn')[1])" title="Open the photo gallery">
+          <img src="<?= htmlspecialchars($gsrc) ?>" alt="Phantom Regiment gallery photo" loading="lazy" />
+          <span class="strip-badge">Gallery</span>
+        </div>
+        <?php endforeach; ?>
       </div>
-      <?php endforeach; ?>
-      <?php foreach ($strip_gallery as $gsrc): ?>
-      <div class="strip-item" data-full="<?= htmlspecialchars($gsrc) ?>" onclick="openLightbox(this)">
-        <img src="<?= htmlspecialchars($gsrc) ?>" alt="Phantom Regiment gallery photo" loading="lazy" />
-        <span class="strip-badge">Gallery</span>
-      </div>
-      <?php endforeach; ?>
+      <button class="strip-arrow strip-arrow-right" onclick="stripScroll(1)" aria-label="Scroll right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     </div>
   </section>
   <?php endif; ?>
@@ -1737,6 +1752,28 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
 <div class="score-toast" id="score-toast"></div>
 <script async src="https://www.instagram.com/embed.js"></script>
 <script>
+  // Latest-photos carousel
+  function stripScroll(dir) {
+    var s = document.getElementById('photoStrip');
+    if (!s) return;
+    var step = Math.max(240, Math.round(s.clientWidth * 0.8));
+    s.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }
+  (function() {
+    var s = document.getElementById('photoStrip');
+    if (!s) return;
+    var left = document.querySelector('.strip-arrow-left');
+    var right = document.querySelector('.strip-arrow-right');
+    function update() {
+      if (!left || !right) return;
+      var max = s.scrollWidth - s.clientWidth - 2;
+      left.disabled = s.scrollLeft <= 2;
+      right.disabled = s.scrollLeft >= max || s.scrollWidth <= s.clientWidth;
+    }
+    s.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  })();
   function openLightbox(el) {
     var img = el.querySelector('img');
     document.getElementById('lightbox-img').src = img.src;
