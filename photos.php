@@ -9,21 +9,23 @@
 
 function phantom_photo_sources(): array {
     return [
-        // Photos dropped directly on the phantom site (survives deploys —
-        // deploy.sh excludes this dir from the rsync --delete).
+        // Photos dropped directly on the phantom site + admin-uploaded gallery
+        // (both survive deploys — deploy.sh excludes uploads/ and data/ from rsync --delete).
         'site' => [
             'label' => null, // no badge for our own uploads
-            'dirs'  => [__DIR__ . '/uploads'],
-        ],
-        // Photos collected by the PhanMail app on CT 101.
-        'phanmail' => [
-            'label' => 'PhanMail',
             'dirs'  => [
+                __DIR__ . '/uploads',
+                __DIR__ . '/data/gallery',   // admin Photo Gallery uploads
+            ],
+        ],
+        // Photos submitted through the site's Phanmail message board (name + photo).
+        'phanmail' => [
+            'label' => 'Phanmail',
+            'dirs'  => [
+                __DIR__ . '/data/uploads',   // where message-board photos are stored
+                // legacy/standalone locations, kept in case a separate app is added later
                 '/var/www/phanmail/uploads',
                 '/var/www/phanmail/data/uploads',
-                '/var/www/phanmail/public/uploads',
-                '/var/www/phanmail/storage/uploads',
-                '/var/www/phanmail/images',
             ],
         ],
     ];

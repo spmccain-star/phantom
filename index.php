@@ -1,9 +1,71 @@
 <?php
+$today    = date('Y-m-d');
+$today_ts = strtotime($today);
+
+// Photo sources (site uploads + PhanMail dirs)
 require __DIR__ . '/photos.php';
 $latest_photos = phantom_latest_photos(24);
-$today = date('Y-m-d');
+
+// Announcement + score
+$_announcement = '';
+$_ann_file = __DIR__ . '/data/announcement.txt';
+if (file_exists($_ann_file)) $_announcement = trim(file_get_contents($_ann_file));
+$_score = [];
+$_score_file = __DIR__ . '/data/score.json';
+if (file_exists($_score_file)) $_score = json_decode(file_get_contents($_score_file), true) ?: [];
+$_scores_history = [];
+$_hist_file = __DIR__ . '/data/scores_history.json';
+if (file_exists($_hist_file)) $_scores_history = json_decode(file_get_contents($_hist_file), true) ?: [];
+
+$_days_to_finals = max(0, (int)ceil((strtotime('2026-08-08') - $today_ts) / 86400));
+
+// Messages DB
+$_msg_db_path = __DIR__ . '/data/messages.db';
+if (!is_dir(__DIR__ . '/data')) mkdir(__DIR__ . '/data', 0755, true);
+$_msg_db = new PDO('sqlite:' . $_msg_db_path);
+$_msg_db->exec("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, message TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+$_ticker_msgs = $_msg_db->query("SELECT name, message FROM messages ORDER BY created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
+$_msg_count = (int)$_msg_db->query("SELECT COUNT(*) FROM messages")->fetchColumn();
+$_photo_count = (int)$_msg_db->query("SELECT COUNT(*) FROM messages WHERE image_path IS NOT NULL")->fetchColumn();
+
+// Latest show + season best (shared by Latest snapshot and Results tab)
+$_latest_hist = !empty($_scores_history) ? end($_scores_history) : null;
+$_best_score = null;
+if (!empty($_scores_history)) {
+    $best = null;
+    foreach ($_scores_history as $h) {
+        if ($best === null || (float)$h['score'] > (float)$best['score']) $best = $h;
+    }
+    $_best_score = $best['score'] ?? null;
+}
+
+// Official DCI World Class Rankings — avg of last 3 shows (as of Jul 13)
+$_rankings = [
+    ['rank'=>1,  'name'=>'Bluecoats',             'div'=>'World', 'score'=>86.542, 'recent'=>87.575],
+    ['rank'=>2,  'name'=>'Blue Devils',            'div'=>'World', 'score'=>85.408, 'recent'=>86.675],
+    ['rank'=>3,  'name'=>'Boston Crusaders',       'div'=>'World', 'score'=>83.817, 'recent'=>84.550],
+    ['rank'=>4,  'name'=>'Santa Clara Vanguard',   'div'=>'World', 'score'=>83.767, 'recent'=>84.650],
+    ['rank'=>5,  'name'=>'Phantom Regiment',       'div'=>'World', 'score'=>81.117, 'recent'=>83.350],
+    ['rank'=>6,  'name'=>'Blue Stars',             'div'=>'World', 'score'=>80.042, 'recent'=>81.925],
+    ['rank'=>7,  'name'=>'The Cavaliers',          'div'=>'World', 'score'=>79.342, 'recent'=>80.975],
+    ['rank'=>8,  'name'=>'Blue Knights',           'div'=>'World', 'score'=>76.250, 'recent'=>77.150],
+    ['rank'=>9,  'name'=>'Troopers',               'div'=>'World', 'score'=>76.092, 'recent'=>77.925],
+    ['rank'=>10, 'name'=>'Colts',                  'div'=>'World', 'score'=>75.433, 'recent'=>78.250],
+    ['rank'=>11, 'name'=>'Madison Scouts',         'div'=>'World', 'score'=>75.308, 'recent'=>76.925],
+    ['rank'=>12, 'name'=>'Spirit of Atlanta',      'div'=>'World', 'score'=>74.733, 'recent'=>76.300],
+    ['rank'=>13, 'name'=>'Pacific Crest',          'div'=>'World', 'score'=>74.042, 'recent'=>76.225],
+    ['rank'=>14, 'name'=>'The Academy',            'div'=>'World', 'score'=>73.183, 'recent'=>74.600],
+    ['rank'=>15, 'name'=>'Music City',             'div'=>'World', 'score'=>70.250, 'recent'=>71.550],
+    ['rank'=>16, 'name'=>'Genesis',                'div'=>'World', 'score'=>69.308, 'recent'=>69.875],
+    ['rank'=>17, 'name'=>'Seattle Cascades',       'div'=>'World', 'score'=>67.708, 'recent'=>70.075],
+];
+$_season_rank = null;
+$_season_field = count($_rankings);
+foreach ($_rankings as $rc) {
+    if (stripos($rc['name'], 'Phantom') !== false) { $_season_rank = $rc['rank']; break; }
+}
 $events = [
-    '2026-05-20' => ['label' => 'Move In Day',                       'detail' => 'Fly via Nashville (BNA) · transport provided to Owensboro', 'type' => 'milestone'],
+    '2026-05-20' => ['label' => 'Move In Day',                       'detail' => 'Fly via Nashville (BNA) · transport provided to Owensboro', 'type' => 'milestone', 'city' => 'Owensboro, KY'],
     '2026-05-25' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM · Memorial Day',                                    'type' => 'practice'],
     '2026-05-26' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM',                                                    'type' => 'practice'],
     '2026-05-27' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM · Flag Football Stadium (Evening)',                  'type' => 'practice'],
@@ -16,15 +78,15 @@ $events = [
     '2026-06-14' => ['label' => 'Community Performance',             'detail' => '',                                                          'type' => 'show',      'city' => 'Owensboro, KY'],
     '2026-06-15' => ['label' => 'Catholic FB Practice',              'detail' => '4–6 PM',                                                    'type' => 'practice'],
     '2026-06-16' => ['label' => 'Cleaning & Moving Day',             'detail' => 'Spring training ends',                                      'type' => 'milestone'],
-    '2026-06-17' => ['label' => 'Travel — Evansville',               'detail' => 'H: Evansville North HS · EVV',                             'type' => 'travel'],
+    '2026-06-17' => ['label' => 'Travel — Evansville',               'detail' => 'H: Evansville North HS · EVV',                             'type' => 'travel',    'city' => 'Evansville, IN'],
     '2026-06-18' => ['label' => 'Evansville Community Perf.',        'detail' => 'H: Evansville North HS',                                   'type' => 'show',      'city' => 'Evansville, IN'],
-    '2026-06-19' => ['label' => 'NIU Spring Training',               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
+    '2026-06-19' => ['label' => 'NIU Spring Training',               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal', 'city' => 'DeKalb, IL'],
     '2026-06-20' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-06-21' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-06-22' => ['label' => 'NIU Dress Rehearsal',               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-06-23' => ['label' => 'Concert in the Park — Depart Tour', 'detail' => 'H: NIU · ORD',                                             'type' => 'milestone'],
-    '2026-06-24' => ['label' => 'Travel — Lincoln, NE',              'detail' => 'H: Lincoln Sports Foundation',                             'type' => 'travel'],
-    '2026-06-25' => ['label' => 'Rehearsal',                         'detail' => 'H: Eaton HS, CO · No Fly',                                 'type' => 'rehearsal'],
+    '2026-06-24' => ['label' => 'Travel — Lincoln, NE',              'detail' => 'H: Lincoln Sports Foundation',                             'type' => 'travel',    'city' => 'Lincoln, NE'],
+    '2026-06-25' => ['label' => 'Rehearsal',                         'detail' => 'H: Eaton HS, CO · No Fly',                                 'type' => 'rehearsal', 'city' => 'Eaton, CO'],
     '2026-06-26' => ['label' => 'Rehearsal',                         'detail' => 'H: Eaton HS, CO · DEN',                                    'type' => 'rehearsal'],
     '2026-06-27' => ['label' => 'Fort Collins Show / DCI Denver',    'detail' => 'H: Eaton HS · No Fly',                                     'type' => 'show',      'city' => 'Fort Collins, CO', 'result' => '2nd · 72.650'],
     '2026-06-28' => ['label' => 'Denver Free Day + Laundry',         'detail' => 'H: Eaton HS · DEN',                                        'type' => 'free'],
@@ -71,6 +133,118 @@ $events = [
     '2026-08-08' => ['label' => 'DCI FINALS',                        'detail' => 'Indianapolis, IN',                                        'type' => 'dci',       'city' => 'Indianapolis, IN'],
     '2026-08-09' => ['label' => 'Banquet',                           'detail' => 'End of season',                                           'type' => 'milestone'],
 ];
+
+// Judged (DCI-scored) shows from official DCI schedule PDF
+$_judged_dates = [
+    '2026-07-03','2026-07-05','2026-07-10','2026-07-11',
+    '2026-07-13','2026-07-14','2026-07-16','2026-07-18','2026-07-20',
+    '2026-07-22','2026-07-24','2026-07-25','2026-07-27','2026-07-30',
+    '2026-08-01','2026-08-03',
+];
+$_dci_show_names = [
+    '2026-07-03' => 'Show of Shows',
+    '2026-07-05' => 'River City Rhapsody',
+    '2026-07-10' => 'Cavalcade of Brass',
+    '2026-07-11' => 'The Whitewater Classic',
+    '2026-07-13' => 'Brass Impact',
+    '2026-07-14' => 'DCI Broken Arrow',
+    '2026-07-16' => 'DCI Denton',
+    '2026-07-18' => 'DCI Southwestern Championship',
+    '2026-07-20' => 'DCI McKinney',
+    '2026-07-22' => 'Drums on the Ohio',
+    '2026-07-24' => 'Drums on Parade',
+    '2026-07-25' => 'Midwestern Championship',
+    '2026-07-27' => 'Summer Music Games in Cincinnati',
+    '2026-07-30' => 'DCI East Coast Showcase',
+    '2026-08-01' => 'DCI Eastern Classic',
+    '2026-08-03' => 'DCI Kentucky',
+    '2026-08-06' => 'DCI World Championship Prelims',
+    '2026-08-07' => 'DCI World Championship Semifinals',
+    '2026-08-08' => 'DCI World Championship Finals',
+];
+// All judged dates (regular shows + DCI events)
+$_all_judged = array_merge($_judged_dates, ['2026-08-06','2026-08-07','2026-08-08']);
+
+// Show Night Mode: today is a scored competition
+$_is_show_night = in_array($today, $_all_judged);
+$_tonight_event = $_is_show_night && isset($events[$today]) ? $events[$today] : null;
+$_tonight_dci_show = $_dci_show_names[$today] ?? null;
+
+// Season progress (must be after $events)
+$_total_shows = 0; $_past_shows = 0;
+foreach ($events as $date_str => $ev) {
+    if (in_array($ev['type'], ['show','dci'])) {
+        $_total_shows++;
+        if (strtotime($date_str) <= $today_ts) $_past_shows++;
+    }
+}
+
+// Next upcoming show
+$next_event = null;
+foreach ($events as $date_str => $ev) {
+    if (strtotime($date_str) >= $today_ts && in_array($ev['type'], ['show','dci'])) {
+        $next_event = ['date' => $date_str] + $ev;
+        break;
+    }
+}
+if ($next_event) {
+    $ne_ts       = strtotime($next_event['date']);
+    $ne_dow      = date('l', $ne_ts);
+    $ne_date_fmt = date('F j, Y', $ne_ts);
+    $ne_detail   = $next_event['detail'];
+    $ne_location = '';
+    if (preg_match('/H:\s*([^·]+)/u', $ne_detail, $m)) {
+        $ne_location = trim($m[1]);
+    }
+}
+
+// Current location: most recent event on or before today that has a city
+$current_city = null;
+foreach ($events as $date_str => $ev) {
+    if (strtotime($date_str) <= $today_ts && !empty($ev['city'])) {
+        $current_city = $ev['city'];
+    }
+}
+
+// Coordinates for tour cities → drives the "current location" locator map
+$_city_coords = [
+    'Owensboro, KY'    => [37.77, -87.11],  'Evansville, IN'  => [37.97, -87.57],
+    'Lincoln, NE'      => [40.81, -96.70],  'Eaton, CO'       => [40.53, -104.71],
+    'Fort Collins, CO' => [40.59, -105.08], 'Omaha, NE'       => [41.26, -95.93],
+    'Rockford, IL'     => [42.27, -89.09],  'La Crosse, WI'   => [43.80, -91.25],
+    'DeKalb, IL'       => [41.93, -88.75],  'Lisle, IL'       => [41.80, -88.07],
+    'Whitewater, WI'   => [42.83, -88.73],  'Olathe, KS'      => [38.88, -94.82],
+    'Broken Arrow, OK' => [36.06, -95.79],  'Denton, TX'      => [33.21, -97.13],
+    'San Antonio, TX'  => [29.42, -98.49],  'McKinney, TX'    => [33.20, -96.64],
+    'Madison, WI'      => [43.07, -89.40],  'Mason, OH'       => [39.36, -84.31],
+    'Lawrence, MA'     => [42.71, -71.16],  'Allentown, PA'   => [40.61, -75.49],
+    'Lexington, KY'    => [38.04, -84.50],  'Indianapolis, IN'=> [39.77, -86.16],
+];
+$_loc_name   = $current_city ?: ($next_event['city'] ?? null);
+$_loc_coords = $_loc_name && isset($_city_coords[$_loc_name]) ? $_city_coords[$_loc_name] : null;
+
+// Featured media (chosen in admin) shown on the Latest page
+$_featured = null;
+$_feat_file = __DIR__ . '/data/featured.json';
+if (file_exists($_feat_file)) {
+    $ff = json_decode(file_get_contents($_feat_file), true) ?: [];
+    $fkey = $ff['key'] ?? null;
+    if ($fkey) {
+        $fhidden = file_exists(__DIR__ . '/data/gallery_hidden.json') ? (json_decode(file_get_contents(__DIR__ . '/data/gallery_hidden.json'), true) ?: []) : [];
+        $fpath = null; $furl = null;
+        if (str_starts_with($fkey, 'gallery/')) { $fpath = __DIR__ . '/data/gallery/' . basename($fkey); $furl = '/data/gallery/' . basename($fkey); }
+        elseif (str_starts_with($fkey, 'assets/')) { $fpath = __DIR__ . '/assets/' . basename($fkey); $furl = '/assets/' . basename($fkey); }
+        if ($fpath && is_file($fpath) && !in_array($fkey, $fhidden)) {
+            $fext = strtolower(pathinfo($fpath, PATHINFO_EXTENSION));
+            $_featured = [
+                'url'     => $furl,
+                'video'   => in_array($fext, ['mp4','mov','m4v','webm']),
+                'caption' => trim($ff['caption'] ?? ''),
+            ];
+        }
+    }
+}
+
 $type_colors = [
     'milestone' => '#FFD97D',
     'show'      => '#7DD9A2',
@@ -114,8 +288,21 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mateo on tour — Phantom Regiment 2026</title>
+  <title>Keep up with Matéo — Phantom Regiment 2026</title>
+  <meta name="description" content="Follow Matéo's 2026 DCI season with Phantom Regiment performing Bloodline — scores, rankings, photos, and tour dates." />
+  <meta property="og:title" content="Keep up with Matéo — Phantom Regiment 2026" />
+  <meta property="og:description" content="Follow Matéo's 2026 DCI season with Phantom Regiment performing Bloodline — scores, rankings, photos, and tour dates." />
+  <meta property="og:image" content="https://phantom.agavelabs.dev/assets/mateo.jpg" />
+  <meta property="og:url" content="https://phantom.agavelabs.dev" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="/assets/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon-v2.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -136,37 +323,33 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
           --green-bg: rgba(76,175,114,0.12);
         }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--page-bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding-bottom: 3rem;
-      font-size: 16px;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--page-bg); color: var(--text); min-height: 100vh; padding-bottom: <?= !empty($_ticker_msgs) ? '4.5rem' : '3rem' ?>; font-size: 16px; }
 
-    .hero {
-      position: relative;
-      width: 100%;
-      height: clamp(320px, 50vw, 520px);
-      overflow: hidden;
-      background: #000;
-    }
-    .hero > img {
-      width: 100%; height: 100%;
-      object-fit: cover; object-position: center top;
-      display: block;
-    }
-    .hero-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(to bottom, transparent 0%, transparent 28%, rgba(0,0,0,0.55) 58%, rgba(0,0,0,0.91) 100%);
-      display: flex; flex-direction: column; justify-content: flex-end;
-      padding: clamp(1.25rem, 4vw, 2.5rem);
-    }
-    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #E07070; margin-top: 0.5rem; margin-bottom: 0.75rem; }
-    .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
+    .hero { position: relative; width: 100%; height: clamp(416px, 65vw, 676px); overflow: hidden; background: #000; }
+    .hero > img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.0) 10%, rgba(0,0,0,0.95) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(1.25rem, 4vw, 2.5rem); }
+    .hero-bottom-row { position: relative; }
+    .hero-left { flex: 1; min-width: 0; }
+    .hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; opacity: 0.75; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: opacity 0.15s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+    .hero-eyebrow:hover { opacity: 1; }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff4444; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(255,68,68,0.6); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,68,68,0.6); } 70% { box-shadow: 0 0 0 7px rgba(255,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(255,68,68,0); } }
+    .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(24px, 4vw, 42px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
+    .hero-location { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); white-space: nowrap; margin-top: 0.6rem; }
+    @media (min-width: 480px) { .hero-location { position: absolute; bottom: 0; right: 0; margin-top: 0; } }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
+    .msg-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--red); border: none; color: #fff; font-size: 15px; font-weight: 700; padding: 13px 26px; border-radius: 24px; text-decoration: none; margin-top: 0.9rem; align-self: flex-start; transition: background 0.15s; }
+    .msg-btn:hover { background: var(--red-dark); }
+
+    .ticker-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: rgba(20,20,20,0.95); border-top: 1px solid var(--border); backdrop-filter: blur(8px); height: 36px; display: flex; align-items: center; overflow: hidden; }
+    .ticker-label { flex-shrink: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); padding: 0 12px 0 14px; border-right: 1px solid var(--border); height: 100%; display: flex; align-items: center; white-space: nowrap; }
+    .ticker-track { flex: 1; overflow: hidden; position: relative; }
+    .ticker-inner { display: flex; gap: 3rem; white-space: nowrap; animation: ticker-scroll 40s linear infinite; }
+    .ticker-inner:hover { animation-play-state: paused; }
+    .ticker-item { font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+    .ticker-item strong { color: var(--text); }
+    @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
     .countdown-pill { display: inline-block; background: rgba(255,215,0,0.14); border: 1px solid rgba(255,215,0,0.45); color: #FFD700; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; backdrop-filter: blur(4px); margin-left: 6px; }
 
@@ -178,13 +361,20 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
 
     .latest-strip { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.1rem 0 1.3rem; }
     .latest-strip .section-label { max-width: 1100px; margin: 0 auto 0.8rem; padding: 0 1.5rem; }
-    .strip { display: flex; gap: 10px; overflow-x: auto; padding: 0 1.5rem 6px; max-width: 1100px; margin: 0 auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-    .strip-item { position: relative; flex: 0 0 auto; width: 156px; height: 156px; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; scroll-snap-align: start; }
+    .strip-wrap { position: relative; max-width: 1100px; margin: 0 auto; }
+    .strip { display: flex; gap: 10px; overflow-x: auto; padding: 0 1.5rem 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scroll-behavior: smooth; }
+    .strip-arrow { position: absolute; top: calc(50% - 6px); transform: translateY(-50%); z-index: 5; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border-strong); background: rgba(20,20,20,0.82); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0,0,0,0.5); transition: background 0.15s, opacity 0.15s; }
+    .strip-arrow:hover { background: var(--red); }
+    .strip-arrow-left { left: 0.5rem; }
+    .strip-arrow-right { right: 0.5rem; }
+    .strip-arrow[disabled] { opacity: 0; pointer-events: none; }
+    @media (max-width: 600px) { .strip-arrow { width: 32px; height: 32px; } }
+    .strip-item { position: relative; flex: 0 0 auto; width: 122px; height: 122px; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; scroll-snap-align: start; }
     .strip-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
     .strip-item:hover img { transform: scale(1.04); }
     .strip-badge { position: absolute; top: 7px; left: 7px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 10px; backdrop-filter: blur(3px); }
     .strip-time { position: absolute; bottom: 6px; right: 9px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
-    @media (max-width: 600px) { .strip-item { width: 124px; height: 124px; } }
+    @media (max-width: 600px) { .strip-item { width: 100px; height: 100px; } }
 
     .tab-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
     .tab-btn { flex: 1; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 16px 8px 13px; cursor: pointer; transition: color 0.15s, border-color 0.15s; text-align: center; }
@@ -202,6 +392,174 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .card.featured { border-color: rgba(176,26,28,0.5); box-shadow: 0 4px 16px rgba(176,26,28,0.15); }
     .card-header { padding: 1.4rem 1.5rem 0.875rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
     .card-option-num { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+    .card-date { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-top: 5px; }
+    .card-horizontal { display: flex; flex-direction: row; gap: 0; align-items: stretch; }
+    .card-horizontal-left { flex: 1; padding: 1.4rem 1.5rem; border-right: 1px solid var(--border); }
+    .card-horizontal-right { flex: 0 0 auto; width: 286px; padding: 1.4rem 1.5rem; display: flex; flex-direction: column; justify-content: center; }
+    @media (max-width: 600px) { .card-horizontal { flex-direction: column; } .card-horizontal-left { border-right: none; border-bottom: 1px solid var(--border); } .card-horizontal-right { width: auto; } }
+    /* Status bar */
+    .status-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1.5rem; margin-bottom: 1rem; }
+    @media (max-width: 600px) { .status-bar { grid-template-columns: 1fr 1fr; } }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; text-align: center; }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
+    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+    .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+    /* Progress bar */
+    .season-progress { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1.1rem; margin-bottom: 1rem; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+    .progress-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--red); border-radius: 3px; transition: width 0.6s ease; }
+    /* Announcement */
+    .announcement-banner { background: rgba(176,26,28,0.1); border: 1px solid rgba(176,26,28,0.35); border-radius: var(--radius); padding: 0.9rem 1.1rem; margin-bottom: 1rem; font-size: 14px; color: var(--text); line-height: 1.6; }
+    .announcement-banner strong { color: #E07070; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+    /* Score card */
+    .score-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid #FFD700; border-radius: var(--radius); padding: 0.9rem 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .score-left .score-num { font-size: 28px; font-weight: 800; color: #FFD700; line-height: 1; }
+    .score-left .score-place { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .score-right { font-size: 12px; color: var(--text-muted); text-align: right; }
+    /* Fanmail hook */
+    .fanmail-hook { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; text-decoration: none; color: var(--text); transition: background 0.15s; }
+    .fanmail-hook:hover { background: var(--surface-2); }
+    .fanmail-hook-left { font-size: 14px; color: var(--text-secondary); }
+    .fanmail-hook-left strong { color: var(--text); display: block; font-size: 15px; margin-bottom: 2px; }
+    /* Countdown */
+    .countdown-strip { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .countdown-label { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    .countdown-digits { display: flex; gap: 12px; align-items: baseline; }
+    .countdown-unit { text-align: center; }
+    .countdown-num { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
+    .countdown-unit-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* Score chip (compact, Latest tab) */
+    .score-chip { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid #FFD700; border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 1rem; text-decoration: none; color: var(--text); transition: background 0.15s; flex-wrap: wrap; cursor: pointer; }
+    .score-chip:hover { background: var(--surface-2); }
+    .score-chip-num { font-size: 22px; font-weight: 800; color: #FFD700; line-height: 1; flex-shrink: 0; }
+    .score-chip-meta { font-size: 13px; color: var(--text-secondary); flex: 1; }
+    .score-chip-cta { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    /* Results tab */
+    .results-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 14px; }
+    .results-table th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 0 0.75rem 0.6rem; border-bottom: 1px solid var(--border); }
+    .results-table td { padding: 0.7rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); vertical-align: middle; }
+    .results-table tr:last-child td { border-bottom: none; }
+    .results-table .td-score { font-size: 17px; font-weight: 800; color: #FFD700; }
+    .results-table .td-place { font-weight: 700; color: var(--text); }
+    .results-table .td-trend { font-size: 18px; }
+    .results-table .td-trend.up { color: #4CAF72; }
+    .results-table .td-trend.down { color: #E07070; }
+    .results-table .td-trend.same { color: var(--text-muted); }
+    .results-empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1.5rem; }
+    .results-empty strong { display: block; font-size: 16px; color: var(--text-secondary); margin-bottom: 0.4rem; }
+    .score-chart { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; }
+    .score-chart svg { display: block; width: 100%; }
+    .ext-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 2rem; }
+    @media (max-width: 500px) { .ext-links { grid-template-columns: 1fr; } }
+    .ext-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600; transition: background 0.15s; }
+    .ext-link:hover { background: var(--surface-2); }
+    .ext-link span { color: var(--text-muted); font-size: 12px; }
+    /* Hero score */
+    .hero-score-card { background: linear-gradient(135deg, #1a1400 0%, #1A1A1A 100%); border: 1px solid rgba(255,215,0,0.25); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; position: relative; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+    .hero-score-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(90deg, #FFD700 0%, rgba(255,215,0,0.3) 100%); }
+    .hero-score-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,215,0,0.6); margin-bottom: 0.5rem; }
+    .hero-score-num { font-size: clamp(52px, 12vw, 80px); font-weight: 900; color: #FFD700; line-height: 1; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .hero-score-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 0.75rem; }
+    .score-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 20px; }
+    .score-badge-place { background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3); color: #FFD700; }
+    .score-badge-show { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-secondary); font-weight: 500; font-size: 12px; }
+    .score-badge-best { background: rgba(76,175,114,0.12); border: 1px solid rgba(76,175,114,0.3); color: #4CAF72; }
+    /* Caption bars */
+    .caption-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .caption-card-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 10px; }
+    .caption-card-title { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--text); }
+    .caption-card-sub { font-size: 11px; color: var(--text-muted); }
+    .caption-row { display: flex; align-items: center; gap: 12px; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .caption-row:last-child { border-bottom: none; }
+    .caption-row.percussion { background: rgba(255,215,0,0.04); }
+    .caption-name { width: 90px; font-size: 12px; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
+    .caption-row.percussion .caption-name { color: #FFD700; }
+    .caption-bar-wrap { flex: 1; height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+    .caption-bar { height: 100%; border-radius: 4px; background: var(--red); transition: width 0.6s ease; }
+    .caption-row.percussion .caption-bar { background: #FFD700; }
+    .caption-score { width: 44px; text-align: right; font-size: 14px; font-weight: 700; color: var(--text); flex-shrink: 0; }
+    .caption-row.percussion .caption-score { color: #FFD700; }
+    .caption-max { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+    /* Results page */
+    .results-section-head { display: flex; align-items: baseline; gap: 10px; margin: 1.5rem 0 0.75rem; }
+    .results-section-head h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin: 0; }
+    .results-section-head span { font-size: 11px; color: var(--text-muted); opacity: 0.6; }
+    /* Latest show hero */
+    .show-hero { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 1.5rem; margin-bottom: 1rem; }
+    .show-hero-top { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+    .show-hero-score-row { display: flex; align-items: baseline; gap: 0.75rem; }
+    .show-hero-score { font-size: 52px; font-weight: 900; color: #FFD700; line-height: 1; letter-spacing: -0.02em; }
+    .show-hero-place { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; }
+    .show-hero-name { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+    .show-hero-sub { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+    .show-hero-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: rgba(255,215,0,0.15); color: #FFD700; letter-spacing: 0.06em; }
+    .show-hero-updated { font-size: 11px; color: var(--text-muted); }
+    /* Leaderboard */
+    .lb-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .lb-header { padding: 0.8rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .lb-header-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .lb-header-sub { font-size: 11px; color: var(--text-muted); }
+    .lb-row { display: grid; grid-template-columns: 28px 1fr auto auto; align-items: center; gap: 8px; padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row.phantom { background: rgba(255,215,0,0.07); border-left: 3px solid #FFD700; padding-left: calc(1.25rem - 3px); }
+    .lb-rank { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: center; }
+    .lb-row.phantom .lb-rank { color: #FFD700; }
+    .lb-name { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-row.phantom .lb-name { color: var(--text); font-weight: 700; }
+    .lb-gap { font-size: 11px; color: var(--text-muted); text-align: right; min-width: 44px; }
+    .lb-row.phantom .lb-gap { color: rgba(255,215,0,0.5); }
+    .lb-score { font-size: 14px; font-weight: 800; color: var(--text); text-align: right; min-width: 52px; }
+    .lb-row.phantom .lb-score { color: #FFD700; }
+    .lb-divider { height: 1px; background: var(--border); opacity: 0.5; margin: 0; }
+    /* Season stats strip */
+    .season-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .season-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 0.9rem; text-align: center; }
+    .season-stat-val { font-size: 24px; font-weight: 900; color: var(--text); line-height: 1; }
+    .season-stat-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+    .season-stat-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    /* History table */
+    .history-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .history-row { display: grid; grid-template-columns: 1fr 64px 56px 52px; align-items: center; gap: 8px; padding: 0.7rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .history-row:last-child { border-bottom: none; }
+    .history-row.history-head { padding: 0.55rem 1.25rem; background: var(--surface-2); }
+    .history-head-cell { font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); text-align: right; }
+    .history-head-cell:first-child { text-align: left; }
+    .history-show { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .history-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .history-score { font-size: 14px; font-weight: 800; color: var(--text); text-align: right; }
+    .history-place { font-size: 15px; font-weight: 800; text-align: right; }
+    .history-trend { font-size: 12px; text-align: right; white-space: nowrap; }
+    .history-trend.up { color: #4CAF50; }
+    .history-trend.down { color: #E07070; }
+    .history-trend.same { color: var(--text-muted); }
+    /* Score trend chart */
+    .trend-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 0.5rem 0.5rem; margin-bottom: 1rem; overflow: hidden; }
+    /* Projection */
+    .proj-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid rgba(176,26,28,0.6); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1.25rem; }
+    .proj-score { font-size: 36px; font-weight: 900; color: var(--red); line-height: 1; }
+    .proj-label { font-size: 14px; font-weight: 700; color: var(--text); }
+    .proj-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    /* DCI history */
+    .dci-hist-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .dci-hist-chart { padding: 0.75rem 0.5rem 0.25rem; overflow-x: auto; }
+    .dci-hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .dci-hist-table th { padding: 0.5rem 1rem; text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .dci-hist-table th:not(:first-child) { text-align: right; }
+    .dci-hist-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .dci-hist-table td:not(:first-child) { text-align: right; }
+    .dci-hist-table tr:last-child td { border-bottom: none; }
+    .dci-hist-table tr.champ td { color: var(--text); font-weight: 700; }
+    .dci-hist-table .place-gold { color: #FFD700; }
+    .dci-hist-table .place-silver { color: #C0C0C0; }
+    .dci-hist-table .place-bronze { color: #CD7F32; }
+    /* Links */
+    .results-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 2rem; }
+    .results-link { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1.1rem; text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; transition: background 0.12s; }
+    .results-link:hover { background: var(--surface-2); }
+    .results-link span { font-size: 11px; color: var(--text-muted); display: block; font-weight: 400; margin-top: 2px; }
+
     .card-title { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
     .badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; margin-top: 4px; }
     .badge-us { background: var(--green-bg); color: var(--green); }
@@ -214,6 +572,17 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .detail svg { flex-shrink: 0; margin-top: 2px; }
     .ticket-btn { display: block; margin: 0 1.5rem 1.25rem; padding: 14px 20px; background: var(--red); color: white; text-align: center; border-radius: 10px; font-size: 15px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
     .ticket-btn:hover { background: var(--red-dark); }
+    /* Day-of schedule timeline */
+    .day-schedule { margin: 0 1.5rem 1.25rem; padding: 1rem 1.1rem; background: var(--surface-2); border-radius: 10px; }
+    .day-schedule-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.85rem; }
+    .sched-row { display: grid; grid-template-columns: 68px 16px 1fr; align-items: center; gap: 4px; position: relative; padding: 5px 0; }
+    .sched-time { font-size: 13px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .sched-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong, #555); justify-self: center; position: relative; z-index: 1; }
+    .sched-row:not(:last-child) .sched-dot::after { content: ''; position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 2px; height: calc(100% + 10px); background: var(--border); }
+    .sched-label { font-size: 14px; color: var(--text-secondary); line-height: 1.35; }
+    .sched-highlight .sched-time { color: #FFD700; }
+    .sched-highlight .sched-dot { background: #FFD700; box-shadow: 0 0 0 3px rgba(255,215,0,0.18); }
+    .sched-highlight .sched-label { color: var(--text); font-weight: 600; }
 
     .links-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
     .links-header { padding: 1.1rem 1.5rem 0.6rem; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
@@ -227,19 +596,20 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
 
     .footer-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--red); border-radius: var(--radius); padding: 1.25rem 1.5rem; font-size: 15px; color: var(--text-secondary); line-height: 1.75; box-shadow: 0 2px 8px rgba(0,0,0,0.3); margin-bottom: 2rem; }
     .footer-card strong { color: var(--text); font-weight: 600; }
-    .social-section { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+    .social-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; align-items: start; }
+    @media (max-width: 600px) { .social-section { grid-template-columns: 1fr; } }
     .reel-wrap { border-radius: var(--radius); overflow: hidden; }
     .ig-follow-btn { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.5rem; color: var(--text); text-decoration: none; font-size: 15px; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
     .ig-follow-btn:hover { border-color: var(--border-strong); background: var(--surface-2); }
     .ig-follow-btn .link-arrow { margin-left: auto; color: var(--text-muted); }
 
-    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 2rem; }
-    .gallery-grid .wide { grid-column: span 2; }
-    .gallery-item { border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--surface-2); cursor: pointer; position: relative; }
-    .gallery-item.tall { aspect-ratio: 3 / 4; }
-    .gallery-item.wide { aspect-ratio: 16 / 7; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 2rem; }
+    .gallery-item { border-radius: 8px; overflow: hidden; aspect-ratio: 1 / 1; background: var(--surface-2); cursor: pointer; position: relative; }
     .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
-    .gallery-item:hover img { transform: scale(1.03); }
+    .gallery-item:hover img { transform: scale(1.05); }
+    .gallery-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; pointer-events: none; backdrop-filter: blur(2px); }
+    @media (max-width: 480px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; } .gallery-play { width: 36px; height: 36px; } }
     .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
     .lightbox.open { display: flex; }
     .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; object-fit: contain; }
@@ -259,20 +629,23 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .cal-nav-btn:hover { background: var(--surface-2); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
     .cal-nav-btn:disabled { opacity: 0.25; cursor: default; box-shadow: none; }
     .cal-nav-center { text-align: center; flex: 1; padding: 0 1rem; }
-    .cal-month-name { font-size: 1.25rem; font-weight: 700; color: var(--text); }
-    .cal-phase { font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px; }
-    .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 1rem; }
-    .cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--text-secondary); }
-    .cal-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .cal-wrap { background: #161616; border: 1px solid var(--border); border-radius: 0 0 10px 10px; overflow: hidden; }
+    .cal-month-name { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .cal-month-phase { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 1rem; padding: 0 2px; }
+    .cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .bloodline-banner { width: 100%; max-height: 175px; object-fit: contain; object-position: center; display: block; margin-bottom: 1.5rem; }
+    .cal-wrap { background: #161616; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
     .cal-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); }
     .cal-dow { text-align: center; padding: 10px 4px; font-size: 0.72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
     .cal-cell { min-height: 100px; padding: 8px; border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
     .cal-cell:nth-child(7n) { border-right: none; }
     .cal-cell.empty { background: transparent; }
-    .cal-cell.today { background: rgba(176,26,28,0.07); }
+    .cal-cell.today { background: rgba(176,26,28,0.14); border: 1.5px solid rgba(176,26,28,0.5); border-radius: 6px; }
     .cal-cell.today .day-num { color: #B01A1C; font-weight: 800; }
+    .today-num-wrap { display: flex; align-items: center; gap: 4px; }
+    .today-dot { width: 6px; height: 6px; border-radius: 50%; background: #B01A1C; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(176,26,28,0.5); animation: pulse 2s infinite; }
     .day-num { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; display: block; }
     .event-pill { display: block; border-radius: 5px; padding: 4px 7px; margin-bottom: 4px; font-size: 0.72rem; font-weight: 600; line-height: 1.3; color: #000; cursor: default; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; position: relative; }
     .event-pill.dci { font-size: 0.78rem; font-weight: 800; letter-spacing: .02em; }
@@ -299,30 +672,165 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
       .dci-info-box { font-size: 0.78rem; }
       .dci-info-box p { margin-top: 4px; }
     }
+
+    /* Show Night Mode */
+    .show-night-banner { background: linear-gradient(135deg, rgba(176,26,28,0.22) 0%, rgba(176,26,28,0.07) 100%); border: 1px solid rgba(176,26,28,0.5); border-left: 4px solid var(--red); border-radius: var(--radius); padding: 1.1rem 1.25rem; margin-bottom: 1rem; position: relative; overflow: hidden; }
+    .show-night-banner::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, var(--red), transparent); }
+    .snb-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .snb-title { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.2; }
+    .snb-show-name { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+    .snb-status { font-size: 11px; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+    /* Score update toast */
+    .score-toast { position: fixed; bottom: 5.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: #1A1A1A; border: 1px solid rgba(255,215,0,0.5); border-radius: 12px; padding: 11px 20px; font-size: 14px; font-weight: 700; color: #FFD700; z-index: 500; transition: transform 0.35s ease, opacity 0.35s ease; opacity: 0; pointer-events: none; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.7); }
+    .score-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    /* 2026 Season Rankings */
+    .rankings-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .rank-row { display: grid; grid-template-columns: 28px 32px 1fr 80px 64px; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row-phantom { background: rgba(176,26,28,0.08); border-left: 3px solid #B01A1C; padding-left: 11px; }
+    .rank-num { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: right; }
+    .rank-row-phantom .rank-num { color: #B01A1C; }
+    .rank-logo { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+    .rank-logo img { width: 28px; height: 28px; object-fit: contain; }
+    .rank-name { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+    .rank-row-phantom .rank-name { color: #E07070; }
+    .rank-div-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; background: rgba(255,255,255,0.08); color: var(--text-muted); padding: 1px 5px; border-radius: 3px; }
+    .rank-bar-wrap { height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+    .rank-bar { height: 100%; background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .rank-row-phantom .rank-bar { background: #B01A1C; }
+    .rank-score { font-size: 13px; font-weight: 700; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+    @media (max-width: 480px) {
+      .rank-row { grid-template-columns: 24px 28px 1fr 56px; gap: 8px; padding: 8px 10px; }
+      .rank-bar-wrap { display: none; }
+    }
+    /* DCI Finals history */
+    .hist-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .hist-chart-wrap { padding: 0.75rem 0.75rem 0; border-bottom: 1px solid var(--border); }
+    .hist-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 340px; }
+    .hist-table th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .hist-table td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-secondary); }
+    .hist-table td:first-child { font-weight: 700; color: var(--text); }
+    .hist-table td:nth-child(2) { font-weight: 600; color: var(--text); }
+    .hist-table td:nth-child(3) { font-family: monospace; font-size: 12px; }
+    .hist-table tr.hist-champ td { background: rgba(255,215,0,0.05); }
+    .hist-table tr.hist-champ td:nth-child(2) { color: #FFD700; }
+    .hist-table tbody tr:last-child td { border-bottom: none; }
+    /* Tour map */
+    .tour-map-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 1.5rem; margin-bottom: 1.5rem; }
+    .tour-map-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .tour-map-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .tour-map-sub { font-size: 11px; color: var(--text-muted); }
+    .tour-map-svg-wrap { overflow-x: auto; padding: 0.75rem; }
+    /* Season projection */
+    .projection-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid #4CAF72; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .projection-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #4CAF72; margin-bottom: 0.5rem; }
+    .projection-score { font-size: 32px; font-weight: 900; color: var(--text); line-height: 1; }
+    .projection-sub { font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+    .projection-detail { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    /* Caption trend */
+    .caption-trend-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+    .caption-trend-header { padding: 0.9rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); }
+    .caption-trend-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .caption-trend-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .caption-trend-body { overflow-x: auto; padding: 0.75rem 0.5rem 0; }
+    .caption-trend-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 0.5rem 1rem 0.75rem; }
+    .clt-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+    .clt-line { width: 18px; height: 2px; border-radius: 1px; }
+    /* Latest snapshot */
+    .snapshot { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; }
+    .snapshot-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .snapshot-status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+    .snapshot-loc { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    .snapshot-main { display: grid; grid-template-columns: 1fr 1fr; }
+    .snapshot-block { display: block; padding: 1.1rem 1.25rem; text-decoration: none; color: inherit; border-right: 1px solid var(--border); transition: background 0.15s; }
+    .snapshot-main .snapshot-block:last-child { border-right: none; }
+    .snapshot-block:hover { background: var(--surface-2); }
+    .snapshot-k { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; }
+    .snapshot-v { font-size: 34px; font-weight: 900; color: var(--text); line-height: 1; letter-spacing: -0.02em; }
+    .snapshot-v-gold { color: #FFD700; }
+    .snapshot-ord { font-size: 16px; font-weight: 700; margin-left: 1px; }
+    .snapshot-sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.35; }
+    .snapshot-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border); }
+    .snapshot-cell { padding: 0.85rem 0.75rem; text-align: center; border-right: 1px solid var(--border); }
+    .snapshot-cell:last-child { border-right: none; }
+    .snapshot-cell-v { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1; }
+    .snapshot-cell-v span { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+    .snapshot-cell-k { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-top: 5px; }
+    .snapshot-next { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.95rem 1.25rem; border-top: 1px solid var(--border); text-decoration: none; color: inherit; transition: background 0.15s; }
+    .snapshot-next:hover { background: var(--surface-2); }
+    .snapshot-next-k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); margin-bottom: 3px; }
+    .snapshot-next-v { font-size: 16px; font-weight: 700; color: var(--text); }
+    .snapshot-next-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .snapshot-next svg { color: var(--text-muted); flex-shrink: 0; }
+    /* Featured media */
+    .featured-card { background: var(--surface); border: 1px solid rgba(255,215,0,0.3); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 4px 20px rgba(0,0,0,0.35); }
+    .featured-head { display: flex; align-items: center; gap: 10px; padding: 0.7rem 1rem 0.65rem; }
+    .featured-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #FFD700; }
+    .featured-cap { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .featured-media { width: 100%; display: block; background: #000; }
+    img.featured-media { max-height: 460px; object-fit: cover; }
+    video.featured-media { max-height: 70vh; }
+    /* Current-location locator map */
+    /* Location + next-show row (map stacks beside the next-show card) */
+    .latest-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; align-items: stretch; }
+    .latest-row-single { grid-template-columns: 1fr; }
+    @media (max-width: 640px) { .latest-row { grid-template-columns: 1fr; } }
+    .loc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+    .loc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.7rem 1rem; }
+    .loc-card-k { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .loc-card-v { font-size: 16px; font-weight: 700; color: var(--text); margin-top: 2px; }
+    .loc-card-link { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+    .loc-card-link:hover { color: var(--text); }
+    .loc-map-wrap { position: relative; flex: 1; min-height: 170px; }
+    #loc-map { position: absolute; inset: 0; width: 100%; height: 100%; background: #12161c; }
+    .next-card { display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; text-decoration: none; color: inherit; transition: background 0.15s; min-height: 170px; }
+    .next-card:hover { background: var(--surface-2); }
+    .next-card-k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); margin-bottom: 5px; }
+    .next-card-v { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.15; }
+    .next-card-sub { font-size: 13px; color: var(--text-muted); margin-top: 5px; line-height: 1.4; }
+    .next-card-foot { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 0.7rem; }
+    .loc-pin { position: relative; width: 20px; height: 20px; }
+    .loc-pin-dot { position: absolute; top: 50%; left: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: var(--red); border: 2px solid #fff; box-shadow: 0 0 8px rgba(176,26,28,0.95); z-index: 2; }
+    .loc-pin-pulse { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: rgba(176,26,28,0.55); z-index: 1; animation: locpulse 2s ease-out infinite; }
+    @keyframes locpulse { 0% { transform: scale(0.5); opacity: 0.85; } 70% { transform: scale(2.8); opacity: 0; } 100% { transform: scale(2.8); opacity: 0; } }
   </style>
 </head>
 <body>
 
   <div class="hero">
-    <img src="/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
+    <img src="/assets/mateo.jpg" alt="Matéo — Phantom Regiment 2026">
     <div class="hero-overlay">
-      <?php if ($next_show): ?>
-      <div class="hero-title">Come watch Mateo perform!</div>
-      <div class="hero-eyebrow">Next up — <?= date('l, F j', strtotime($next_show['date'])) ?><?= !empty($next_show['city']) ? ' &nbsp;&middot;&nbsp; ' . htmlspecialchars($next_show['city']) : '' ?></div>
-      <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em> &middot; <?= htmlspecialchars($next_show['label']) ?></div>
-      <?php else: ?>
-      <div class="hero-title">What a season, Mateo!</div>
-      <div class="hero-eyebrow">2026 Summer Tour &nbsp;&middot;&nbsp; DCI World Championships &middot; Indianapolis, IN</div>
-      <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em></div>
-      <?php endif; ?>
-      <div>
-        <span class="show-pill">Bloodline</span>
-        <?php if ($days_to_finals > 1): ?>
-        <span class="countdown-pill">DCI Finals in <?= $days_to_finals ?> days</span>
-        <?php elseif ($days_to_finals === 1): ?>
-        <span class="countdown-pill">DCI Finals tomorrow!</span>
-        <?php elseif ($days_to_finals === 0): ?>
-        <span class="countdown-pill">DCI Finals — tonight!</span>
+      <div class="hero-bottom-row">
+        <div class="hero-left">
+          <?php if ($next_event): ?>
+          <a class="hero-eyebrow" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])" style="text-decoration:none;">
+            <span class="pulse-dot"></span>Next show &nbsp;&middot;&nbsp; <?= date('M j', $ne_ts) ?><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?> &nbsp;&middot;&nbsp; <?= htmlspecialchars($next_event['label']) ?> ›
+          </a>
+          <?php else: ?>
+          <div class="hero-eyebrow"><span style="opacity:0.6;">&#10003;</span>&nbsp; Season complete &nbsp;&middot;&nbsp; DCI Championships, Indianapolis</div>
+          <?php endif; ?>
+          <div class="hero-title">Keep up with Matéo</div>
+          <div class="hero-sub">Phantom Regiment &middot; Drum Corps International</div>
+          <div style="margin:0.6rem 0 0.9rem;">
+            <span class="show-pill">Bloodline</span>
+            <?php if ($days_to_finals > 1): ?>
+            <span class="countdown-pill">DCI Finals in <?= $days_to_finals ?> days</span>
+            <?php elseif ($days_to_finals === 1): ?>
+            <span class="countdown-pill">DCI Finals tomorrow!</span>
+            <?php elseif ($days_to_finals === 0): ?>
+            <span class="countdown-pill">DCI Finals — tonight!</span>
+            <?php endif; ?>
+          </div>
+          <a class="msg-btn" href="/fanmail.php">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Post Phanmail to Matéo
+          </a>
+        </div>
+        <?php if ($current_city): ?>
+        <div class="hero-location">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Currently in <?= htmlspecialchars($current_city) ?>
+        </div>
         <?php endif; ?>
       </div>
     </div>
@@ -338,30 +846,223 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   </div>
   <?php endif; ?>
 
-  <?php if ($latest_photos): ?>
+  <?php
+  // Two images from the Media gallery (assets/ stock, minus hidden) to sit
+  // alongside the Phanmail submissions in the strip.
+  $strip_gallery = [];
+  $g_skip = ['bloodline.png','bloodline.webp','mateo.jpg','favicon.png','apple-touch-icon.png','apple-touch-icon-v2.png','favicon.ico'];
+  $g_hidden = file_exists(__DIR__.'/data/gallery_hidden.json') ? (json_decode(file_get_contents(__DIR__.'/data/gallery_hidden.json'), true) ?: []) : [];
+  foreach (glob(__DIR__.'/assets/*.{jpg,jpeg,png}', GLOB_BRACE) as $gp) {
+      $gfn = basename($gp);
+      if (in_array($gfn, $g_skip) || in_array('assets/'.$gfn, $g_hidden)) continue;
+      $strip_gallery[] = '/assets/'.$gfn;
+      if (count($strip_gallery) >= 2) break;
+  }
+  ?>
+  <?php if ($latest_photos || $strip_gallery): ?>
   <section class="latest-strip">
     <div class="section-label">Latest photos</div>
-    <div class="strip">
-      <?php foreach (array_slice($latest_photos, 0, 12) as $p): ?>
-      <div class="strip-item" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
-        <img src="<?= htmlspecialchars($p['thumb']) ?>" alt="Phantom Regiment tour photo" loading="lazy" />
-        <?php if ($p['label']): ?><span class="strip-badge"><?= htmlspecialchars($p['label']) ?></span><?php endif; ?>
-        <span class="strip-time"><?= date('M j', $p['mtime']) ?></span>
+    <div class="strip-wrap">
+      <button class="strip-arrow strip-arrow-left" onclick="stripScroll(-1)" aria-label="Scroll left">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="strip" id="photoStrip">
+        <?php foreach (array_slice($latest_photos, 0, 10) as $p): ?>
+        <div class="strip-item" onclick="location.href='/messages.php'" title="See this on the Phanmail board">
+          <img src="<?= htmlspecialchars($p['thumb']) ?>" alt="Phantom Regiment tour photo" loading="lazy" />
+          <?php if ($p['label']): ?><span class="strip-badge"><?= htmlspecialchars($p['label']) ?></span><?php endif; ?>
+          <span class="strip-time"><?= date('M j', $p['mtime']) ?></span>
+        </div>
+        <?php endforeach; ?>
+        <?php foreach ($strip_gallery as $gsrc): ?>
+        <div class="strip-item" onclick="switchTab('media', document.querySelectorAll('.tab-btn')[1])" title="Open the photo gallery">
+          <img src="<?= htmlspecialchars($gsrc) ?>" alt="Phantom Regiment gallery photo" loading="lazy" />
+          <span class="strip-badge">Gallery</span>
+        </div>
+        <?php endforeach; ?>
       </div>
-      <?php endforeach; ?>
+      <button class="strip-arrow strip-arrow-right" onclick="stripScroll(1)" aria-label="Scroll right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     </div>
   </section>
   <?php endif; ?>
 
   <nav class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('watch', this)">Latest</button>
-    <button class="tab-btn" onclick="switchTab('more', this)">Media</button>
-    <button class="tab-btn" onclick="switchTab('schedule', this)">Dates</button>
+    <button class="tab-btn active" onclick="switchTab('latest', this)">Latest</button>
+    <button class="tab-btn" onclick="switchTab('media', this)">Media</button>
+    <button class="tab-btn" onclick="switchTab('results', this)">Results</button>
+    <button class="tab-btn" onclick="switchTab('more', this)">Dates</button>
   </nav>
 
-  <div class="tab-panel active" id="tab-watch">
+  <div class="tab-panel active" id="tab-latest">
     <div class="content">
-      <div class="section-label">More about Phantom Regiment</div>
+      <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
+
+      <?php if ($_featured): ?>
+      <div class="featured-card">
+        <div class="featured-head">
+          <span class="featured-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Featured</span>
+          <?php if ($_featured['caption']): ?><span class="featured-cap"><?= htmlspecialchars($_featured['caption']) ?></span><?php endif; ?>
+        </div>
+        <?php if ($_featured['video']): ?>
+        <video class="featured-media" src="<?= htmlspecialchars($_featured['url']) ?>" controls playsinline preload="metadata"></video>
+        <?php else: ?>
+        <img class="featured-media" src="<?= htmlspecialchars($_featured['url']) ?>" alt="Featured — Matéo" loading="lazy" />
+        <?php endif; ?>
+      </div>
+      <?php endif; ?>
+
+      <?php if ($_announcement): ?>
+      <div class="announcement-banner"><strong>Update</strong><?= nl2br(htmlspecialchars($_announcement)) ?></div>
+      <?php endif; ?>
+
+      <?php if ($_is_show_night && $_tonight_event): ?>
+      <div class="show-night-banner">
+        <div class="snb-eyebrow"><span class="pulse-dot"></span>Competition Night</div>
+        <div class="snb-title"><?= htmlspecialchars($_tonight_event['label']) ?></div>
+        <?php if ($_tonight_dci_show): ?>
+        <div class="snb-show-name"><?= htmlspecialchars($_tonight_dci_show) ?></div>
+        <?php endif; ?>
+        <div class="snb-status">
+          <span>Checking for score updates automatically</span>
+          <span id="snb-check-time"></span>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <!-- Snapshot: where things stand right now -->
+      <?php
+        $snap_status = $_is_show_night ? 'Competition night' : ($next_event ? 'On tour' : 'Season complete');
+        $snap_loc = $current_city ?: ($next_event['city'] ?? ($ne_location ?: null));
+        $rank_suf = '';
+        if ($_season_rank) {
+            $rank_suf = in_array($_season_rank % 100, [11,12,13]) ? 'th' : ([1=>'st',2=>'nd',3=>'rd'][$_season_rank % 10] ?? 'th');
+        }
+      ?>
+      <div class="snapshot">
+        <div class="snapshot-head">
+          <span class="snapshot-status"><span class="pulse-dot"></span><?= htmlspecialchars($snap_status) ?></span>
+          <?php if ($snap_loc): ?>
+          <span class="snapshot-loc">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <?= htmlspecialchars($snap_loc) ?>
+          </span>
+          <?php endif; ?>
+        </div>
+
+        <div class="snapshot-main">
+          <?php if (!empty($_score['score'])): ?>
+          <a class="snapshot-block" href="javascript:switchTab('results',document.querySelectorAll('.tab-btn')[2])">
+            <div class="snapshot-k">Latest score</div>
+            <div class="snapshot-v snapshot-v-gold" id="live-score-num"><?= htmlspecialchars($_score['score']) ?></div>
+            <div class="snapshot-sub"><?= htmlspecialchars($_score['placement']) ?> &middot; <?= htmlspecialchars($_score['show']) ?></div>
+          </a>
+          <?php endif; ?>
+          <?php if ($_season_rank): ?>
+          <a class="snapshot-block" href="javascript:switchTab('results',document.querySelectorAll('.tab-btn')[2])">
+            <div class="snapshot-k">Season rank</div>
+            <div class="snapshot-v"><?= $_season_rank ?><span class="snapshot-ord"><?= $rank_suf ?></span></div>
+            <div class="snapshot-sub">of <?= $_season_field ?> World Class corps</div>
+          </a>
+          <?php endif; ?>
+        </div>
+
+        <div class="snapshot-grid">
+          <div class="snapshot-cell">
+            <div class="snapshot-cell-v"><?= $_past_shows ?><span>/<?= $_total_shows ?></span></div>
+            <div class="snapshot-cell-k">Shows</div>
+          </div>
+          <div class="snapshot-cell">
+            <div class="snapshot-cell-v"><?= $_days_to_finals ?></div>
+            <div class="snapshot-cell-k">Days to Finals</div>
+          </div>
+          <div class="snapshot-cell">
+            <div class="snapshot-cell-v"><?= $_best_score ? htmlspecialchars($_best_score) : '&mdash;' ?></div>
+            <div class="snapshot-cell-k">Season best</div>
+          </div>
+        </div>
+      </div>
+
+      <?php
+        // Next-show / finale card content
+        if ($next_event) {
+            $days_to_next = (int)floor(($ne_ts - $today_ts) / 86400);
+            $next_when = $days_to_next <= 0 ? 'Tonight' : ($days_to_next === 1 ? 'Tomorrow' : 'In ' . $days_to_next . ' days');
+            $next_k = 'Next show &middot; ' . htmlspecialchars($next_when);
+            $next_v = htmlspecialchars($next_event['label']);
+            $next_sub = date('l, M j', $ne_ts) . ($ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '');
+        } else {
+            $next_k = 'Grand finale';
+            $next_v = 'DCI World Championships';
+            $next_sub = 'Lucas Oil Stadium, Indianapolis &middot; Aug 6&ndash;9';
+        }
+      ?>
+      <div class="latest-row<?= $_loc_coords ? '' : ' latest-row-single' ?>">
+        <?php if ($_loc_coords): ?>
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <div>
+              <div class="loc-card-k">Currently in</div>
+              <div class="loc-card-v"><?= htmlspecialchars($_loc_name) ?></div>
+            </div>
+            <a class="loc-card-link" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">Map &rsaquo;</a>
+          </div>
+          <div class="loc-map-wrap"><div id="loc-map"></div></div>
+        </div>
+        <?php endif; ?>
+
+        <a class="next-card" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">
+          <div>
+            <div class="next-card-k"><?= $next_k ?></div>
+            <div class="next-card-v"><?= $next_v ?></div>
+            <div class="next-card-sub"><?= $next_sub ?></div>
+          </div>
+          <div class="next-card-foot">
+            <span>View tour dates</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </a>
+      </div>
+      <?php if ($_loc_coords): ?>
+      <script>
+        (function() {
+          var el = document.getElementById('loc-map');
+          if (!el || typeof L === 'undefined') return;
+          var lat = <?= $_loc_coords[0] ?>, lon = <?= $_loc_coords[1] ?>;
+          var m = L.map('loc-map', { zoomControl: false, attributionControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false, touchZoom: false, keyboard: false, tap: false }).setView([lat, lon], 6);
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 12, minZoom: 3 }).addTo(m);
+          var icon = L.divIcon({ className: '', html: '<div class="loc-pin"><span class="loc-pin-pulse"></span><span class="loc-pin-dot"></span></div>', iconSize: [20, 20], iconAnchor: [10, 10] });
+          L.marker([lat, lon], { icon: icon }).addTo(m);
+          window._locMap = m;
+          // Tiles can render partially before the grid cell has its final width — nudge Leaflet to recalc.
+          function fix() { m.invalidateSize(); m.setView([lat, lon], 6); }
+          setTimeout(fix, 120);
+          setTimeout(fix, 500);
+          window.addEventListener('load', fix);
+        })();
+      </script>
+      <?php endif; ?>
+
+      <a class="fanmail-hook" href="/fanmail.php">
+        <div class="fanmail-hook-left">
+          <strong><?= $_msg_count ?> Phanmail<?= $_msg_count !== 1 ? 's' : '' ?> for Matéo<?= $_photo_count ? " · {$_photo_count} photos" : '' ?></strong>
+          See what fans have been sending him →
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-muted);"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </a>
+
+      <div style="display:flex;gap:10px;margin-bottom:2rem;">
+        <a href="/messages.php" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          All messages
+        </a>
+        <a href="/fanmail.php" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Phanmail
+        </a>
+      </div>
+      <div class="section-label">About Phantom Regiment</div>
       <div class="links-card">
       <div class="links-header">Links</div>
 
@@ -412,174 +1113,93 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     </div>
   </div>
 
-  <div class="tab-panel" id="tab-schedule">
-    <!-- Full Season Calendar -->
-  <div class="calendar-section">
-
-    <div class="cal-nav">
-      <button class="cal-nav-btn" id="cal-prev" onclick="calNav(-1)" aria-label="Previous month">&#8592;</button>
-      <div class="cal-nav-center">
-        <div class="cal-month-name" id="cal-month-name"></div>
-        <div class="cal-phase" id="cal-phase"></div>
-      </div>
-      <button class="cal-nav-btn" id="cal-next" onclick="calNav(1)" aria-label="Next month">&#8594;</button>
-    </div>
-
-    <div class="cal-legend">
-      <?php foreach ([
-        'show'      => ['#7DD9A2','Show'],
-        'dci'       => ['#FFD700','DCI Championships'],
-        'rehearsal' => ['#5E9BD6','Rehearsal / NIU'],
-        'practice'  => ['#4FD1C0','Practice'],
-        'travel'    => ['#7A7A85','Travel'],
-        'free'      => ['#FFB59E','Free Day'],
-        'milestone' => ['#FFD97D','Milestone'],
-      ] as $t => [$c, $l]): ?>
-      <div class="cal-legend-item">
-        <div class="cal-legend-dot" style="background:<?= $c ?>"></div>
-        <?= $l ?>
-      </div>
-      <?php endforeach; ?>
-    </div>
-
-    <?php foreach ($months as $idx => $m):
-      $year = $m['year']; $mon = $m['month'];
-      $first_dow = (int)date('w', mktime(0,0,0,$mon,1,$year));
-      $days_in_month = (int)date('t', mktime(0,0,0,$mon,1,$year));
-    ?>
-    <div class="month-view" id="month-<?= $idx ?>"
-         data-name="<?= htmlspecialchars($m['name']) ?>"
-         data-phase="<?= htmlspecialchars($m['phase']) ?>">
-      <div class="cal-wrap">
-        <div class="cal-dow-row">
-          <?php foreach (['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $d): ?>
-            <div class="cal-dow"><?= $d ?></div>
-          <?php endforeach; ?>
-        </div>
-        <div class="cal-grid">
-          <?php
-          for ($i = 0; $i < $first_dow; $i++) echo '<div class="cal-cell empty"></div>';
-          for ($day = 1; $day <= $days_in_month; $day++):
-            $date_str = sprintf('%04d-%02d-%02d', $year, $mon, $day);
-            $ev = $events[$date_str] ?? null;
-            $is_today = ($date_str === $today);
-            $cls = 'cal-cell' . ($is_today ? ' today' : '');
-          ?>
-          <div class="<?= $cls ?>">
-            <span class="day-num"><?= $day ?></span>
-            <?php if ($ev):
-              $color  = $type_colors[$ev['type']];
-              $pcls   = 'event-pill' . ($ev['type'] === 'dci' ? ' dci' : '');
-            ?>
-            <span class="<?= $pcls ?>" style="background:<?= $color ?>" data-detail="<?= htmlspecialchars($ev['detail']) ?>"><?= htmlspecialchars($ev['label']) ?></span>
-            <?php if (!empty($ev['city'])): ?>
-            <span class="event-city"><?= htmlspecialchars($ev['city']) ?></span>
-            <?php endif; ?>
-            <?php if (!empty($ev['result'])): ?>
-            <span class="event-result"><?= htmlspecialchars($ev['result']) ?></span>
-            <?php endif; ?>
-            <?php endif; ?>
-          </div>
-          <?php endfor;
-          $total = $first_dow + $days_in_month;
-          $trailing = (7 - ($total % 7)) % 7;
-          for ($i = 0; $i < $trailing; $i++) echo '<div class="cal-cell empty"></div>';
-          ?>
-        </div>
-      </div>
-    </div>
-    <?php endforeach; ?>
-
-    <div class="dci-info-box" id="dci-info-box" style="display:none;">
-      <strong>DCI Championships — Indianapolis, IN (Aug 6–9)</strong>
-      <p>Housing: Lawrence Armory · 9920 E 59th St, Indianapolis IN 46216</p>
-      <p>Rehearsal (Tue–Fri): Carmel Dad's Club · 5459 E Main St, Carmel IN 46033</p>
-    </div>
-
-  </div>
-
-  <script>
-    var CAL_COUNT = <?= count($months) ?>;
-    var CAL_LAST  = CAL_COUNT - 1;
-
-    // Default to the current month if it falls in range, otherwise first month
-    var todayStr = '<?= $today ?>';
-    var todayMonth = parseInt(todayStr.slice(5,7), 10);
-    var monthMap = <?= json_encode(array_map(fn($m) => $m['month'], $months)) ?>;
-    var initIdx = monthMap.indexOf(todayMonth);
-    if (initIdx === -1) initIdx = 0;
-
-    var curIdx = initIdx;
-
-    function calShow(idx) {
-      document.querySelectorAll('.month-view').forEach(function(el) { el.classList.remove('active'); });
-      var el = document.getElementById('month-' + idx);
-      el.classList.add('active');
-      document.getElementById('cal-month-name').textContent = el.dataset.name;
-      document.getElementById('cal-phase').textContent       = el.dataset.phase;
-      document.getElementById('cal-prev').disabled = (idx === 0);
-      document.getElementById('cal-next').disabled = (idx === CAL_LAST);
-      document.getElementById('dci-info-box').style.display = (idx === CAL_LAST) ? 'block' : 'none';
-    }
-
-    function calNav(dir) {
-      var next = curIdx + dir;
-      if (next < 0 || next > CAL_LAST) return;
-      curIdx = next;
-      calShow(curIdx);
-    }
-
-    calShow(curIdx);
-  </script>
-  </div>
-
-
-  <!-- Tab: More -->
-  <div class="tab-panel" id="tab-more">
+  <div class="tab-panel" id="tab-media">
     <div class="content">
-      <div class="footer-card">
-      We're also flying to <strong>Indianapolis on August 8</strong> to watch Mateo's final performance at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio! 🎶
-    </div>
-      <div class="section-label" style="margin-top:0.5rem;">Photos</div>
+      <div class="section-label" style="margin-top:1.5rem;">Photos</div>
+      <?php
+      $asset_dir   = __DIR__ . '/assets';
+      $upload_dir  = __DIR__ . '/data/gallery';
+      $hidden_file = __DIR__ . '/data/gallery_hidden.json';
+      $hidden = file_exists($hidden_file) ? (json_decode(file_get_contents($hidden_file), true) ?: []) : [];
+      $skip = ['bloodline.png','bloodline.webp','mateo.jpg','favicon.png','apple-touch-icon.png','apple-touch-icon-v2.png'];
+
+      $render = [];
+
+      // Admin-uploaded photos + video clips first (newest first) — live in data/gallery, survive deploys
+      $_vid_exts = ['mp4','mov','m4v','webm'];
+      if (is_dir($upload_dir)) {
+          $ups = glob($upload_dir . '/*.{jpg,jpeg,png,webp,mp4,mov,m4v,webm}', GLOB_BRACE);
+          usort($ups, fn($a, $b) => filemtime($b) <=> filemtime($a));
+          foreach ($ups as $path) {
+              $fname = basename($path);
+              if (in_array('gallery/' . $fname, $hidden)) continue;
+              $is_vid = in_array(strtolower(pathinfo($fname, PATHINFO_EXTENSION)), $_vid_exts);
+              $render[] = ['src' => '/data/gallery/' . $fname, 'webp' => null, 'video' => $is_vid];
+          }
+      }
+
+      // Bundled stock photos — group by stem, prefer jpg/png as base, webp as source
+      $stems = [];
+      foreach (glob($asset_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE) as $path) {
+          $fname = basename($path);
+          if (in_array($fname, $skip)) continue;
+          $ext  = strtolower(pathinfo($fname, PATHINFO_EXTENSION));
+          $stem = pathinfo($fname, PATHINFO_FILENAME);
+          if (!isset($stems[$stem])) $stems[$stem] = ['base' => null, 'webp' => null];
+          if ($ext === 'webp') { $stems[$stem]['webp'] = '/assets/' . $fname; }
+          else { $stems[$stem]['base'] = '/assets/' . $fname; }
+      }
+      foreach ($stems as $stem => $f) {
+          $base_fname = basename($f['base'] ?? $f['webp']);
+          if (in_array('assets/' . $base_fname, $hidden)) continue;
+          $render[] = ['src' => $f['base'] ?? $f['webp'], 'webp' => $f['webp']];
+      }
+      ?>
       <div class="gallery-grid" id="gallery">
-      <?php if ($latest_photos): ?>
-      <?php foreach ($latest_photos as $i => $p): ?>
-      <div class="gallery-item<?= $i === 0 ? ' wide' : '' ?>" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
-        <img src="<?= htmlspecialchars($p['url'] . '&w=' . ($i === 0 ? 960 : 640)) ?>" alt="Phantom Regiment tour photo — <?= date('M j', $p['mtime']) ?>" loading="lazy" />
+        <?php
+        function gallery_picture(array $item, string $alt = 'Phantom Regiment'): string {
+            $src = htmlspecialchars($item['src']);
+            $webp = $item['webp'] ? htmlspecialchars($item['webp']) : null;
+            $inner = $webp ? "<source srcset=\"$webp\" type=\"image/webp\">" : '';
+            $inner .= "<img src=\"$src\" alt=\"$alt\" loading=\"lazy\" />";
+            return "<picture>$inner</picture>";
+        }
+        ?>
+        <?php foreach ($render as $item): ?>
+          <?php if (!empty($item['video'])): ?>
+          <div class="gallery-item gallery-video" onclick="openVideoLightbox(this)" data-src="<?= htmlspecialchars($item['src']) ?>">
+            <video src="<?= htmlspecialchars($item['src']) ?>#t=0.1" muted playsinline preload="metadata"></video>
+            <span class="gallery-play"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          </div>
+          <?php else: ?>
+          <div class="gallery-item" onclick="openLightbox(this)">
+            <?= gallery_picture($item) ?>
+          </div>
+          <?php endif; ?>
+        <?php endforeach; ?>
       </div>
-      <?php endforeach; ?>
-      <?php else: ?>
-      <div class="gallery-item wide" onclick="openLightbox(this)">
-        <img src="/assets/mateo.jpg" alt="Phantom Regiment snare line rehearsal" loading="lazy" />
+      <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">&#215;</button>
+        <img id="lightbox-img" src="" alt="" />
+        <video id="lightbox-video" controls playsinline style="display:none;max-width:100%;max-height:90vh;border-radius:8px;"></video>
       </div>
-      <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="/assets/mateo.jpg" alt="Phantom Regiment — Bloodline" loading="lazy" />
-      </div>
-      <div class="gallery-item" onclick="openLightbox(this)">
-        <img src="/assets/mateo.jpg" alt="Phantom Regiment percussion" loading="lazy" />
-      </div>
-      <?php endif; ?>
-    </div>
-
-    <div class="section-label" style="margin-top:1.75rem;">Follow along</div>
-
-    <div class="social-section">
-      <div class="video-wrap">
-        <iframe
-          src="https://www.youtube.com/embed/lrOzW2I4r3U"
-          title="Phantom Regiment 2026"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen>
-        </iframe>
-      </div>
-
-      <div class="reel-wrap">
+      <div class="section-label" style="margin-top:1.75rem;">Videos &amp; Social</div>
+      <div class="social-section">
+        <div class="video-wrap">
+          <iframe src="https://www.youtube.com/embed/lrOzW2I4r3U" title="Phantom Regiment 2026" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <div class="video-wrap">
+          <iframe src="https://www.youtube.com/embed/sIMSeloDV3k" title="Phantom Regiment 2026" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <div class="video-wrap">
+          <iframe src="https://www.youtube.com/embed/rwodYLaTWc4" title="Phantom Regiment 2026" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <div class="reel-wrap">
         <blockquote
           class="instagram-media"
           data-instgrm-permalink="https://www.instagram.com/reel/DaIBv_ABv5a/"
           data-instgrm-version="14"
-          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:0;padding:0;width:calc(100% - 2px);">
+          style="background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,.5),0 1px 10px 0 rgba(0,0,0,.15);margin:0;max-width:100%;min-width:326px;padding:0;width:calc(100% - 2px);">
           <div style="padding:16px;">
             <a href="https://www.instagram.com/reel/DaIBv_ABv5a/" target="_blank" rel="noopener"
                style="color:#c9c8cd;font-family:Arial,sans-serif;font-size:14px;line-height:17px;text-decoration:none;">
@@ -588,83 +1208,697 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
           </div>
         </blockquote>
       </div>
-
-      <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
+        <a class="ig-follow-btn" href="https://www.instagram.com/thephantomregiment/" target="_blank" rel="noopener">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
         Follow @thephantomregiment on Instagram
         <svg class="link-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-results">
+    <div class="content">
+    <?php
+      // $_latest_hist, $_best_score, $_rankings, $_season_rank are defined in the header.
+      $_has_leader = !empty($_latest_hist['leaderboard']);
+
+      $_pr_history = [
+        ['year'=>2024,'placement'=>5,'score'=>93.613,'show'=>'Phantasm'],
+        ['year'=>2023,'placement'=>5,'score'=>92.188,'show'=>'Somewhere in Time'],
+        ['year'=>2022,'placement'=>6,'score'=>90.750,'show'=>'Somewhere in Time'],
+        ['year'=>2019,'placement'=>7,'score'=>90.863,'show'=>'Phantasm'],
+        ['year'=>2018,'placement'=>8,'score'=>90.375,'show'=>'The Impresario'],
+        ['year'=>2017,'placement'=>6,'score'=>89.538,'show'=>'Year One'],
+        ['year'=>2016,'placement'=>5,'score'=>89.050,'show'=>'As Dreams Are Made On'],
+        ['year'=>2015,'placement'=>7,'score'=>87.625,'show'=>'The Sacrifice'],
+        ['year'=>2014,'placement'=>3,'score'=>94.213,'show'=>'Scheherazade'],
+        ['year'=>2013,'placement'=>2,'score'=>95.950,'show'=>'Triumph'],
+        ['year'=>2012,'placement'=>3,'score'=>95.025,'show'=>'Juliet'],
+        ['year'=>2011,'placement'=>5,'score'=>93.650,'show'=>'Don Quixote'],
+        ['year'=>2010,'placement'=>4,'score'=>94.300,'show'=>'MMVI'],
+        ['year'=>2009,'placement'=>2,'score'=>97.050,'show'=>'Angels in the Architecture'],
+        ['year'=>2008,'placement'=>1,'score'=>99.650,'show'=>'Angels in the Architecture'],
+      ];
+    ?>
+
+    <!-- ═══ LATEST SHOW ═══ -->
+    <div style="margin-top:1.5rem;margin-bottom:0.75rem;">
+      <div style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.01em;">Latest Show Results</div>
+      <?php if (!empty($_latest_hist['show'])): ?>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:2px;"><?= htmlspecialchars($_latest_hist['show']) ?> &nbsp;·&nbsp; How Phantom placed against the field</div>
+      <?php endif; ?>
+    </div>
+
+    <?php if (empty($_scores_history)): ?>
+      <div class="results-empty"><strong>Season just getting started</strong> Scores will appear here after each competition night.</div>
+    <?php else: ?>
+
+    <?php if (!empty($_score['score'])): ?>
+    <div class="show-hero">
+      <div class="show-hero-top">
+        <?php $place_num=(int)preg_replace('/\D/','',$_score['placement']??''); $place_suf=match($place_num){1=>'st',2=>'nd',3=>'rd',default=>'th'}; ?>
+        <div class="show-hero-score-row">
+          <div class="show-hero-score"><?= htmlspecialchars($_score['score']) ?></div>
+          <div class="show-hero-place"><?= $place_num ?><?= $place_suf ?> place</div>
+        </div>
+        <div class="show-hero-name"><?= htmlspecialchars($_score['show']??'') ?></div>
+        <div class="show-hero-sub">
+          <?php if ($_best_score && $_score['score']===$_best_score): ?><div class="show-hero-badge">Season best</div><?php endif; ?>
+          <?php if (!empty($_score['updated'])): ?><div class="show-hero-updated">Updated <?= htmlspecialchars(substr($_score['updated'],5)) ?></div><?php endif; ?>
+        </div>
+      </div>
+
+      <?php if ($_has_leader):
+        $leader=$_latest_hist['leaderboard'];
+        usort($leader,fn($a,$b)=>$b['total']<=>$a['total']);
+        $top_score=(float)($leader[0]['total']??0);
+        $prev_rank=0;
+        foreach ($leader as $idx=>$corps):
+          $is_phantom=stripos($corps['name']??'','Phantom')!==false;
+          $corps_rank=(int)($corps['rank']??($idx+1));
+          $corps_total=(float)($corps['total']??0);
+          $gap=$corps_total-$top_score;
+          $gap_str=$gap>=0?'':number_format($gap,3);
+          $show_divider=$idx>0&&$corps_rank<$prev_rank&&$corps_rank===1;
+          $prev_rank=$corps_rank;
+      ?>
+      <?php if($show_divider): ?><div style="border-top:1px dashed var(--border);opacity:.35;"></div><?php endif; ?>
+      <div class="lb-row <?= $is_phantom?'phantom':'' ?>">
+        <div class="lb-rank"><?= $corps_rank ?></div>
+        <div class="lb-name"><?= htmlspecialchars($corps['name']??'') ?></div>
+        <div class="lb-gap"><?= htmlspecialchars($gap_str) ?></div>
+        <div class="lb-score"><?= $corps_total>0?number_format($corps_total,3):'—' ?></div>
+      </div>
+      <?php endforeach; endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- ═══ SEASON ═══ -->
+    <div class="results-section-head" style="margin-top:1.75rem;"><h2>2026 Season</h2></div>
+
+    <div class="season-strip">
+      <div class="season-stat">
+        <div class="season-stat-val"><?= $_past_shows ?><span style="font-size:14px;font-weight:400;color:var(--text-muted);">/<?= $_total_shows ?></span></div>
+        <div class="season-stat-label">Shows</div>
+        <div class="season-stat-sub">competed</div>
+      </div>
+      <div class="season-stat">
+        <?php if ($_season_rank): ?>
+        <div class="season-stat-val" style="color:#FFD700;"><?= $_season_rank ?><span style="font-size:14px;font-weight:600;"><?= match($_season_rank){1=>'st',2=>'nd',3=>'rd',default=>'th'} ?></span></div>
+        <div class="season-stat-label">Season Rank</div>
+        <div class="season-stat-sub">overall</div>
+        <?php else: ?>
+        <div class="season-stat-val">—</div><div class="season-stat-label">Rank</div><div class="season-stat-sub">&nbsp;</div>
+        <?php endif; ?>
+      </div>
+      <div class="season-stat">
+        <div class="season-stat-val"><?= $_days_to_finals ?></div>
+        <div class="season-stat-label">Days to Finals</div>
+        <div class="season-stat-sub">Aug 8 · Indy</div>
+      </div>
+    </div>
+
+    <?php $_pct=$_total_shows>0?round(($_past_shows/$_total_shows)*100):0; ?>
+    <div class="season-progress" style="margin-bottom:1.25rem;">
+      <div class="progress-label"><span>Season progress</span><span><?= $_pct ?>% &middot; <?= $_total_shows-$_past_shows ?> shows remaining</span></div>
+      <div class="progress-track"><div class="progress-fill" style="width:<?= $_pct ?>%;"></div></div>
+    </div>
+
+    <!-- World Class standings -->
+    <?php
+      $world=array_filter($_rankings,fn($r)=>$r['div']==="World");
+      $open=array_filter($_rankings,fn($r)=>$r['div']==="Open");
+      $top_world=max(array_column(array_values($world),'score'));
+    ?>
+    <div style="margin-bottom:0.75rem;">
+      <div style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.01em;">Overall Season Rankings</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Official DCI standings &nbsp;&middot;&nbsp; ranked by average of last 3 shows</div>
+    </div>
+    <div class="lb-card">
+      <div class="lb-header">
+        <div class="lb-header-title">World Class</div>
+        <div class="lb-header-sub">Updated Jul 13</div>
+      </div>
+      <div class="lb-row history-head" style="background:var(--surface-2);padding-top:.4rem;padding-bottom:.4rem;">
+        <div class="lb-rank"></div>
+        <div class="lb-name" style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);">Corps</div>
+        <div class="lb-gap" style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);">Recent</div>
+        <div class="lb-score" style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);">Avg</div>
+      </div>
+      <?php foreach($world as $r):
+        $is_phantom=stripos($r['name'],'Phantom')!==false;
+        $gap=$r['score']-$top_world;
+        $gap_str=$gap>=0?'—':number_format($gap,3);
+      ?>
+      <div class="lb-row <?= $is_phantom?'phantom':'' ?>">
+        <div class="lb-rank"><?= $r['rank'] ?></div>
+        <div class="lb-name"><?= htmlspecialchars($r['name']) ?></div>
+        <div class="lb-gap"><?= isset($r['recent']) ? number_format($r['recent'],3) : '—' ?></div>
+        <div class="lb-score"><?= number_format($r['score'],3) ?></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+    <?php if($open): $top_open=max(array_column(array_values($open),'score')); ?>
+    <div class="lb-card">
+      <div class="lb-header"><div class="lb-header-title">Open Class</div><div class="lb-header-sub">2026 season</div></div>
+      <?php foreach($open as $r): $gap=$r['score']-$top_open; ?>
+      <div class="lb-row">
+        <div class="lb-rank"><?= $r['rank'] ?></div>
+        <div class="lb-name"><?= htmlspecialchars($r['name']) ?></div>
+        <div class="lb-gap"><?= $gap>=0?'Leader':number_format($gap,3) ?></div>
+        <div class="lb-score"><?= number_format($r['score'],3) ?></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Performance log -->
+    <?php if(count($_scores_history)>=1): ?>
+    <div class="results-section-head" style="margin-top:1.75rem;">
+      <h2>Performance Log</h2>
+      <span><?= count($_scores_history) ?> show<?= count($_scores_history)!==1?'s':'' ?></span>
+    </div>
+    <div class="history-card">
+      <div class="history-row history-head">
+        <div class="history-head-cell">Show</div>
+        <div class="history-head-cell">Score</div>
+        <div class="history-head-cell">Place</div>
+        <div class="history-head-cell">+/−</div>
+      </div>
+      <?php
+        $history_rev=array_reverse($_scores_history);
+        $n_hist=count($history_rev);
+        foreach($history_rev as $i=>$h):
+          $prev_idx=$n_hist-2-$i;
+          $prev=($prev_idx>=0&&isset($_scores_history[$prev_idx]))?$_scores_history[$prev_idx]:null;
+          $diff=$prev?(float)$h['score']-(float)$prev['score']:null;
+          $tclass=$diff===null?'same':($diff>0.001?'up':($diff<-0.001?'down':'same'));
+          $trend=$diff===null?'—':($diff>0.001?'+'.number_format($diff,3):($diff<-0.001?number_format($diff,3):'—'));
+          $place_num=(int)preg_replace('/\D/','',$h['placement']??'');
+          $place_color=match($place_num){1=>'#FFD700',2=>'#C0C0C0',3=>'#CD7F32',default=>'var(--text-secondary)'};
+          $corps_at=!empty($h['leaderboard'])?count($h['leaderboard']):null;
+      ?>
+      <div class="history-row">
+        <div>
+          <div class="history-show"><?= htmlspecialchars($h['show']) ?></div>
+          <?php if(!empty($h['date'])): ?><div class="history-date"><?= date('M j, Y',strtotime($h['date'])) ?></div><?php endif; ?>
+        </div>
+        <div class="history-score"><?= htmlspecialchars($h['score']) ?></div>
+        <div class="history-place" style="color:<?= $place_color ?>;">
+          <?= htmlspecialchars($h['placement']??'—') ?>
+          <?php if($corps_at): ?><div style="font-size:10px;font-weight:400;color:var(--text-muted);">of <?= $corps_at ?></div><?php endif; ?>
+        </div>
+        <div class="history-trend <?= $tclass ?>"><?= $trend ?></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+    <?php if(count($_scores_history)>=2):
+      $scores_vals=array_map(fn($h)=>(float)$h['score'],$_scores_history);
+      $min_s=min($scores_vals);$max_s=max($scores_vals);
+      $range=max($max_s-$min_s,2.0);$pad=$range*0.2;
+      $y_min=$min_s-$pad;$y_max=$max_s+$pad;
+      $W=560;$H=130;$ML=46;$MR=12;$MT=14;$MB=26;
+      $cw=$W-$ML-$MR;$ch=$H-$MT-$MB;
+      $n=count($_scores_history);
+      function sx($i,$n,$cw,$ML){return $ML+($n>1?($i/($n-1))*$cw:$cw/2);}
+      function sy($v,$y_min,$y_max,$ch,$MT){return $MT+$ch-(($v-$y_min)/($y_max-$y_min))*$ch;}
+      $pts=[];
+      for($i=0;$i<$n;$i++) $pts[]=sx($i,$n,$cw,$ML).','.sy($scores_vals[$i],$y_min,$y_max,$ch,$MT);
+    ?>
+    <div class="trend-card">
+      <svg viewBox="0 0 <?= $W ?> <?= $H ?>" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+        <?php for($g=0;$g<=4;$g++): $gy=$MT+($g/4)*$ch; $gv=$y_max-($g/4)*($y_max-$y_min); ?>
+        <line x1="<?=$ML?>" y1="<?=$gy?>" x2="<?=$W-$MR?>" y2="<?=$gy?>" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+        <text x="<?=$ML-4?>" y="<?=$gy+4?>" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.28)"><?=number_format($gv,1)?></text>
+        <?php endfor; ?>
+        <polygon points="<?=implode(' ',$pts)?> <?=$W-$MR?>,<?=$MT+$ch?> <?=$ML?>,<?=$MT+$ch?>" fill="rgba(255,215,0,0.07)"/>
+        <polyline points="<?=implode(' ',$pts)?>" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <?php for($i=0;$i<$n;$i++):
+          $px=sx($i,$n,$cw,$ML);$py=sy($scores_vals[$i],$y_min,$y_max,$ch,$MT);
+          $lbl=mb_strimwidth(explode(',',$_scores_history[$i]['show']??'')[0]??'',0,9,'');
+        ?>
+        <circle cx="<?=$px?>" cy="<?=$py?>" r="4" fill="#FFD700" stroke="#111" stroke-width="1.5"/>
+        <text x="<?=$px?>" y="<?=$py-8?>" text-anchor="middle" font-size="9.5" font-weight="700" fill="#FFD700"><?=number_format($scores_vals[$i],3)?></text>
+        <?php if($n<=10): ?><text x="<?=$px?>" y="<?=$H-3?>" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,0.3)"><?=htmlspecialchars($lbl)?></text><?php endif; ?>
+        <?php endfor; ?>
+      </svg>
+    </div>
+    <?php endif; ?>
+
+    <?php if(count($_scores_history)>=3):
+      $n=count($_scores_history);$totalShows=17;
+      $sum_x=0;$sum_y=0;$sum_xy=0;$sum_x2=0;
+      foreach($_scores_history as $i=>$h){$x=$i+1;$y=(float)$h['score'];$sum_x+=$x;$sum_y+=$y;$sum_xy+=$x*$y;$sum_x2+=$x*$x;}
+      $denom=$n*$sum_x2-$sum_x*$sum_x;
+      $slope=$denom!=0?($n*$sum_xy-$sum_x*$sum_y)/$denom:0;
+      $intercept=($sum_y-$slope*$sum_x)/$n;
+      $proj=$slope*$totalShows+$intercept;
+    ?>
+    <div class="proj-card">
+      <div class="proj-score"><?=number_format($proj,2)?></div>
+      <div><div class="proj-label">Projected Finals Score</div><div class="proj-sub"><?=$n?> shows · <?=number_format($slope,3)?> pts/show · extrapolated to show <?=$totalShows?></div></div>
+    </div>
+    <?php endif; ?>
+    <?php endif; // count >= 1 ?>
+
+    <?php endif; // scores_history not empty ?>
+
+    <!-- ═══ DCI FINALS HISTORY ═══ -->
+    <div class="results-section-head" style="margin-top:1.75rem;"><h2>DCI Finals History</h2><span>Phantom Regiment</span></div>
+    <?php
+      $H_hist=155;$W_hist=680;$hML=26;$hMR=14;$hMT=14;$hMB=22;
+      $hn=count($_pr_history);
+      $hcW=($W_hist-$hML-$hMR)/($hn-1);
+      $hmaxP=12;
+      function histY(int $place,int $H,int $MT,int $MB,int $maxP):float{
+          return $MT+($place-1)/($maxP-1)*($H-$MT-$MB);
+      }
+      $hpts='';
+      foreach(array_reverse($_pr_history) as $i=>$r){
+          $x=$hML+$i*$hcW;$y=histY($r['placement'],$H_hist,$hMT,$hMB,$hmaxP);
+          $hpts.="$x,$y ";
+      }
+    ?>
+    <div class="dci-hist-card">
+      <div class="dci-hist-chart">
+        <svg viewBox="0 0 <?=$W_hist?> <?=$H_hist?>" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+          <?php foreach([1,3,5,8,10] as $gp): $gy=histY($gp,$H_hist,$hMT,$hMB,$hmaxP); ?>
+          <line x1="<?=$hML?>" y1="<?=$gy?>" x2="<?=$W_hist-$hMR?>" y2="<?=$gy?>" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <text x="<?=$hML-4?>" y="<?=$gy+4?>" text-anchor="end" font-size="8" fill="rgba(255,255,255,0.22)"><?=$gp?></text>
+          <?php endforeach; ?>
+          <polyline points="<?=trim($hpts)?>" fill="none" stroke="#B01A1C" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <?php foreach(array_reverse($_pr_history) as $i=>$r):
+            $x=$hML+$i*$hcW;$y=histY($r['placement'],$H_hist,$hMT,$hMB,$hmaxP);$isChamp=$r['placement']===1;
+          ?>
+          <circle cx="<?=$x?>" cy="<?=$y?>" r="<?=$isChamp?5:3?>" fill="<?=$isChamp?'#FFD700':'#B01A1C'?>"/>
+          <?php if($isChamp): ?><text x="<?=$x?>" y="<?=$y-9?>" text-anchor="middle" font-size="8" fill="#FFD700" font-weight="700">CHAMP</text><?php endif; ?>
+          <text x="<?=$x?>" y="<?=$H_hist-3?>" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.28)"><?=substr($r['year'],2)?></text>
+          <?php endforeach; ?>
+        </svg>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="dci-hist-table">
+          <thead><tr><th>Year</th><th>Show</th><th>Score</th><th>Place</th></tr></thead>
+          <tbody>
+          <?php foreach($_pr_history as $r):
+            $pclass=match($r['placement']){1=>'place-gold',2=>'place-silver',3=>'place-bronze',default=>''};
+          ?>
+          <tr class="<?=$r['placement']===1?'champ':''?>">
+            <td><?=$r['year']?></td><td><?=htmlspecialchars($r['show'])?></td>
+            <td><?=number_format($r['score'],3)?></td>
+            <td class="<?=$pclass?>"><?=$r['placement']?><?=match($r['placement']){1=>'st',2=>'nd',3=>'rd',default=>'th'}?></td>
+          </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="results-links" style="margin-top:1rem;">
+      <a class="results-link" href="https://drumcorps.app/corps/phantom-regiment" target="_blank" rel="noopener">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <div>drumcorps.app<span>Phantom Regiment profile</span></div>
+      </a>
+      <a class="results-link" href="https://drumcorps.app/rankings" target="_blank" rel="noopener">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <div>DCI Rankings<span>Full season standings</span></div>
       </a>
     </div>
 
     </div>
   </div>
 
-  <!-- Lightbox overlay -->
-  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <button class="lightbox-close" onclick="closeLightbox()">×</button>
-    <button class="lightbox-nav prev" id="lb-prev" onclick="event.stopPropagation(); lightboxStep(-1)" aria-label="Previous photo">&#8249;</button>
-    <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
-    <button class="lightbox-nav next" id="lb-next" onclick="event.stopPropagation(); lightboxStep(1)" aria-label="Next photo">&#8250;</button>
+  <div class="tab-panel" id="tab-more">
+    <div class="content">
+      <picture><source srcset="/assets/bloodline.webp" type="image/webp"><img src="/assets/bloodline.png" alt="Bloodline — Phantom Regiment 2026" class="bloodline-banner"></picture>
+      <div class="footer-card">
+      We're also flying to <strong>Indianapolis August 6–9</strong> to watch Matéo compete at the DCI World Championships at Lucas Oil Stadium. Can't wait — hope to see some of you in San Antonio!
+    </div>
+    <div class="footer-card" style="margin-top:0.75rem;border-left-color:#FFD700;">
+      <strong style="color:#FFD700;">About DCI Championships</strong> — DCI (Drum Corps International) is the top competitive level of marching music. The season ends with three rounds in Indianapolis: <strong>Prelims</strong> (Aug 6, all corps compete), <strong>Semifinals</strong> (Aug 7, top scores advance), and <strong>Finals</strong> (Aug 8, the championship). Over 20,000 fans attend each night at Lucas Oil Stadium.
+    </div>
+    </div>
+    <div class="calendar-section">
+      <?php
+      $monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      // Build phase lookup from $months array
+      $phaseMap = [];
+      foreach ($months as $mo) $phaseMap[sprintf('%04d-%02d', $mo['year'], $mo['month'])] = $mo['phase'];
+
+      $calMonths = [];
+      foreach ($events as $date_str => $ev) {
+        $ts = strtotime($date_str);
+        $k  = date('Y-m', $ts);
+        if (!isset($calMonths[$k])) {
+          $calMonths[$k] = [
+            'label'  => $monthNames[(int)date('m',$ts)-1].' '.date('Y',$ts),
+            'year'   => (int)date('Y',$ts),
+            'month'  => (int)date('m',$ts),
+            'phase'  => $phaseMap[$k] ?? '',
+            'events' => [],
+          ];
+        }
+        $calMonths[$k]['events'][] = ['day'=>(int)date('j',$ts), 'date'=>$date_str] + $ev;
+      }
+      ksort($calMonths);
+      $mKeys    = array_keys($calMonths);
+      $todayY   = (int)date('Y');
+      $todayM   = (int)date('m');
+      $todayD   = (int)date('j');
+      $curIdx   = 0;
+      foreach ($mKeys as $i => $k) {
+        if ($calMonths[$k]['year'] == $todayY && $calMonths[$k]['month'] == $todayM) $curIdx = $i;
+      }
+      $eventsByMon = [];
+      foreach ($calMonths as $k => $m) {
+        $byDay = [];
+        foreach ($m['events'] as $ev) $byDay[$ev['day']][] = $ev;
+        $eventsByMon[$k] = ['meta'=>$m, 'byDay'=>$byDay];
+      }
+      ?>
+
+      <div class="cal-nav">
+        <button class="cal-nav-btn" id="cal-prev" onclick="calNav(-1)">&#8592;</button>
+        <div class="cal-nav-center">
+          <div class="cal-month-name" id="cal-month-label"></div>
+          <div class="cal-month-phase" id="cal-month-phase"></div>
+        </div>
+        <button class="cal-nav-btn" id="cal-next" onclick="calNav(1)">&#8594;</button>
+      </div>
+
+      <div class="cal-legend">
+        <?php foreach ($type_colors as $t => $c): ?>
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:<?= $c ?>"></span><?= htmlspecialchars($t) ?></div>
+        <?php endforeach; ?>
+      </div>
+
+      <?php foreach ($eventsByMon as $k => $data): ?>
+      <?php $m = $data['meta']; $byDay = $data['byDay']; ?>
+      <div class="month-view" id="mv-<?= $k ?>">
+        <div class="cal-wrap">
+          <div class="cal-dow-row">
+            <?php foreach (['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $d): ?>
+            <div class="cal-dow"><?= $d ?></div>
+            <?php endforeach; ?>
+          </div>
+          <div class="cal-grid">
+            <?php
+            $firstDow = (int)date('w', mktime(0,0,0,$m['month'],1,$m['year']));
+            $daysInMon = (int)date('t', mktime(0,0,0,$m['month'],1,$m['year']));
+            for ($e = 0; $e < $firstDow; $e++): ?>
+            <div class="cal-cell empty"></div>
+            <?php endfor; ?>
+            <?php for ($d = 1; $d <= $daysInMon; $d++): ?>
+            <?php $isToday = ($m['year']==$todayY && $m['month']==$todayM && $d==$todayD); ?>
+            <div class="cal-cell<?= $isToday ? ' today' : '' ?>">
+              <?php if ($isToday): ?>
+              <div class="today-num-wrap"><span class="day-num"><?= $d ?></span><span class="today-dot"></span></div>
+              <?php else: ?>
+              <span class="day-num"><?= $d ?></span>
+              <?php endif; ?>
+              <?php if (isset($byDay[$d])): ?>
+              <?php foreach ($byDay[$d] as $ev): ?>
+              <?php
+                $c = $type_colors[$ev['type']] ?? '#888';
+                $isDCI = ($ev['type']==='dci');
+                $isJudged = in_array($ev['date'] ?? '', $_all_judged) || $isDCI;
+                $dciName  = $_dci_show_names[$ev['date'] ?? ''] ?? null;
+                $tipDetail = ($dciName ? '★ '.$dciName.' · ' : '') . ($ev['detail'] ?? '');
+              ?>
+              <span class="event-pill<?= $isDCI ? ' dci' : '' ?>"
+                style="background:<?= $c ?>"
+                data-detail="<?= htmlspecialchars($tipDetail) ?>">
+                <?= $isJudged ? '★ ' : '' ?><?= htmlspecialchars($ev['label']) ?>
+              </span>
+              <?php if (!empty($ev['city'])): ?><span class="event-city"><?= htmlspecialchars($ev['city']) ?></span><?php endif; ?>
+              <?php if (!empty($ev['result'])): ?><span class="event-result"><?= htmlspecialchars($ev['result']) ?></span><?php endif; ?>
+              <?php endforeach; ?>
+              <?php endif; ?>
+            </div>
+            <?php endfor; ?>
+          </div>
+        </div>
+      </div>
+      <?php endforeach; ?>
+
+      <div class="dci-info-box">
+        <strong>DCI World Championships — Indianapolis, IN</strong>
+        August 7–9, 2026: Semifinals & Finals at Lucas Oil Stadium. The pinnacle of drum corps — over 20,000 fans. <a href="https://dci.org" target="_blank" style="color:#FFD700;">dci.org</a>
+      </div>
+
+      <?php
+      // Tour map city data: [city label, dci show name, date, svg_x, svg_y]
+      $_map_cities = [
+        // [city, show name, date, lat, lon]
+        ['Rockford IL',     'Show of Shows',           '2026-07-03', 42.27, -89.09],
+        ['La Crosse WI',    'River City Rhapsody',     '2026-07-05', 43.80, -91.25],
+        ['Lisle IL',        'Cavalcade of Brass',      '2026-07-10', 41.80, -88.07],
+        ['Whitewater WI',   'The Whitewater Classic',  '2026-07-11', 42.83, -88.73],
+        ['Olathe KS',       'Brass Impact',            '2026-07-13', 38.88, -94.82],
+        ['Broken Arrow OK', 'DCI Broken Arrow',        '2026-07-14', 36.06, -95.79],
+        ['Denton TX',       'DCI Denton',              '2026-07-16', 33.21, -97.13],
+        ['San Antonio TX',  'DCI Southwestern Champ.', '2026-07-18', 29.42, -98.49],
+        ['McKinney TX',     'DCI McKinney',            '2026-07-20', 33.20, -96.64],
+        ['Evansville IN',   'Drums on the Ohio',       '2026-07-22', 37.97, -87.57],
+        ['Madison WI',      'Drums on Parade',         '2026-07-24', 43.07, -89.40],
+        ['DeKalb IL',       'Midwestern Championship', '2026-07-25', 41.93, -88.75],
+        ['Mason OH',        'Summer Music Games',      '2026-07-27', 39.36, -84.31],
+        ['Lawrence MA',     'DCI East Coast Showcase', '2026-07-30', 42.71, -71.16],
+        ['Allentown PA',    'DCI Eastern Classic',     '2026-08-01', 40.61, -75.49],
+        ['Lexington KY',    'DCI Kentucky',            '2026-08-03', 38.04, -84.50],
+        ['Indianapolis IN', 'DCI World Championships', '2026-08-06', 39.77, -86.16],
+      ];
+      ?>
+      <div class="tour-map-wrap">
+        <div class="tour-map-header">
+          <div>
+            <div class="tour-map-title">2026 Tour Map</div>
+            <div class="tour-map-sub"><?= count($_map_cities) ?> DCI judged competitions &nbsp;&middot;&nbsp; click markers for details</div>
+          </div>
+        </div>
+        <div id="tour-map" style="height:400px;border-radius:0 0 var(--radius) var(--radius);overflow:hidden;"></div>
+        <?php
+        // Build JS city data for Leaflet
+        $map_js_cities = [];
+        foreach ($_map_cities as $mc) {
+            list($city, $dciShow, $date, $lat, $lon) = $mc;
+            $mts = strtotime($date);
+            $isTonight  = ($date === $today);
+            $isPast     = ($mts < $today_ts);
+            $isDCIChamp = ($date >= '2026-08-06');
+            if ($isTonight)      { $color = '#B01A1C'; $r = 10; $opacity = 1.0; }
+            elseif ($isPast)     { $color = 'rgba(255,255,255,0.5)'; $r = 6; $opacity = 0.5; }
+            elseif ($isDCIChamp) { $color = '#FFD700'; $r = 11; $opacity = 1.0; }
+            else                 { $color = '#7DD9A2'; $r = 8; $opacity = 1.0; }
+            $map_js_cities[] = [
+                'city'     => $city,
+                'show'     => $dciShow,
+                'date'     => date('M j, Y', $mts),
+                'lat'      => $lat,
+                'lon'      => $lon,
+                'color'    => $color,
+                'r'        => $r,
+                'opacity'  => $opacity,
+                'tonight'  => $isTonight,
+                'champ'    => $isDCIChamp,
+            ];
+        }
+        ?>
+        <script>
+        (function() {
+          var cities = <?= json_encode($map_js_cities) ?>;
+          var map = window._tourMap = L.map('tour-map', {
+            center: [38.5, -88],
+            zoom: 5,
+            scrollWheelZoom: false,
+            zoomControl: true,
+            attributionControl: true
+          });
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+          }).addTo(map);
+          cities.forEach(function(c) {
+            var circle = L.circleMarker([c.lat, c.lon], {
+              radius: c.r,
+              fillColor: c.color,
+              color: c.tonight ? '#FF6B6B' : (c.champ ? '#FFF176' : 'rgba(255,255,255,0.3)'),
+              weight: c.tonight || c.champ ? 2 : 1,
+              fillOpacity: c.opacity,
+              opacity: 1
+            }).addTo(map);
+            circle.bindTooltip(
+              '<strong>' + c.city + '</strong><br>' + c.show + '<br><span style="opacity:.7">' + c.date + '</span>',
+              { direction: 'top', offset: [0, -8], className: 'map-tip' }
+            );
+            if (c.tonight) {
+              var pulse = function() {
+                circle.setStyle({ radius: c.r });
+                setTimeout(function() { circle.setStyle({ radius: c.r + 5 }); }, 500);
+                setTimeout(function() { circle.setStyle({ radius: c.r }); }, 1000);
+              };
+              setInterval(pulse, 2000);
+            }
+          });
+        })();
+        </script>
+        <style>
+          .map-tip { background: #1A1A1A; border: 1px solid rgba(255,255,255,0.15); color: #F0EDE8; font-size: 12px; padding: 6px 10px; border-radius: 6px; box-shadow: none; }
+          .map-tip::before { display: none; }
+          .leaflet-control-zoom a { background: #1A1A1A; color: #ccc; border-color: rgba(255,255,255,0.15); }
+          .leaflet-control-zoom a:hover { background: #2A2A2A; color: #fff; }
+          .leaflet-control-attribution { background: rgba(0,0,0,0.5) !important; color: rgba(255,255,255,0.3) !important; font-size: 10px; }
+          .leaflet-control-attribution a { color: rgba(255,255,255,0.4) !important; }
+        </style>
+      </div>
+    </div>
+
+    <script>
+      var mKeys   = <?php echo json_encode(array_keys($eventsByMon)); ?>;
+      var mLabels = <?php echo json_encode(array_values(array_map(function($d){return $d['meta']['label'];}, $eventsByMon))); ?>;
+      var mPhases = <?php echo json_encode(array_values(array_map(function($d){return $d['meta']['phase'] ?? '';}, $eventsByMon))); ?>;
+      var curIdx  = <?php echo $curIdx; ?>;
+      function calShow(idx) {
+        document.querySelectorAll('.month-view').forEach(function(el){el.classList.remove('active');});
+        document.getElementById('mv-' + mKeys[idx]).classList.add('active');
+        document.getElementById('cal-month-label').textContent = mLabels[idx];
+        document.getElementById('cal-month-phase').textContent = mPhases[idx];
+        document.getElementById('cal-prev').disabled = (idx === 0);
+        document.getElementById('cal-next').disabled = (idx === mKeys.length - 1);
+        curIdx = idx;
+      }
+      function calNav(dir) { calShow(curIdx + dir); }
+      calShow(curIdx);
+    </script>
   </div>
 
+<?php if (!empty($_ticker_msgs)): ?>
+<?php
+  // Double the items so the scroll loops seamlessly
+  $ticker_items = array_merge($_ticker_msgs, $_ticker_msgs);
+?>
+<div class="ticker-bar">
+  <div class="ticker-label">Messages</div>
+  <div class="ticker-track">
+    <div class="ticker-inner">
+      <?php foreach ($ticker_items as $tm): ?>
+      <span class="ticker-item"><strong><?= htmlspecialchars($tm['name']) ?>:</strong> <?= htmlspecialchars(mb_strimwidth($tm['message'], 0, 80, '…')) ?></span>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
+<div class="score-toast" id="score-toast"></div>
 <script async src="https://www.instagram.com/embed.js"></script>
 <script>
-  var lbItems = [];
-  var lbIndex = -1;
-
-  function openLightbox(el) {
-    // Cycle within the group that was clicked (photo strip vs. gallery)
-    var container = el.closest('.strip, .gallery-grid') || document;
-    lbItems = Array.prototype.slice.call(container.querySelectorAll('.strip-item, .gallery-item'));
-    lbIndex = lbItems.indexOf(el);
-    if (lbIndex === -1) { lbItems = [el]; lbIndex = 0; }
-    showLightbox();
+  // Latest-photos carousel
+  function stripScroll(dir) {
+    var s = document.getElementById('photoStrip');
+    if (!s) return;
+    var step = Math.max(240, Math.round(s.clientWidth * 0.8));
+    s.scrollBy({ left: dir * step, behavior: 'smooth' });
   }
-  function showLightbox() {
-    var el = lbItems[lbIndex];
+  (function() {
+    var s = document.getElementById('photoStrip');
+    if (!s) return;
+    var left = document.querySelector('.strip-arrow-left');
+    var right = document.querySelector('.strip-arrow-right');
+    function update() {
+      if (!left || !right) return;
+      var max = s.scrollWidth - s.clientWidth - 2;
+      left.disabled = s.scrollLeft <= 2;
+      right.disabled = s.scrollLeft >= max || s.scrollWidth <= s.clientWidth;
+    }
+    s.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  })();
+  function openLightbox(el) {
     var img = el.querySelector('img');
     var lbImg = document.getElementById('lightbox-img');
-    lbImg.src = el.dataset.full || img.src;
+    var lbVid = document.getElementById('lightbox-video');
+    if (lbVid) { lbVid.pause(); lbVid.removeAttribute('src'); lbVid.style.display = 'none'; }
+    lbImg.style.display = '';
+    lbImg.src = img.src;
     lbImg.alt = img.alt;
-    var multi = lbItems.length > 1 ? '' : 'none';
-    document.getElementById('lb-prev').style.display = multi;
-    document.getElementById('lb-next').style.display = multi;
     document.getElementById('lightbox').classList.add('open');
     document.body.style.overflow = 'hidden';
   }
-  function lightboxStep(dir) {
-    if (lbItems.length < 2) return;
-    lbIndex = (lbIndex + dir + lbItems.length) % lbItems.length;
-    showLightbox();
+  function openVideoLightbox(el) {
+    var src = el.getAttribute('data-src');
+    var lbImg = document.getElementById('lightbox-img');
+    var lbVid = document.getElementById('lightbox-video');
+    lbImg.style.display = 'none';
+    lbImg.removeAttribute('src');
+    lbVid.src = src;
+    lbVid.style.display = '';
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    lbVid.play().catch(function(){});
   }
   function closeLightbox() {
     document.getElementById('lightbox').classList.remove('open');
     document.body.style.overflow = '';
+    var lbVid = document.getElementById('lightbox-video');
+    if (lbVid) { lbVid.pause(); }
   }
   document.addEventListener('keydown', function(e) {
-    if (!document.getElementById('lightbox').classList.contains('open')) return;
     if (e.key === 'Escape') closeLightbox();
-    if (e.key === 'ArrowLeft') lightboxStep(-1);
-    if (e.key === 'ArrowRight') lightboxStep(1);
   });
-  (function() {
-    var lb = document.getElementById('lightbox');
-    var touchX = null;
-    lb.addEventListener('touchstart', function(e) { touchX = e.touches[0].clientX; }, { passive: true });
-    lb.addEventListener('touchend', function(e) {
-      if (touchX === null) return;
-      var dx = e.changedTouches[0].clientX - touchX;
-      touchX = null;
-      if (Math.abs(dx) > 50) lightboxStep(dx < 0 ? 1 : -1);
-    }, { passive: true });
-  })();
   function switchTab(name, btn) {
     document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
-    if (name === 'schedule' && typeof calShow === 'function') calShow(curIdx);
+    if (name === 'more' && typeof calShow === 'function') calShow(curIdx);
+    if (name === 'more' && window._tourMap) setTimeout(function() { window._tourMap.invalidateSize(); }, 50);
   }
+
+  // Score toast notification
+  function showScoreToast(score, placement) {
+    var t = document.getElementById('score-toast');
+    if (!t) return;
+    t.textContent = 'Score updated: ' + score + (placement ? ' · ' + placement + ' place' : '');
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 5500);
+  }
+
+<?php if ($_is_show_night): ?>
+  // Show Night Mode — poll /score_check.php every 2 minutes for live score updates
+  (function() {
+    var lastScore = '<?= addslashes($_score['score'] ?? '') ?>';
+    var lastPlace = '<?= addslashes($_score['placement'] ?? '') ?>';
+    function doCheck() {
+      var ts = (new Date()).getTime();
+      fetch('/score_check.php?_=' + ts)
+        .then(function(r){ return r.json(); })
+        .then(function(d) {
+          var el = document.getElementById('snb-check-time');
+          if (el) {
+            var t = new Date();
+            var hm = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+            el.textContent = '· Last checked ' + hm;
+          }
+          if (d.score && d.score !== lastScore) {
+            var chip = document.getElementById('live-score-num');
+            if (chip) chip.textContent = d.score;
+            showScoreToast(d.score, d.placement || '');
+            lastScore = d.score;
+            lastPlace = d.placement || lastPlace;
+          }
+        })
+        .catch(function(){});
+      setTimeout(doCheck, 120000); // re-check every 2 minutes
+    }
+    setTimeout(doCheck, 30000); // first check after 30 seconds
+  })();
+<?php endif; ?>
+
 </script>
 
 </body>

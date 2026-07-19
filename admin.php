@@ -1,0 +1,672 @@
+<?php
+session_start();
+
+$pass_file = __DIR__ . '/data/.adminpass';
+$admin_password = file_exists($pass_file) ? trim(file_get_contents($pass_file)) : '';
+
+$db = new PDO('sqlite:' . __DIR__ . '/data/messages.db');
+$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$db->exec("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, message TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+
+// Login / logout
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
+    if ($admin_password && $_POST['password'] === $admin_password) {
+        $_SESSION['phantom_admin'] = true;
+    } else {
+        $login_error = 'Wrong password.';
+    }
+}
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: /admin.php');
+    exit;
+}
+
+// Delete
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    $stmt = $db->prepare("DELETE FROM messages WHERE id = ?");
+    $stmt->execute([(int)$_POST['delete_id']]);
+    header('Location: /admin.php');
+    exit;
+}
+
+// Edit save
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_id'])) {
+    $stmt = $db->prepare("UPDATE messages SET name = ?, message = ? WHERE id = ?");
+    $stmt->execute([trim($_POST['edit_name']), trim($_POST['edit_message']), (int)$_POST['edit_id']]);
+    header('Location: /admin.php');
+    exit;
+}
+
+// Save announcement
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['announcement'])) {
+    file_put_contents(__DIR__ . '/data/announcement.txt', trim($_POST['announcement']));
+    header('Location: /admin.php');
+    exit;
+}
+
+// Save Phanmail settings
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['phanmail_email'])) {
+    $pm_file = __DIR__ . '/data/phanmail_settings.json';
+    $existing_pm = file_exists($pm_file) ? json_decode(file_get_contents($pm_file), true) ?: [] : [];
+    $pm = [
+        'recipient_email' => trim($_POST['phanmail_email']),
+        'frequency'       => in_array($_POST['phanmail_freq'], ['daily','weekly','biweekly']) ? $_POST['phanmail_freq'] : 'weekly',
+        'from_email'      => trim($_POST['phanmail_from_email'] ?: 'phanmail@phantom.agavelabs.dev'),
+        'from_name'       => trim($_POST['phanmail_from_name']  ?: 'Phanmail — Phantom Regiment'),
+        'smtp_host'       => trim($_POST['phanmail_smtp_host']),
+        'smtp_port'       => (int)($_POST['phanmail_smtp_port'] ?: 587),
+        'smtp_user'       => trim($_POST['phanmail_smtp_user']),
+        'smtp_pass'       => trim($_POST['phanmail_smtp_pass']) ?: ($existing_pm['smtp_pass'] ?? ''),
+    ];
+    if (isset($existing_pm['last_sent'])) $pm['last_sent'] = $existing_pm['last_sent'];
+    file_put_contents($pm_file, json_encode($pm, JSON_PRETTY_PRINT));
+    header('Location: /admin.php?phanmail=saved');
+    exit;
+}
+
+// Send test Phanmail now
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['phanmail_test'])) {
+    $out = shell_exec('/usr/bin/php ' . escapeshellarg(__DIR__ . '/phanmail_digest.php') . ' --force 2>&1');
+    header('Location: /admin.php?phanmail=tested&log=' . urlencode(trim(substr($out ?? '', 0, 300))));
+    exit;
+}
+
+// Reset last_sent so next cron sends all messages
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['phanmail_reset'])) {
+    $pm_file = __DIR__ . '/data/phanmail_settings.json';
+    $pm = file_exists($pm_file) ? json_decode(file_get_contents($pm_file), true) ?: [] : [];
+    unset($pm['last_sent']);
+    file_put_contents($pm_file, json_encode($pm, JSON_PRETTY_PRINT));
+    header('Location: /admin.php?phanmail=reset');
+    exit;
+}
+
+// Mark SmugMug as checked
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['smugmug_checked'])) {
+    $f = __DIR__ . '/data/smugmug_check.json';
+    file_put_contents($f, json_encode(['last_checked' => date('Y-m-d H:i:s')], JSON_PRETTY_PRINT));
+    header('Location: /admin.php#smugmug');
+    exit;
+}
+
+// Save score
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['score_text'])) {
+    $score_data = json_encode([
+        'score'     => trim($_POST['score_text']),
+        'placement' => trim($_POST['score_placement']),
+        'show'      => trim($_POST['score_show']),
+    ]);
+    file_put_contents(__DIR__ . '/data/score.json', $score_data);
+    header('Location: /admin.php');
+    exit;
+}
+
+// Delete image only
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_image_id'])) {
+    $row = $db->prepare("SELECT image_path FROM messages WHERE id = ?");
+    $row->execute([(int)$_POST['delete_image_id']]);
+    $r = $row->fetch(PDO::FETCH_ASSOC);
+    if ($r && $r['image_path']) {
+        $f = __DIR__ . '/data/uploads/' . basename($r['image_path']);
+        if (file_exists($f)) unlink($f);
+    }
+    $db->prepare("UPDATE messages SET image_path = NULL WHERE id = ?")->execute([(int)$_POST['delete_image_id']]);
+    header('Location: /admin.php');
+    exit;
+}
+
+// ── Gallery: image processor (resize/normalize to JPEG, max 1600px) ───────────
+function admin_process_image(string $tmp_path, string $mime, string $out_path, int $max_w = 1600, int $quality = 84): bool {
+    // HEIC via ImageMagick
+    if (in_array($mime, ['image/heic', 'image/heif']) || str_ends_with(strtolower($tmp_path), '.heic')) {
+        exec('convert ' . escapeshellarg($tmp_path) . " -auto-orient -resize {$max_w}x{$max_w}\\> -quality $quality " . escapeshellarg($out_path) . ' 2>&1', $o, $code);
+        return $code === 0 && file_exists($out_path);
+    }
+    $src = match($mime) {
+        'image/jpeg' => @imagecreatefromjpeg($tmp_path),
+        'image/png'  => @imagecreatefrompng($tmp_path),
+        'image/gif'  => @imagecreatefromgif($tmp_path),
+        'image/webp' => @imagecreatefromwebp($tmp_path),
+        default      => null,
+    };
+    if (!$src) return false;
+    if (function_exists('exif_read_data') && $mime === 'image/jpeg') {
+        $exif = @exif_read_data($tmp_path);
+        $src = match($exif['Orientation'] ?? 1) {
+            3 => imagerotate($src, 180, 0),
+            6 => imagerotate($src, -90, 0),
+            8 => imagerotate($src, 90, 0),
+            default => $src,
+        };
+    }
+    $ow = imagesx($src); $oh = imagesy($src);
+    $nw = $ow > $max_w ? $max_w : $ow;
+    $nh = $ow > $max_w ? (int)round($oh * $max_w / $ow) : $oh;
+    $dst = imagecreatetruecolor($nw, $nh);
+    imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
+    imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $ow, $oh);
+    imagejpeg($dst, $out_path, $quality);
+    imagedestroy($src); imagedestroy($dst);
+    return file_exists($out_path);
+}
+
+$gallery_dir   = __DIR__ . '/data/gallery';
+$hidden_file   = __DIR__ . '/data/gallery_hidden.json';
+$featured_file = __DIR__ . '/data/featured.json';
+$read_hidden   = fn() => file_exists($hidden_file) ? (json_decode(file_get_contents($hidden_file), true) ?: []) : [];
+$write_hidden  = function(array $h) use ($hidden_file) { file_put_contents($hidden_file, json_encode(array_values(array_unique($h)), JSON_PRETTY_PRINT)); };
+$read_featured = fn() => file_exists($featured_file) ? (json_decode(file_get_contents($featured_file), true)['key'] ?? null) : null;
+
+function is_video_ext(string $ext): bool { return in_array(strtolower($ext), ['mp4','mov','m4v','webm']); }
+
+// Gallery: upload photos and video clips
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['gallery_photos'])) {
+    if (!is_dir($gallery_dir)) @mkdir($gallery_dir, 0755, true);
+    $ok = 0; $fail = 0;
+    $files = $_FILES['gallery_photos'];
+    $img_mimes = ['image/jpeg','image/png','image/gif','image/webp','image/heic','image/heif'];
+    $vid_mimes = ['video/mp4','video/quicktime','video/webm','video/x-m4v'];
+    $count = is_array($files['name']) ? count($files['name']) : 0;
+    for ($i = 0; $i < $count; $i++) {
+        if ($files['error'][$i] !== UPLOAD_ERR_OK) { $fail++; continue; }
+        $mime = @mime_content_type($files['tmp_name'][$i]) ?: $files['type'][$i];
+        if (in_array($mime, $img_mimes)) {
+            if ($files['size'][$i] > 25 * 1024 * 1024) { $fail++; continue; }
+            $out = $gallery_dir . '/' . bin2hex(random_bytes(10)) . '.jpg';
+            if (admin_process_image($files['tmp_name'][$i], $mime, $out)) $ok++; else $fail++;
+        } elseif (in_array($mime, $vid_mimes)) {
+            if ($files['size'][$i] > 125 * 1024 * 1024) { $fail++; continue; }
+            // .mov (quicktime) → serve with .mp4 extension (H.264 mov plays as mp4 in browsers)
+            $ext = ($mime === 'video/webm') ? 'webm' : 'mp4';
+            $out = $gallery_dir . '/' . bin2hex(random_bytes(10)) . '.' . $ext;
+            if (@move_uploaded_file($files['tmp_name'][$i], $out)) { @chmod($out, 0644); $ok++; } else { $fail++; }
+        } else { $fail++; }
+    }
+    header('Location: /admin.php?gallery=up_' . $ok . '_' . $fail . '#gallery');
+    exit;
+}
+
+// Gallery: hide a bundled stock photo (survives deploy) or delete an uploaded one
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gallery_remove'])) {
+    $key = $_POST['gallery_remove']; // "assets/foo.jpg" or "gallery/bar.jpg"
+    if (str_starts_with($key, 'gallery/')) {
+        $f = $gallery_dir . '/' . basename($key);
+        if (file_exists($f)) unlink($f);
+    } else { // assets/ — can't delete (deploy restores), so hide it
+        $h = $read_hidden(); $h[] = $key; $write_hidden($h);
+    }
+    // If the removed item was featured, clear the feature
+    if ($read_featured() === $key && file_exists($featured_file)) @unlink($featured_file);
+    header('Location: /admin.php?gallery=removed#gallery');
+    exit;
+}
+
+// Gallery: restore a hidden stock photo
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gallery_restore'])) {
+    $h = array_values(array_filter($read_hidden(), fn($x) => $x !== $_POST['gallery_restore']));
+    $write_hidden($h);
+    header('Location: /admin.php?gallery=restored#gallery');
+    exit;
+}
+
+// Gallery: set / clear the featured media (shows on the Latest page)
+if (!empty($_SESSION['phantom_admin']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gallery_feature'])) {
+    $key = $_POST['gallery_feature'];
+    if ($key === '' || $read_featured() === $key) {
+        if (file_exists($featured_file)) @unlink($featured_file);  // toggle off
+    } else {
+        file_put_contents($featured_file, json_encode(['key' => $key, 'caption' => trim($_POST['gallery_feature_caption'] ?? '')], JSON_PRETTY_PRINT));
+    }
+    header('Location: /admin.php?gallery=featured#gallery');
+    exit;
+}
+
+$messages = !empty($_SESSION['phantom_admin'])
+    ? $db->query("SELECT * FROM messages ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC)
+    : [];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Phantom Messages</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --page-bg: #111; --surface: #1C1C1E; --surface-2: #2C2C2E;
+      --border: rgba(255,255,255,0.1); --text: #F2F0EA;
+      --text-secondary: #A0A0A5; --text-muted: #666;
+      --red: #B01A1C; --red-dark: #8B1416; --radius: 12px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--page-bg); color: var(--text); min-height: 100vh; padding-bottom: 3rem; }
+
+    .page-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .page-header h1 { font-size: 18px; font-weight: 700; }
+    .logout-btn { font-size: 13px; color: var(--text-muted); text-decoration: none; }
+    .logout-btn:hover { color: var(--text); }
+
+    .content { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; max-width: 360px; margin: 5rem auto; }
+    .login-card h2 { font-size: 20px; margin-bottom: 1.25rem; }
+    input[type=password] { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 15px; padding: 11px 14px; outline: none; margin-bottom: 1rem; }
+    input[type=password]:focus { border-color: rgba(176,26,28,0.6); }
+    .btn-primary { background: var(--red); color: #fff; width: 100%; padding: 11px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-primary:hover { background: var(--red-dark); }
+    .error { color: #E07070; font-size: 13px; margin-bottom: 0.75rem; }
+
+    .stats { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .msg-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .msg-meta { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.5rem; gap: 1rem; }
+    .msg-name { font-weight: 700; font-size: 15px; }
+    .msg-date { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    .msg-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 0.75rem; }
+    .msg-img { max-width: 100%; max-height: 260px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 0.75rem; }
+    .msg-img-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 0.75rem; }
+    .msg-img-row img { max-width: 180px; max-height: 140px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+    .msg-actions { display: flex; gap: 8px; }
+    .btn-sm { padding: 6px 14px; font-size: 12px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-edit { background: var(--surface-2); color: var(--text); }
+    .btn-edit:hover { background: #3a3a3c; }
+    .btn-delete { background: rgba(176,26,28,0.2); color: #E07070; }
+    .btn-delete:hover { background: rgba(176,26,28,0.4); }
+
+    .edit-form { display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+    .edit-form.open { display: block; }
+    .edit-form input, .edit-form textarea { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; font-family: inherit; padding: 9px 12px; outline: none; margin-bottom: 8px; }
+    .edit-form textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+    .edit-form input:focus, .edit-form textarea:focus { border-color: rgba(176,26,28,0.5); }
+    .edit-actions { display: flex; gap: 8px; }
+    .btn-save { background: var(--red); color: #fff; }
+    .btn-save:hover { background: var(--red-dark); }
+    .btn-cancel { background: var(--surface-2); color: var(--text-secondary); }
+
+    .empty { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 15px; }
+  </style>
+</head>
+<body>
+
+<?php if (empty($_SESSION['phantom_admin'])): ?>
+
+<div style="padding:1rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);">
+  <strong style="font-size:16px;">Phantom Admin</strong>
+</div>
+<div class="content">
+  <div class="login-card">
+    <h2>Sign in</h2>
+    <?php if (!empty($login_error)): ?>
+    <div class="error"><?= htmlspecialchars($login_error) ?></div>
+    <?php endif; ?>
+    <form method="POST">
+      <input type="password" name="password" placeholder="Password" autofocus required />
+      <button class="btn-primary" type="submit">Enter</button>
+    </form>
+  </div>
+</div>
+
+<?php else: ?>
+
+<div class="page-header">
+  <h1>Message Board Admin</h1>
+  <a class="logout-btn" href="/admin.php?logout=1">Sign out</a>
+</div>
+
+<div class="content">
+  <div class="stats">
+    <?= count($messages) ?> message<?= count($messages) !== 1 ? 's' : '' ?> &nbsp;·&nbsp;
+    <a href="/messages.php" style="color:var(--text-muted);">View public page</a> &nbsp;·&nbsp;
+    <a href="/score.php" style="color:var(--text-muted);">Quick score</a> &nbsp;·&nbsp;
+    <a href="/" style="color:var(--text-muted);">View site</a>
+  </div>
+
+  <!-- Announcement -->
+  <?php $ann = file_exists(__DIR__.'/data/announcement.txt') ? file_get_contents(__DIR__.'/data/announcement.txt') : ''; ?>
+  <div class="msg-card" style="margin-bottom:1.5rem;">
+    <div class="msg-name" style="margin-bottom:0.75rem;">Pinned Announcement</div>
+    <form method="POST">
+      <textarea name="announcement" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;padding:9px 12px;min-height:70px;resize:vertical;outline:none;margin-bottom:8px;"><?= htmlspecialchars($ann) ?></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-save" type="submit">Save</button>
+        <?php if ($ann): ?><button class="btn-sm btn-delete" type="submit" onclick="document.querySelector('[name=announcement]').value='';">Clear</button><?php endif; ?>
+      </div>
+    </form>
+  </div>
+
+  <!-- Score -->
+  <?php $score_raw = file_exists(__DIR__.'/data/score.json') ? json_decode(file_get_contents(__DIR__.'/data/score.json'), true) : []; ?>
+  <div class="msg-card" style="margin-bottom:1.5rem;">
+    <div class="msg-name" style="margin-bottom:0.75rem;">Latest DCI Score</div>
+    <form method="POST" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;">
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Score</label>
+        <input type="text" name="score_text" placeholder="e.g. 74.350" value="<?= htmlspecialchars($score_raw['score'] ?? '') ?>" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Placement</label>
+        <input type="text" name="score_placement" placeholder="e.g. 8th" value="<?= htmlspecialchars($score_raw['placement'] ?? '') ?>" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Show / Date</label>
+        <input type="text" name="score_show" placeholder="e.g. Rockford, Jul 3" value="<?= htmlspecialchars($score_raw['show'] ?? '') ?>" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <button class="btn-sm btn-save" type="submit" style="grid-column:1;">Save Score</button>
+    </form>
+  </div>
+
+  <!-- SmugMug photo check -->
+  <?php
+    $smug_file    = __DIR__ . '/data/smugmug_check.json';
+    $smug_alb_file= __DIR__ . '/data/smugmug_albums.json';
+    $smug   = file_exists($smug_file) ? json_decode(file_get_contents($smug_file), true) : [];
+    $smug_alb = file_exists($smug_alb_file) ? json_decode(file_get_contents($smug_alb_file), true) : [];
+    $smug_last = $smug['last_checked'] ?? null;
+    $smug_days = $smug_last ? (int)floor((time() - strtotime($smug_last)) / 86400) : null;
+    $smug_overdue = $smug_days === null || $smug_days >= 7;
+    $smug_auto_check = $smug_alb['last_check'] ?? null;
+    $smug_alb_count  = $smug_alb['last_count'] ?? null;
+    $smug_known_albs = array_filter($smug_alb['items'] ?? [], fn($i) => !str_starts_with($i, '__hash__:'));
+  ?>
+  <div class="msg-card" id="smugmug" style="margin-bottom:1.5rem;<?= $smug_overdue ? 'border-color:rgba(176,26,28,0.5);' : '' ?>">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+      <div class="msg-name">SmugMug — New Photos of Matéo</div>
+      <?php if ($smug_overdue): ?>
+      <span style="font-size:11px;font-weight:700;color:#E07070;background:rgba(176,26,28,0.15);padding:3px 8px;border-radius:4px;">
+        <?= $smug_days === null ? 'Never checked manually' : "Manual check {$smug_days}d ago" ?>
+      </span>
+      <?php else: ?>
+      <span style="font-size:11px;color:var(--text-muted);">Checked <?= $smug_days ?>d ago</span>
+      <?php endif; ?>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.75rem;line-height:1.5;">Official Phantom Regiment photos — check for new shots of Matéo to add to the gallery.</p>
+
+    <?php if ($smug_auto_check): ?>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;padding:8px 10px;background:var(--surface-2);border-radius:8px;">
+      <span style="color:var(--text-secondary);font-weight:600;">Auto-watcher</span>
+      &nbsp;·&nbsp; Last ran: <?= date('M j, g:i A', strtotime($smug_auto_check)) ?>
+      <?php if ($smug_alb_count !== null): ?>
+      &nbsp;·&nbsp; <?= $smug_alb_count ?> album<?= $smug_alb_count !== 1 ? 's' : '' ?> tracked
+      <?php endif; ?>
+      &nbsp;·&nbsp; <em style="color:#7DD9A2;">Email alert to spmccain@gmail.com on new albums</em>
+    </div>
+    <?php if (!empty($smug_known_albs)): ?>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;">
+      Known albums:
+      <?php foreach ($smug_known_albs as $alb): ?>
+      <a href="https://phantomregiment.smugmug.com<?= htmlspecialchars($alb) ?>" target="_blank" rel="noopener"
+         style="color:var(--text-secondary);margin-left:6px;"><?= htmlspecialchars(trim(str_replace(['/2026/', '-'], ['', ' '], $alb))) ?> ↗</a>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+    <?php else: ?>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;padding:8px 10px;background:var(--surface-2);border-radius:8px;">
+      Auto-watcher not yet run — cron runs daily at 9 AM. Email alerts to spmccain@gmail.com on new albums.
+    </div>
+    <?php endif; ?>
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <a href="https://phantomregiment.smugmug.com/2026" target="_blank" rel="noopener"
+         class="btn-sm btn-save" style="text-decoration:none;display:inline-block;">
+        Open SmugMug →
+      </a>
+      <form method="POST">
+        <input type="hidden" name="smugmug_checked" value="1">
+        <button class="btn-sm" type="submit" style="background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border);">Mark as checked</button>
+      </form>
+      <?php if ($smug_last): ?>
+      <span style="font-size:12px;color:var(--text-muted);">Last manual: <?= date('M j, g:i A', strtotime($smug_last)) ?></span>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <!-- Photo Gallery -->
+  <?php
+    $g_asset_dir = __DIR__ . '/assets';
+    $g_skip = ['bloodline.png','bloodline.webp','mateo.jpg','favicon.png','apple-touch-icon.png','apple-touch-icon-v2.png'];
+    $g_hidden = $read_hidden();
+    $g_featured = $read_featured();
+
+    // Uploaded photos + video clips (newest first)
+    $g_uploads = [];
+    if (is_dir($gallery_dir)) {
+        $u = glob($gallery_dir . '/*.{jpg,jpeg,png,webp,mp4,mov,m4v,webm}', GLOB_BRACE);
+        usort($u, fn($a, $b) => filemtime($b) <=> filemtime($a));
+        foreach ($u as $p) {
+            $bn = basename($p);
+            $g_uploads[] = ['key' => 'gallery/' . $bn, 'src' => '/data/gallery/' . $bn, 'video' => is_video_ext(pathinfo($bn, PATHINFO_EXTENSION))];
+        }
+    }
+    // Stock photos grouped by stem
+    $g_stems = [];
+    foreach (glob($g_asset_dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE) as $p) {
+        $fn = basename($p);
+        if (in_array($fn, $g_skip)) continue;
+        $ext = strtolower(pathinfo($fn, PATHINFO_EXTENSION));
+        $stem = pathinfo($fn, PATHINFO_FILENAME);
+        if (!isset($g_stems[$stem])) $g_stems[$stem] = ['base' => null, 'webp' => null];
+        if ($ext === 'webp') $g_stems[$stem]['webp'] = '/assets/' . $fn;
+        else $g_stems[$stem]['base'] = '/assets/' . $fn;
+    }
+    $g_stock = [];
+    foreach ($g_stems as $stem => $f) {
+        $bfn = basename($f['base'] ?? $f['webp']);
+        $g_stock[] = ['key' => 'assets/' . $bfn, 'src' => $f['base'] ?? $f['webp']];
+    }
+
+    $g_notice = '';
+    if (isset($_GET['gallery'])) {
+        if (str_starts_with($_GET['gallery'], 'up_')) { $parts = explode('_', $_GET['gallery']); $o = $parts[1] ?? '0'; $fa = $parts[2] ?? '0'; $g_notice = "Uploaded {$o} item" . ($o !== '1' ? 's' : '') . ($fa > 0 ? ", {$fa} failed (check type/size)" : '') . '.'; }
+        elseif ($_GET['gallery'] === 'removed')  $g_notice = 'Removed from the gallery.';
+        elseif ($_GET['gallery'] === 'restored') $g_notice = 'Photo restored.';
+        elseif ($_GET['gallery'] === 'featured') $g_notice = 'Featured media updated — check the Latest page.';
+    }
+    // Render one gallery cell (image or video) with feature + remove controls
+    $render_cell = function(array $g, bool $is_upload) use ($g_featured) {
+        $isFeat = ($g_featured === $g['key']);
+        ?>
+        <div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--surface-2);<?= $isFeat ? 'outline:2px solid #FFD700;outline-offset:-2px;' : '' ?>">
+          <?php if (!empty($g['video'])): ?>
+          <video src="<?= htmlspecialchars($g['src']) ?>#t=0.1" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+          <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;pointer-events:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+          </span>
+          <?php else: ?>
+          <img src="<?= htmlspecialchars($g['src']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <?php endif; ?>
+
+          <form method="POST" style="position:absolute;top:4px;left:4px;">
+            <input type="hidden" name="gallery_feature" value="<?= htmlspecialchars($g['key']) ?>">
+            <button type="submit" title="<?= $isFeat ? 'Unset featured' : 'Feature on Latest page' ?>" style="width:26px;height:26px;border:none;border-radius:6px;background:<?= $isFeat ? '#FFD700' : 'rgba(0,0,0,0.55)' ?>;color:<?= $isFeat ? '#111' : '#fff' ?>;font-size:14px;line-height:1;cursor:pointer;">★</button>
+          </form>
+          <form method="POST" <?= $is_upload ? "onsubmit=\"return confirm('Remove this from the gallery? This deletes it permanently.');\"" : '' ?> style="position:absolute;top:4px;right:4px;">
+            <input type="hidden" name="gallery_remove" value="<?= htmlspecialchars($g['key']) ?>">
+            <button type="submit" title="<?= $is_upload ? 'Delete' : 'Hide from gallery' ?>" style="width:26px;height:26px;border:none;border-radius:6px;background:rgba(176,26,28,0.85);color:#fff;font-size:15px;line-height:1;cursor:pointer;">&times;</button>
+          </form>
+          <?php if ($isFeat): ?>
+          <span style="position:absolute;bottom:4px;left:4px;background:#FFD700;color:#111;font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:2px 6px;border-radius:4px;">Featured</span>
+          <?php endif; ?>
+        </div>
+        <?php
+    };
+  ?>
+  <div class="msg-card" id="gallery" style="margin-bottom:1.5rem;">
+    <div class="msg-name" style="margin-bottom:0.5rem;">Photo &amp; Video Gallery</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.9rem;line-height:1.5;">Upload photos or short video clips (up to ~125&nbsp;MB). Tap <strong style="color:#FFD700;">★</strong> to feature one on the Latest page. Photos are auto-resized; your uploads show first in the Media tab.</p>
+    <?php if ($g_notice): ?>
+    <div style="font-size:13px;color:#7DD9A2;background:rgba(125,217,162,0.12);padding:8px 12px;border-radius:8px;margin-bottom:0.9rem;"><?= htmlspecialchars($g_notice) ?></div>
+    <?php endif; ?>
+
+    <form method="POST" enctype="multipart/form-data" style="margin-bottom:1.1rem;">
+      <input type="file" name="gallery_photos[]" accept="image/*,video/mp4,video/quicktime,video/webm,.mov,.mp4,.m4v,.webm" multiple required
+             style="display:block;width:100%;font-size:13px;color:var(--text-secondary);background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:14px;margin-bottom:8px;cursor:pointer;">
+      <button class="btn-sm btn-save" type="submit">Upload to gallery</button>
+    </form>
+
+    <?php if ($g_uploads): ?>
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Your uploads (<?= count($g_uploads) ?>)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:1.1rem;">
+      <?php foreach ($g_uploads as $g) $render_cell($g, true); ?>
+    </div>
+    <?php endif; ?>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Bundled photos (<?= count($g_stock) ?>)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;">
+      <?php foreach ($g_stock as $g) $render_cell($g, false); ?>
+    </div>
+
+    <?php if ($g_hidden): ?>
+    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin:1.1rem 0 6px;">Hidden (<?= count($g_hidden) ?>) — click to restore</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <?php foreach ($g_hidden as $hk): ?>
+      <form method="POST" style="display:inline;">
+        <input type="hidden" name="gallery_restore" value="<?= htmlspecialchars($hk) ?>">
+        <button type="submit" class="btn-sm btn-edit" style="font-size:11px;"><?= htmlspecialchars(basename($hk)) ?> ↺</button>
+      </form>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+  </div>
+
+  <!-- Phanmail Settings -->
+  <?php
+    $pm_file = __DIR__.'/data/phanmail_settings.json';
+    $pm = file_exists($pm_file) ? json_decode(file_get_contents($pm_file), true) ?: [] : [];
+    $pm_notice = '';
+    if (isset($_GET['phanmail'])) {
+        if ($_GET['phanmail'] === 'saved')  $pm_notice = 'Settings saved.';
+        if ($_GET['phanmail'] === 'reset')  $pm_notice = 'Last-sent reset — next run will include all messages.';
+        if ($_GET['phanmail'] === 'tested') $pm_notice = 'Test sent. Log: ' . htmlspecialchars(urldecode($_GET['log'] ?? ''));
+    }
+  ?>
+  <div class="msg-card" style="margin-bottom:1.5rem;">
+    <div class="msg-name" style="margin-bottom:0.75rem;">Phanmail Digest</div>
+    <?php if ($pm_notice): ?><div style="font-size:12px;color:#7DD9A2;margin-bottom:0.75rem;"><?= $pm_notice ?></div><?php endif; ?>
+    <?php if (!empty($pm['last_sent'])): ?>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem;">Last sent: <?= htmlspecialchars($pm['last_sent']) ?></div>
+    <?php endif; ?>
+    <form method="POST" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Matéo's email</label>
+        <input type="email" name="phanmail_email" placeholder="mateo@example.com"
+          value="<?= htmlspecialchars($pm['recipient_email'] ?? '') ?>"
+          style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Frequency</label>
+        <select name="phanmail_freq" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          <option value="weekly"   <?= ($pm['frequency'] ?? 'weekly') === 'weekly'   ? 'selected' : '' ?>>Weekly (Sundays)</option>
+          <option value="biweekly" <?= ($pm['frequency'] ?? '') === 'biweekly' ? 'selected' : '' ?>>Bi-weekly (every other Sunday)</option>
+          <option value="daily"    <?= ($pm['frequency'] ?? '') === 'daily'    ? 'selected' : '' ?>>Daily</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">From name</label>
+        <input type="text" name="phanmail_from_name" placeholder="Phanmail — Phantom Regiment"
+          value="<?= htmlspecialchars($pm['from_name'] ?? 'Phanmail — Phantom Regiment') ?>"
+          style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">From address</label>
+        <input type="email" name="phanmail_from_email" placeholder="phanmail@phantom.agavelabs.dev"
+          value="<?= htmlspecialchars($pm['from_email'] ?? 'phanmail@phantom.agavelabs.dev') ?>"
+          style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+      </div>
+      <div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">SMTP (optional — uses PHP mail() if blank)</div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 2fr 2fr;gap:8px;">
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Host</label>
+            <input type="text" name="phanmail_smtp_host" placeholder="smtp.gmail.com"
+              value="<?= htmlspecialchars($pm['smtp_host'] ?? '') ?>"
+              style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Port</label>
+            <input type="number" name="phanmail_smtp_port" placeholder="587"
+              value="<?= htmlspecialchars((string)($pm['smtp_port'] ?? 587)) ?>"
+              style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Username</label>
+            <input type="text" name="phanmail_smtp_user" placeholder="you@gmail.com"
+              value="<?= htmlspecialchars($pm['smtp_user'] ?? '') ?>"
+              style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">Password <span style="font-weight:400;">(leave blank to keep)</span></label>
+            <input type="password" name="phanmail_smtp_pass" placeholder="••••••••"
+              style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:9px 12px;outline:none;">
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;grid-column:span 2;">
+        <button class="btn-sm btn-save" type="submit" name="phanmail_save" value="1">Save settings</button>
+      </div>
+    </form>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <form method="POST" style="display:inline;">
+        <button class="btn-sm btn-edit" type="submit" name="phanmail_test" value="1"
+          onclick="return confirm('Send a test digest to the configured email right now?')">Send test now</button>
+      </form>
+      <?php if (!empty($pm['last_sent'])): ?>
+      <form method="POST" style="display:inline;">
+        <button class="btn-sm" type="submit" name="phanmail_reset" value="1"
+          style="background:var(--surface-2);color:var(--text-muted);"
+          onclick="return confirm('Reset last-sent timestamp? Next digest will include ALL messages.')">Reset last-sent</button>
+      </form>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <?php if (empty($messages)): ?>
+  <div class="empty">No messages yet.</div>
+  <?php else: ?>
+  <?php foreach ($messages as $msg): ?>
+  <div class="msg-card">
+    <div class="msg-meta">
+      <span class="msg-name"><?= htmlspecialchars($msg['name']) ?></span>
+      <span class="msg-date"><?= date('M j, Y g:i A', strtotime($msg['created_at'])) ?></span>
+    </div>
+    <div class="msg-text"><?= nl2br(htmlspecialchars($msg['message'])) ?></div>
+    <?php if (!empty($msg['image_path'])): ?>
+    <div class="msg-img-row">
+      <img src="/data/uploads/<?= htmlspecialchars($msg['image_path']) ?>" alt="">
+      <form method="POST" onsubmit="return confirm('Remove this image?')">
+        <input type="hidden" name="delete_image_id" value="<?= $msg['id'] ?>">
+        <button class="btn-sm btn-delete" type="submit" style="margin-top:4px;">Remove image</button>
+      </form>
+    </div>
+    <?php endif; ?>
+    <div class="msg-actions">
+      <button class="btn-sm btn-edit" onclick="toggleEdit(<?= $msg['id'] ?>)">Edit</button>
+      <form method="POST" style="display:inline" onsubmit="return confirm('Delete this message?')">
+        <input type="hidden" name="delete_id" value="<?= $msg['id'] ?>">
+        <button class="btn-sm btn-delete" type="submit">Delete</button>
+      </form>
+    </div>
+    <div class="edit-form" id="edit-<?= $msg['id'] ?>">
+      <form method="POST">
+        <input type="hidden" name="edit_id" value="<?= $msg['id'] ?>">
+        <input type="text" name="edit_name" value="<?= htmlspecialchars($msg['name']) ?>" placeholder="Name" required>
+        <textarea name="edit_message" required><?= htmlspecialchars($msg['message']) ?></textarea>
+        <div class="edit-actions">
+          <button class="btn-sm btn-save" type="submit">Save</button>
+          <button class="btn-sm btn-cancel" type="button" onclick="toggleEdit(<?= $msg['id'] ?>)">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <?php endforeach; ?>
+  <?php endif; ?>
+</div>
+
+<?php endif; ?>
+
+<script>
+  function toggleEdit(id) {
+    document.getElementById('edit-' + id).classList.toggle('open');
+  }
+</script>
+</body>
+</html>
