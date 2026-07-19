@@ -771,14 +771,24 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     img.featured-media { max-height: 460px; object-fit: cover; }
     video.featured-media { max-height: 70vh; }
     /* Current-location locator map */
-    .loc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; }
-    .loc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.85rem 1.25rem; }
-    .loc-card-k { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
-    .loc-card-v { font-size: 17px; font-weight: 700; color: var(--text); margin-top: 2px; }
+    /* Location + next-show row (map stacks beside the next-show card) */
+    .latest-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; align-items: stretch; }
+    .latest-row-single { grid-template-columns: 1fr; }
+    @media (max-width: 640px) { .latest-row { grid-template-columns: 1fr; } }
+    .loc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+    .loc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0.7rem 1rem; }
+    .loc-card-k { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .loc-card-v { font-size: 16px; font-weight: 700; color: var(--text); margin-top: 2px; }
     .loc-card-link { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
     .loc-card-link:hover { color: var(--text); }
-    #loc-map { height: 210px; width: 100%; background: #12161c; }
-    .loc-map-wrap { position: relative; }
+    .loc-map-wrap { position: relative; flex: 1; min-height: 170px; }
+    #loc-map { position: absolute; inset: 0; width: 100%; height: 100%; background: #12161c; }
+    .next-card { display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; text-decoration: none; color: inherit; transition: background 0.15s; min-height: 170px; }
+    .next-card:hover { background: var(--surface-2); }
+    .next-card-k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); margin-bottom: 5px; }
+    .next-card-v { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.15; }
+    .next-card-sub { font-size: 13px; color: var(--text-muted); margin-top: 5px; line-height: 1.4; }
+    .next-card-foot { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 0.7rem; }
     .loc-pin { position: relative; width: 20px; height: 20px; }
     .loc-pin-dot { position: absolute; top: 50%; left: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: var(--red); border: 2px solid #fff; box-shadow: 0 0 8px rgba(176,26,28,0.95); z-index: 2; }
     .loc-pin-pulse { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: rgba(176,26,28,0.55); z-index: 1; animation: locpulse 2s ease-out infinite; }
@@ -972,52 +982,64 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
             <div class="snapshot-cell-k">Season best</div>
           </div>
         </div>
-
-        <?php if ($next_event):
-          $days_to_next = (int)floor(($ne_ts - $today_ts) / 86400);
-          $next_when = $days_to_next <= 0 ? 'Tonight' : ($days_to_next === 1 ? 'Tomorrow' : 'In ' . $days_to_next . ' days');
-        ?>
-        <a class="snapshot-next" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">
-          <div>
-            <div class="snapshot-next-k">Next show &middot; <?= htmlspecialchars($next_when) ?></div>
-            <div class="snapshot-next-v"><?= htmlspecialchars($next_event['label']) ?></div>
-            <div class="snapshot-next-sub"><?= date('l, M j', $ne_ts) ?><?= $ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '' ?></div>
-          </div>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </a>
-        <?php else: ?>
-        <a class="snapshot-next" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">
-          <div>
-            <div class="snapshot-next-k">Grand finale</div>
-            <div class="snapshot-next-v">DCI World Championships</div>
-            <div class="snapshot-next-sub">Lucas Oil Stadium, Indianapolis &middot; Aug 6&ndash;9</div>
-          </div>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </a>
-        <?php endif; ?>
       </div>
 
-      <?php if ($_loc_coords): ?>
-      <div class="loc-card">
-        <div class="loc-card-head">
-          <div>
-            <div class="loc-card-k">Matéo is currently in</div>
-            <div class="loc-card-v"><?= htmlspecialchars($_loc_name) ?></div>
+      <?php
+        // Next-show / finale card content
+        if ($next_event) {
+            $days_to_next = (int)floor(($ne_ts - $today_ts) / 86400);
+            $next_when = $days_to_next <= 0 ? 'Tonight' : ($days_to_next === 1 ? 'Tomorrow' : 'In ' . $days_to_next . ' days');
+            $next_k = 'Next show &middot; ' . htmlspecialchars($next_when);
+            $next_v = htmlspecialchars($next_event['label']);
+            $next_sub = date('l, M j', $ne_ts) . ($ne_location ? ' &middot; ' . htmlspecialchars($ne_location) : '');
+        } else {
+            $next_k = 'Grand finale';
+            $next_v = 'DCI World Championships';
+            $next_sub = 'Lucas Oil Stadium, Indianapolis &middot; Aug 6&ndash;9';
+        }
+      ?>
+      <div class="latest-row<?= $_loc_coords ? '' : ' latest-row-single' ?>">
+        <?php if ($_loc_coords): ?>
+        <div class="loc-card">
+          <div class="loc-card-head">
+            <div>
+              <div class="loc-card-k">Currently in</div>
+              <div class="loc-card-v"><?= htmlspecialchars($_loc_name) ?></div>
+            </div>
+            <a class="loc-card-link" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">Map &rsaquo;</a>
           </div>
-          <a class="loc-card-link" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">Full tour map &rsaquo;</a>
+          <div class="loc-map-wrap"><div id="loc-map"></div></div>
         </div>
-        <div class="loc-map-wrap"><div id="loc-map"></div></div>
+        <?php endif; ?>
+
+        <a class="next-card" href="javascript:switchTab('more',document.querySelectorAll('.tab-btn')[3])">
+          <div>
+            <div class="next-card-k"><?= $next_k ?></div>
+            <div class="next-card-v"><?= $next_v ?></div>
+            <div class="next-card-sub"><?= $next_sub ?></div>
+          </div>
+          <div class="next-card-foot">
+            <span>View tour dates</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </a>
       </div>
+      <?php if ($_loc_coords): ?>
       <script>
         (function() {
           var el = document.getElementById('loc-map');
           if (!el || typeof L === 'undefined') return;
           var lat = <?= $_loc_coords[0] ?>, lon = <?= $_loc_coords[1] ?>;
           var m = L.map('loc-map', { zoomControl: false, attributionControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false, touchZoom: false, keyboard: false, tap: false }).setView([lat, lon], 6);
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 12 }).addTo(m);
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 12, minZoom: 3 }).addTo(m);
           var icon = L.divIcon({ className: '', html: '<div class="loc-pin"><span class="loc-pin-pulse"></span><span class="loc-pin-dot"></span></div>', iconSize: [20, 20], iconAnchor: [10, 10] });
           L.marker([lat, lon], { icon: icon }).addTo(m);
           window._locMap = m;
+          // Tiles can render partially before the grid cell has its final width — nudge Leaflet to recalc.
+          function fix() { m.invalidateSize(); m.setView([lat, lon], 6); }
+          setTimeout(fix, 120);
+          setTimeout(fix, 500);
+          window.addEventListener('load', fix);
         })();
       </script>
       <?php endif; ?>
