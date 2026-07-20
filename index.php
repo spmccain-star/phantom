@@ -1,16 +1,4 @@
 <?php
-date_default_timezone_set('America/Chicago');
-require __DIR__ . '/photos.php';
-require __DIR__ . '/votes.php';
-$latest_photos = phantom_latest_photos(24);
-$photo_votes = phantom_votes();
-foreach ($latest_photos as &$p) {
-    $p['votes'] = $photo_votes[phantom_vote_key($p['source'], $p['rel'])] ?? 0;
-}
-unset($p);
-// Upvoted photos lead the hero ticker; ties and the rest fall back to newest-first.
-$ticker_photos = $latest_photos;
-usort($ticker_photos, fn($a, $b) => [$b['votes'], $b['mtime']] <=> [$a['votes'], $a['mtime']]);
 $today = date('Y-m-d');
 $events = [
     '2026-05-20' => ['label' => 'Move In Day',                       'detail' => 'Fly via Nashville (BNA) · transport provided to Owensboro', 'type' => 'milestone'],
@@ -36,28 +24,28 @@ $events = [
     '2026-06-24' => ['label' => 'Travel — Lincoln, NE',              'detail' => 'H: Lincoln Sports Foundation',                             'type' => 'travel'],
     '2026-06-25' => ['label' => 'Rehearsal',                         'detail' => 'H: Eaton HS, CO · No Fly',                                 'type' => 'rehearsal'],
     '2026-06-26' => ['label' => 'Rehearsal',                         'detail' => 'H: Eaton HS, CO · DEN',                                    'type' => 'rehearsal'],
-    '2026-06-27' => ['label' => 'Fort Collins Show / DCI Denver',    'detail' => 'H: Eaton HS · No Fly',                                     'type' => 'show',      'city' => 'Fort Collins, CO', 'result' => '2nd · 72.650'],
+    '2026-06-27' => ['label' => 'Fort Collins Show / DCI Denver',    'detail' => 'H: Eaton HS · No Fly',                                     'type' => 'show',      'city' => 'Fort Collins, CO'],
     '2026-06-28' => ['label' => 'Denver Free Day + Laundry',         'detail' => 'H: Eaton HS · DEN',                                        'type' => 'free'],
     '2026-06-29' => ['label' => 'CSU Rehearsal',                     'detail' => 'H: Eaton HS · DEN',                                        'type' => 'rehearsal'],
     '2026-06-30' => ['label' => 'Omaha Area Rehearsal',              'detail' => 'H: Bellevue East HS, NE · OMA',                            'type' => 'rehearsal'],
-    '2026-07-01' => ['label' => 'Omaha Show',                        'detail' => 'H: Bellevue East HS · OMA',                                'type' => 'show',      'city' => 'Omaha, NE', 'result' => '1st · 76.400'],
+    '2026-07-01' => ['label' => 'Omaha Show',                        'detail' => 'H: Bellevue East HS · OMA',                                'type' => 'show',      'city' => 'Omaha, NE'],
     '2026-07-02' => ['label' => 'Travel',                            'detail' => 'H: Guilford · ORD',                                        'type' => 'travel'],
-    '2026-07-03' => ['label' => 'Rockford Show',                     'detail' => 'H: Guilford · ORD',                                        'type' => 'show',      'city' => 'Rockford, IL', 'result' => 'Cancelled — weather'],
+    '2026-07-03' => ['label' => 'Rockford Show',                     'detail' => 'H: Guilford · ORD',                                        'type' => 'show',      'city' => 'Rockford, IL'],
     '2026-07-04' => ['label' => 'Laundry Day',                       'detail' => 'H: Guilford · ORD',                                        'type' => 'free'],
-    '2026-07-05' => ['label' => 'La Crosse, WI Show',                'detail' => 'H: St. Charles HS, MN · No Fly',                           'type' => 'show',      'city' => 'La Crosse, WI', 'result' => '1st · 79.200'],
+    '2026-07-05' => ['label' => 'La Crosse, WI Show',                'detail' => 'H: St. Charles HS, MN · No Fly',                           'type' => 'show',      'city' => 'La Crosse, WI'],
     '2026-07-06' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-07-07' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-07-08' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
     '2026-07-09' => ['label' => 'NIU',                               'detail' => 'H: NIU · ORD',                                             'type' => 'rehearsal'],
-    '2026-07-10' => ['label' => 'Lisle Show',                        'detail' => 'H: Rockford University · ORD',                             'type' => 'show',      'city' => 'Lisle, IL', 'result' => '1st · 80.800'],
-    '2026-07-11' => ['label' => 'Whitewater Show',                   'detail' => 'H: Rockford University · No Fly',                          'type' => 'show',      'city' => 'Whitewater, WI', 'result' => '1st · 83.350'],
+    '2026-07-10' => ['label' => 'Lisle Show',                        'detail' => 'H: Rockford University · ORD',                             'type' => 'show',      'city' => 'Lisle, IL'],
+    '2026-07-11' => ['label' => 'Whitewater Show',                   'detail' => 'H: Rockford University · No Fly',                          'type' => 'show',      'city' => 'Whitewater, WI'],
     '2026-07-12' => ['label' => 'Des Moines Transition Day',         'detail' => 'Visual clinic @ Theodore Roosevelt HS · No Fly',           'type' => 'travel'],
-    '2026-07-13' => ['label' => 'Olathe Show',                       'detail' => 'H: Fort Osage HS, Independence · MCI',                    'type' => 'show',      'city' => 'Olathe, KS', 'result' => '1st · 84.300'],
-    '2026-07-14' => ['label' => 'Broken Arrow Show',                 'detail' => 'H: Owasso HS · TUL',                                      'type' => 'show',      'city' => 'Broken Arrow, OK', 'result' => '3rd · 85.000'],
+    '2026-07-13' => ['label' => 'Olathe Show',                       'detail' => 'H: Fort Osage HS, Independence · MCI',                    'type' => 'show',      'city' => 'Olathe, KS'],
+    '2026-07-14' => ['label' => 'Broken Arrow Show',                 'detail' => 'H: Owasso HS · TUL',                                      'type' => 'show',      'city' => 'Broken Arrow, OK'],
     '2026-07-15' => ['label' => 'Travel',                            'detail' => 'H: Naamen Forest HS · No Fly',                             'type' => 'travel'],
-    '2026-07-16' => ['label' => 'Denton Show',                       'detail' => 'H: Naamen Forest HS · DFW',                               'type' => 'show',      'city' => 'Denton, TX', 'result' => '5th · 85.650'],
+    '2026-07-16' => ['label' => 'Denton Show',                       'detail' => 'H: Naamen Forest HS · DFW',                               'type' => 'show',      'city' => 'Denton, TX'],
     '2026-07-17' => ['label' => 'Rehearsal — Midway High School',    'detail' => '10 ish – 2 ish · No Fly',                              'type' => 'rehearsal'],
-    '2026-07-18' => ['label' => 'San Antonio Show',                  'detail' => 'H: Pleasanton High School · SAT',                         'type' => 'show',      'city' => 'San Antonio, TX', 'result' => '6th · 87.363'],
+    '2026-07-18' => ['label' => 'San Antonio Show',                  'detail' => 'H: Pleasanton High School · SAT',                         'type' => 'show',      'city' => 'San Antonio, TX'],
     '2026-07-19' => ['label' => 'San Antonio Free Day + Laundry',    'detail' => 'H: Pleasanton High School · SAT',                         'type' => 'free'],
     '2026-07-20' => ['label' => 'McKinney Show',                     'detail' => 'H: Pilot Point Middle School · No Fly',                   'type' => 'show',      'city' => 'McKinney, TX'],
     '2026-07-21' => ['label' => 'Travel',                            'detail' => 'H: Collierville HS · No Fly',                             'type' => 'travel'],
@@ -107,24 +95,13 @@ $months = [
     ['year' => 2026, 'month' => 7,  'name' => 'July 2026',   'phase' => 'Summer Tour'],
     ['year' => 2026, 'month' => 8,  'name' => 'August 2026', 'phase' => 'Summer Tour → DCI Championships · Indianapolis IN'],
 ];
-
-// Next upcoming show/championship drives the hero; today's entry feeds the banner.
-$next_show = null;
-foreach ($events as $d => $e) {
-    if ($d >= $today && in_array($e['type'], ['show', 'dci'], true)) {
-        $next_show = ['date' => $d] + $e;
-        break;
-    }
-}
-$today_event    = $events[$today] ?? null;
-$days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 86400);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mateo on tour — Phantom Regiment 2026</title>
+  <title>Come watch Mateo perform — DCI San Antonio</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -177,29 +154,6 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .hero-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.1; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
     .hero-sub { font-size: 16px; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 0.75rem; }
     .show-pill { display: inline-block; background: rgba(176,26,28,0.75); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; font-style: italic; backdrop-filter: blur(4px); }
-
-    .countdown-pill { display: inline-block; background: rgba(255,215,0,0.14); border: 1px solid rgba(255,215,0,0.45); color: #FFD700; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; backdrop-filter: blur(4px); margin-left: 6px; }
-
-    .today-banner { background: var(--surface-2); border-bottom: 1px solid var(--border); }
-    .today-banner-inner { max-width: 1100px; margin: 0 auto; padding: 10px 1.5rem; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-secondary); flex-wrap: wrap; }
-    .today-banner-inner strong { color: var(--text); font-weight: 600; }
-    .today-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .today-detail { color: var(--text-muted); font-size: 13px; }
-
-    .latest-strip { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.1rem 0 1.3rem; }
-    .latest-strip .section-label { max-width: 1100px; margin: 0 auto 0.8rem; padding: 0 1.5rem; }
-    .strip { display: flex; gap: 10px; overflow-x: auto; padding: 0 1.5rem 6px; max-width: 1100px; margin: 0 auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-    .strip-item { position: relative; flex: 0 0 auto; width: 156px; height: 156px; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; scroll-snap-align: start; }
-    .strip-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
-    .strip-item:hover img { transform: scale(1.04); }
-    .strip-fav { position: absolute; top: 7px; right: 7px; background: rgba(0,0,0,0.55); color: #FFD700; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 10px; backdrop-filter: blur(3px); }
-    .strip-time { position: absolute; bottom: 6px; right: 9px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
-    .vote-btn { position: absolute; bottom: 8px; right: 8px; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.18); color: #fff; border-radius: 16px; padding: 4px 11px; font-size: 12px; font-weight: 600; cursor: pointer; backdrop-filter: blur(3px); transition: background 0.15s, border-color 0.15s; }
-    .vote-btn svg { fill: none; }
-    .vote-btn:hover { background: rgba(0,0,0,0.75); border-color: rgba(255,255,255,0.35); }
-    .vote-btn.voted { background: rgba(176,26,28,0.85); border-color: rgba(255,255,255,0.35); }
-    .vote-btn.voted svg { fill: currentColor; }
-    @media (max-width: 600px) { .strip-item { width: 124px; height: 124px; } }
 
     .tab-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
     .tab-btn { flex: 1; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 16px 8px 13px; cursor: pointer; transition: color 0.15s, border-color 0.15s; text-align: center; }
@@ -260,11 +214,6 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; object-fit: contain; }
     .lightbox-close { position: fixed; top: 1rem; right: 1.25rem; background: none; border: none; color: white; font-size: 2rem; cursor: pointer; line-height: 1; opacity: 0.8; }
     .lightbox-close:hover { opacity: 1; }
-    .lightbox-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #fff; width: 46px; height: 46px; border-radius: 50%; font-size: 1.7rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.85; z-index: 1001; padding-bottom: 4px; }
-    .lightbox-nav:hover { opacity: 1; background: rgba(255,255,255,0.16); }
-    .lightbox-nav.prev { left: 1rem; }
-    .lightbox-nav.next { right: 1rem; }
-    @media (max-width: 600px) { .lightbox-nav { width: 38px; height: 38px; font-size: 1.4rem; } }
     .video-wrap { position: relative; border-radius: var(--radius); overflow: hidden; aspect-ratio: 16 / 9; background: #000; }
     .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
@@ -293,7 +242,6 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .event-pill.dci { font-size: 0.78rem; font-weight: 800; letter-spacing: .02em; }
     .event-pill:hover::after { content: attr(data-detail); position: absolute; bottom: calc(100% + 4px); left: 0; min-width: 150px; max-width: 220px; background: #2a2a2a; color: #F2F0EA; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 6px 9px; font-size: 0.7rem; font-weight: 400; white-space: normal; z-index: 10; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.6); }
     .event-city { display: block; font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .event-result { display: block; font-size: 0.63rem; font-weight: 700; color: #FFD700; margin-top: 1px; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .dci-info-box { margin-top: 1.5rem; background: rgba(176,26,28,0.06); border: 1px solid rgba(176,26,28,0.2); border-radius: 10px; padding: 14px 18px; font-size: 0.82rem; color: var(--text-secondary); }
     .dci-info-box strong { color: #FFD700; display: block; margin-bottom: 6px; font-size: 0.88rem; }
     .month-view { display: none; }
@@ -321,52 +269,12 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   <div class="hero">
     <img src="/assets/mateo.jpg" alt="Mateo — Phantom Regiment 2026">
     <div class="hero-overlay">
-      <?php if ($next_show): ?>
       <div class="hero-title">Come watch Mateo perform!</div>
-      <div class="hero-eyebrow">Next up — <?= date('l, F j', strtotime($next_show['date'])) ?><?= !empty($next_show['city']) ? ' &nbsp;&middot;&nbsp; ' . htmlspecialchars($next_show['city']) : '' ?></div>
-      <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em> &middot; <?= htmlspecialchars($next_show['label']) ?></div>
-      <?php else: ?>
-      <div class="hero-title">What a season, Mateo!</div>
-      <div class="hero-eyebrow">2026 Summer Tour &nbsp;&middot;&nbsp; DCI World Championships &middot; Indianapolis, IN</div>
-      <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em></div>
-      <?php endif; ?>
-      <div>
-        <span class="show-pill">Bloodline</span>
-        <?php if ($days_to_finals > 1): ?>
-        <span class="countdown-pill">DCI Finals in <?= $days_to_finals ?> days</span>
-        <?php elseif ($days_to_finals === 1): ?>
-        <span class="countdown-pill">DCI Finals tomorrow!</span>
-        <?php elseif ($days_to_finals === 0): ?>
-        <span class="countdown-pill">DCI Finals — tonight!</span>
-        <?php endif; ?>
-      </div>
+      <div class="hero-eyebrow">Saturday, July 18, 2026 &nbsp;&middot;&nbsp; San Antonio, TX</div>
+      <div class="hero-sub">Phantom Regiment &middot; <em>Bloodline</em> &middot; DCI Southwestern Championship</div>
+      <div><span class="show-pill">Bloodline</span></div>
     </div>
   </div>
-
-  <?php if ($today_event): ?>
-  <div class="today-banner">
-    <div class="today-banner-inner">
-      <span class="today-dot" style="background:<?= $type_colors[$today_event['type']] ?>"></span>
-      <span><strong>Today on tour:</strong> <?= htmlspecialchars($today_event['label']) ?></span>
-      <?php if (!empty($today_event['detail'])): ?><span class="today-detail"><?= htmlspecialchars($today_event['detail']) ?></span><?php endif; ?>
-    </div>
-  </div>
-  <?php endif; ?>
-
-  <?php if ($latest_photos): ?>
-  <section class="latest-strip">
-    <div class="section-label">Latest Phanmail and Uploads</div>
-    <div class="strip">
-      <?php foreach (array_slice($ticker_photos, 0, 12) as $p): ?>
-      <div class="strip-item" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
-        <img src="<?= htmlspecialchars($p['thumb']) ?>" alt="Phantom Regiment tour photo" loading="lazy" />
-        <?php if ($p['votes'] > 0): ?><span class="strip-fav">★ <?= $p['votes'] ?></span><?php endif; ?>
-        <span class="strip-time"><?= date('M j', $p['mtime']) ?></span>
-      </div>
-      <?php endforeach; ?>
-    </div>
-  </section>
-  <?php endif; ?>
 
   <nav class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('watch', this)">Latest</button>
@@ -376,6 +284,105 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
 
   <div class="tab-panel active" id="tab-watch">
     <div class="content">
+      <div class="section-label" style="margin-top:1.5rem;">3 ways to watch</div>
+      <div class="cards">
+
+      <!-- Option 1 -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-option-num">Option 1</div>
+            <div class="card-title">Free rehearsal</div>
+          </div>
+          <span class="badge badge-free">Free</span>
+        </div>
+        <div class="card-body">
+          <p>Phantom Regiment rehearses at a high school about 1 hr 40 min south of the Alamodome. Free, up-close, and you'll likely see them run the full show.</p>
+        </div>
+        <div class="divider"></div>
+        <div class="details">
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Free admission
+          </div>
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            No uniforms — outdoor practice setting
+          </div>
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Address TBD — checking with Mateo
+          </div>
+        </div>
+      </div>
+
+      <!-- Option 2 -->
+      <div class="card featured">
+        <div class="card-header">
+          <div>
+            <div class="card-option-num">Option 2</div>
+            <div class="card-title">The Lots</div>
+          </div>
+          <span class="badge badge-us">We'll be here</span>
+        </div>
+        <div class="card-body">
+          <p>Starting around 6 PM, corps warm up in the parking lots around the Alamodome in partial uniform. You'll see the horn lines and snare lines running drills separately — not the full show, but a cool behind-the-scenes look at how it all comes together.</p>
+          <p>You're free to roam and listen to different sections up close. Multiple corps will be doing the same thing. Phantom wears bright red — hard to miss. Once we find them, we'll text everyone a pin so you can find us!</p>
+          <p>If you're joining us, let us know — once we get a head count we can figure out if dinner together works out after!</p>
+        </div>
+        <div class="divider"></div>
+        <div class="details">
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            Parking ~$35
+          </div>
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            Hot on the pavement — bring water
+          </div>
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Starts ~6 PM, about an hour
+          </div>
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            Bring a chair if you want to sit
+          </div>
+        </div>
+      </div>
+
+      <!-- Option 3 -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-option-num">Option 3</div>
+            <div class="card-title">Official performance</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <p>Phantom performs <em>Bloodline</em> inside the Alamodome around 9 PM. The full event runs from 1:30 PM. Mateo will be near <strong>Section 116</strong> on the field sideline. Exact times post day-of.</p>
+        </div>
+        <div class="divider"></div>
+        <div class="details">
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>
+            Tickets from ~$129
+          </div>
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Watch near Section 116
+          </div>
+          <div class="detail">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Mateo performs ~9 PM
+          </div>
+        </div>
+        <a class="ticket-btn" href="https://www.ticketmaster.com/event/3A00636CF94C7C32" target="_blank" rel="noopener">
+          Buy tickets on Ticketmaster →
+        </a>
+      </div>
+
+    </div>
       <div class="section-label">More about Phantom Regiment</div>
       <div class="links-card">
       <div class="links-header">Links</div>
@@ -490,9 +497,6 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
             <?php if (!empty($ev['city'])): ?>
             <span class="event-city"><?= htmlspecialchars($ev['city']) ?></span>
             <?php endif; ?>
-            <?php if (!empty($ev['result'])): ?>
-            <span class="event-result"><?= htmlspecialchars($ev['result']) ?></span>
-            <?php endif; ?>
             <?php endif; ?>
           </div>
           <?php endfor;
@@ -557,17 +561,6 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     </div>
       <div class="section-label" style="margin-top:0.5rem;">Photos</div>
       <div class="gallery-grid" id="gallery">
-      <?php if ($latest_photos): ?>
-      <?php foreach ($latest_photos as $i => $p): ?>
-      <div class="gallery-item<?= $i === 0 ? ' wide' : '' ?>" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
-        <img src="<?= htmlspecialchars($p['url'] . '&w=' . ($i === 0 ? 960 : 640)) ?>" alt="Phantom Regiment tour photo — <?= date('M j', $p['mtime']) ?>" loading="lazy" />
-        <button class="vote-btn" data-s="<?= htmlspecialchars($p['source']) ?>" data-f="<?= htmlspecialchars($p['rel']) ?>" onclick="toggleVote(this, event)" aria-label="Upvote photo">
-          <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <span class="vote-count"><?= $p['votes'] ?></span>
-        </button>
-      </div>
-      <?php endforeach; ?>
-      <?php else: ?>
       <div class="gallery-item wide" onclick="openLightbox(this)">
         <img src="/assets/mateo.jpg" alt="Phantom Regiment snare line rehearsal" loading="lazy" />
       </div>
@@ -577,7 +570,6 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
       <div class="gallery-item" onclick="openLightbox(this)">
         <img src="/assets/mateo.jpg" alt="Phantom Regiment percussion" loading="lazy" />
       </div>
-      <?php endif; ?>
     </div>
 
     <div class="section-label" style="margin-top:1.75rem;">Follow along</div>
@@ -621,81 +613,25 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
   <!-- Lightbox overlay -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <button class="lightbox-close" onclick="closeLightbox()">×</button>
-    <button class="lightbox-nav prev" id="lb-prev" onclick="event.stopPropagation(); lightboxStep(-1)" aria-label="Previous photo">&#8249;</button>
-    <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
-    <button class="lightbox-nav next" id="lb-next" onclick="event.stopPropagation(); lightboxStep(1)" aria-label="Next photo">&#8250;</button>
+    <img id="lightbox-img" src="" alt="" />
   </div>
 
 <script async src="https://www.instagram.com/embed.js"></script>
 <script>
-  var lbItems = [];
-  var lbIndex = -1;
-
   function openLightbox(el) {
-    // Cycle within the group that was clicked (photo strip vs. gallery)
-    var container = el.closest('.strip, .gallery-grid') || document;
-    lbItems = Array.prototype.slice.call(container.querySelectorAll('.strip-item, .gallery-item'));
-    lbIndex = lbItems.indexOf(el);
-    if (lbIndex === -1) { lbItems = [el]; lbIndex = 0; }
-    showLightbox();
-  }
-  function showLightbox() {
-    var el = lbItems[lbIndex];
     var img = el.querySelector('img');
-    var lbImg = document.getElementById('lightbox-img');
-    lbImg.src = el.dataset.full || img.src;
-    lbImg.alt = img.alt;
-    var multi = lbItems.length > 1 ? '' : 'none';
-    document.getElementById('lb-prev').style.display = multi;
-    document.getElementById('lb-next').style.display = multi;
+    document.getElementById('lightbox-img').src = img.src;
+    document.getElementById('lightbox-img').alt = img.alt;
     document.getElementById('lightbox').classList.add('open');
     document.body.style.overflow = 'hidden';
-  }
-  function lightboxStep(dir) {
-    if (lbItems.length < 2) return;
-    lbIndex = (lbIndex + dir + lbItems.length) % lbItems.length;
-    showLightbox();
   }
   function closeLightbox() {
     document.getElementById('lightbox').classList.remove('open');
     document.body.style.overflow = '';
   }
   document.addEventListener('keydown', function(e) {
-    if (!document.getElementById('lightbox').classList.contains('open')) return;
     if (e.key === 'Escape') closeLightbox();
-    if (e.key === 'ArrowLeft') lightboxStep(-1);
-    if (e.key === 'ArrowRight') lightboxStep(1);
   });
-  function toggleVote(btn, e) {
-    e.stopPropagation();
-    if (btn.disabled) return;
-    var key = 'pvote:' + btn.dataset.s + '|' + btn.dataset.f;
-    var voted = localStorage.getItem(key) === '1';
-    btn.disabled = true;
-    fetch('/vote.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 's=' + encodeURIComponent(btn.dataset.s) + '&f=' + encodeURIComponent(btn.dataset.f) + '&dir=' + (voted ? -1 : 1)
-    }).then(function(r) { return r.json(); }).then(function(d) {
-      localStorage.setItem(key, voted ? '0' : '1');
-      btn.classList.toggle('voted', !voted);
-      btn.querySelector('.vote-count').textContent = d.votes || 0;
-    }).catch(function() {}).finally(function() { btn.disabled = false; });
-  }
-  document.querySelectorAll('.vote-btn').forEach(function(b) {
-    if (localStorage.getItem('pvote:' + b.dataset.s + '|' + b.dataset.f) === '1') b.classList.add('voted');
-  });
-  (function() {
-    var lb = document.getElementById('lightbox');
-    var touchX = null;
-    lb.addEventListener('touchstart', function(e) { touchX = e.touches[0].clientX; }, { passive: true });
-    lb.addEventListener('touchend', function(e) {
-      if (touchX === null) return;
-      var dx = e.changedTouches[0].clientX - touchX;
-      touchX = null;
-      if (Math.abs(dx) > 50) lightboxStep(dx < 0 ? 1 : -1);
-    }, { passive: true });
-  })();
   function switchTab(name, btn) {
     document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
