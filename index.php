@@ -1,6 +1,16 @@
 <?php
+date_default_timezone_set('America/Chicago');
 require __DIR__ . '/photos.php';
+require __DIR__ . '/votes.php';
 $latest_photos = phantom_latest_photos(24);
+$photo_votes = phantom_votes();
+foreach ($latest_photos as &$p) {
+    $p['votes'] = $photo_votes[phantom_vote_key($p['source'], $p['rel'])] ?? 0;
+}
+unset($p);
+// Upvoted photos lead the hero ticker; ties and the rest fall back to newest-first.
+$ticker_photos = $latest_photos;
+usort($ticker_photos, fn($a, $b) => [$b['votes'], $b['mtime']] <=> [$a['votes'], $a['mtime']]);
 $today = date('Y-m-d');
 $events = [
     '2026-05-20' => ['label' => 'Move In Day',                       'detail' => 'Fly via Nashville (BNA) · transport provided to Owensboro', 'type' => 'milestone'],
@@ -182,8 +192,13 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     .strip-item { position: relative; flex: 0 0 auto; width: 156px; height: 156px; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; scroll-snap-align: start; }
     .strip-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
     .strip-item:hover img { transform: scale(1.04); }
-    .strip-badge { position: absolute; top: 7px; left: 7px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 10px; backdrop-filter: blur(3px); }
+    .strip-fav { position: absolute; top: 7px; right: 7px; background: rgba(0,0,0,0.55); color: #FFD700; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 10px; backdrop-filter: blur(3px); }
     .strip-time { position: absolute; bottom: 6px; right: 9px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    .vote-btn { position: absolute; bottom: 8px; right: 8px; display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.18); color: #fff; border-radius: 16px; padding: 4px 11px; font-size: 12px; font-weight: 600; cursor: pointer; backdrop-filter: blur(3px); transition: background 0.15s, border-color 0.15s; }
+    .vote-btn svg { fill: none; }
+    .vote-btn:hover { background: rgba(0,0,0,0.75); border-color: rgba(255,255,255,0.35); }
+    .vote-btn.voted { background: rgba(176,26,28,0.85); border-color: rgba(255,255,255,0.35); }
+    .vote-btn.voted svg { fill: currentColor; }
     @media (max-width: 600px) { .strip-item { width: 124px; height: 124px; } }
 
     .tab-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
@@ -340,12 +355,12 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
 
   <?php if ($latest_photos): ?>
   <section class="latest-strip">
-    <div class="section-label">Latest photos</div>
+    <div class="section-label">Latest Phanmail and Uploads</div>
     <div class="strip">
-      <?php foreach (array_slice($latest_photos, 0, 12) as $p): ?>
+      <?php foreach (array_slice($ticker_photos, 0, 12) as $p): ?>
       <div class="strip-item" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
         <img src="<?= htmlspecialchars($p['thumb']) ?>" alt="Phantom Regiment tour photo" loading="lazy" />
-        <?php if ($p['label']): ?><span class="strip-badge"><?= htmlspecialchars($p['label']) ?></span><?php endif; ?>
+        <?php if ($p['votes'] > 0): ?><span class="strip-fav">★ <?= $p['votes'] ?></span><?php endif; ?>
         <span class="strip-time"><?= date('M j', $p['mtime']) ?></span>
       </div>
       <?php endforeach; ?>
@@ -546,6 +561,10 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
       <?php foreach ($latest_photos as $i => $p): ?>
       <div class="gallery-item<?= $i === 0 ? ' wide' : '' ?>" data-full="<?= htmlspecialchars($p['url']) ?>" onclick="openLightbox(this)">
         <img src="<?= htmlspecialchars($p['url'] . '&w=' . ($i === 0 ? 960 : 640)) ?>" alt="Phantom Regiment tour photo — <?= date('M j', $p['mtime']) ?>" loading="lazy" />
+        <button class="vote-btn" data-s="<?= htmlspecialchars($p['source']) ?>" data-f="<?= htmlspecialchars($p['rel']) ?>" onclick="toggleVote(this, event)" aria-label="Upvote photo">
+          <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span class="vote-count"><?= $p['votes'] ?></span>
+        </button>
       </div>
       <?php endforeach; ?>
       <?php else: ?>
@@ -646,6 +665,25 @@ $days_to_finals = (int)floor((strtotime('2026-08-08') - strtotime($today)) / 864
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') lightboxStep(-1);
     if (e.key === 'ArrowRight') lightboxStep(1);
+  });
+  function toggleVote(btn, e) {
+    e.stopPropagation();
+    if (btn.disabled) return;
+    var key = 'pvote:' + btn.dataset.s + '|' + btn.dataset.f;
+    var voted = localStorage.getItem(key) === '1';
+    btn.disabled = true;
+    fetch('/vote.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 's=' + encodeURIComponent(btn.dataset.s) + '&f=' + encodeURIComponent(btn.dataset.f) + '&dir=' + (voted ? -1 : 1)
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      localStorage.setItem(key, voted ? '0' : '1');
+      btn.classList.toggle('voted', !voted);
+      btn.querySelector('.vote-count').textContent = d.votes || 0;
+    }).catch(function() {}).finally(function() { btn.disabled = false; });
+  }
+  document.querySelectorAll('.vote-btn').forEach(function(b) {
+    if (localStorage.getItem('pvote:' + b.dataset.s + '|' + b.dataset.f) === '1') b.classList.add('voted');
   });
   (function() {
     var lb = document.getElementById('lightbox');
